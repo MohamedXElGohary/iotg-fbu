@@ -3,10 +3,36 @@
 ## {The SIIP Stitching Tool replaces specified firmware sections in the 
 ## current BIOS.bin file with the new version.}
 #################################################################################################
-##Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+##Copyright (c) 2019, Intel Corporation. All rights reserved.
 #
-# This program and the accompanying materials are licensed and made available under
-# the terms and conditions of the
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#################################################################################################
+
+
 ##################################################
 ## Name SIIPStitch.py
 ## Author: Kimberly Barnes
@@ -18,7 +44,7 @@
 ## Version: 0.5.1
 ## Status: Intial Development
 #################################################################################################
-  
+
 import os
 import platform
 import subprocess
@@ -27,7 +53,7 @@ import argparse
 import shutil
 import shlex 
 import stat
-  
+
 __version__ = '0.5.1'
 ################################################################################################
 ##
@@ -71,36 +97,36 @@ def search_for_fv(inputfile, myenv):
     print("\nFinding the Firmware Volume")
     fwvol = None
     status = 0
-   
+
     command = [ 'FMMT.exe', '-v', inputfile, '>', 'temp.txt']
-   
+
     try:
        subprocess.check_call(command, env=myenv,shell=True)
-       
+
     except subprocess.CalledProcessError as status:
        print("\nError using FMMT.exe") 
        return 1, fwvol     
 
     ##  Starting Search for firmware volume ###########
-  
+
     fwvol_found = False
     fwvol_child = False
-   
+
     #############################################################################################
     # Note: the 'with open' and 'For in iter' is used instead of 'for in searchfile'            #
     #       beacause the peek_line function uses 'tell' and they cannot work together           #
     #############################################################################################
-    
+
     with open('temp.txt','r') as searchfile:
        #Read line from file and search for the Keyword FV
        for currentline in iter(searchfile.readline, ""):
-      
+
           if 'FV' in currentline:
              fv = currentline.split(' :')
              # Keyword 'FV was found so search next lines for IntelOseFw or for Child
              while not (peek_line(searchfile).startswith('FV')):
                 nextline = searchfile.readline()
-               
+
                 # check to see if new firmware or Child Firmware
                 if 'IntelOseFw' in nextline:
                    fwvol=fv[0]
@@ -110,7 +136,7 @@ def search_for_fv(inputfile, myenv):
                    print ("Found a child Firmware volume: {}.".format(fv[0]))
                    fwvol_child = True
                    break
-                
+
               # if child Firmware not found we have new Firmware  
              if fwvol_child == False:
                 fwvol =fv[0]
@@ -118,12 +144,13 @@ def search_for_fv(inputfile, myenv):
              # Else child found reset flag
              else:
                 fwvol_child = False
-               
+
           #Firmware Volume was found exit loop/
           if fwvol_found:
              break
     return status, fwvol
-    
+
+
 ################################################################################################
 ##
 ## Get nextline but keep pointer to the same line
@@ -171,7 +198,6 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars):
 
            #GenSec -s EFI_SECTION_GUID_DEFINED -g EE4E5898-3914-4259-9D6E-DC7BD79403CF -r PROCESSING_REQUIRED -o OseFw.guided   IntelOseFw.tmp
            'cmd4' : [prog[0],options[0],section_type[2],options[4],guid_values[0],options[5], option_strings[1], options[2],tempfile[3],tempfile[2]],
-          
 
            #GenFfs.exe -t EFI_FV_FILETYPE_FREEFORM -g EBA4A247-42C0-4C11-A167-A4058BC9D423  -a 1K -i  OseFw.guided   -o IntelOseFw.ffs
            'cmd5' : [prog[2],options[6],section_type[3],options[4],guid_values[1],options[7],option_strings[2], options[8],tempfile[3], options[2],tempfile[4]],
@@ -181,7 +207,7 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars):
     }
 
     print("\nStarting merge and replacement of section")
-   
+
    #Merging and Replacing
     for cmd_name, command in sorted(cmds.items()):
        try:
@@ -189,7 +215,7 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars):
        except subprocess.CalledProcessError as status:
           print("\nError executing {}".format(cmd_name))
           return 1
-  
+
     return 0
 
 ##################################################################################################
@@ -199,7 +225,7 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars):
 ##################################################################################################
 def cleanup(dir):
     osSys = platform.system()
-   
+
     #change directory
     try:
        os.chdir(dir[0])  
@@ -207,14 +233,13 @@ def cleanup(dir):
        sys.exit("\nUnable to Change Directory : {}\n{}".format(dir[0],error))
     except :
        sys.exit("\nUnexpected error:{}".format(sys.exc_info()))
-   
-  
+
    # determine platform in order to use correct command for the OS
     if osSys == "Windows":
        cmd = ['rmdir', dir[1], '/s', '/q']
     else: # linux
        cmd  = ["rm","-fr",dir[1]]
-   
+
     try:
        subprocess.check_call(cmd,shell=True)
     except subprocess.CalledProcessError as status:
@@ -230,9 +255,9 @@ def set_environment_vars():
     osSys = platform.system()
     progs = ['GenSec','LzmaCompress', 'GenFfs', 'FMMT.exe', 'FmmtConf.ini', 'python27.dll',\
              'Rsa2048Sha256SignPlatform.bat','Rsa2048Sha256Sign.exe']
-   
+
    # Determine operating system that script is running
-  
+
     if osSys == "Linux" or osSys == "linux2":
        # linux
        osDir ="BinWrappers/PosixLike"
@@ -242,20 +267,20 @@ def set_environment_vars():
       # windows
       osDir ="Bin\win32"
       cmd = 'where'
-     
+
       print(" Running on Windows")
     else:
       sys.exit("\n{},is not supported".format(osSys))
-          
+
    # set up enviroment variables
     path = os.environ.get("PATH")
     myenv = os.environ.copy()
     myPath = os.getcwd()
-   
+
    # path to Base Tools
     edkToolsPath = os.path.join(os.sep, myPath, "BaseTools")
     edkToolsBin = os.path.join(os.sep,edkToolsPath,osDir)
-   
+
     if not os.environ.get('EDK_TOOLS_PATH'):
        if os.path.isdir(edkToolsPath):
           myenv["EDK_TOOLS_PATH"] = edkToolsPath
@@ -305,7 +330,7 @@ def file_exist(file):
     if not os.path.isfile(file):
        raise argparse.ArgumentTypeError("{} does not exist!".format(file))
     return file
-   
+
 ##################################################################################################
 ##
 ## 'Type' for argparse = chk_ip
@@ -315,7 +340,7 @@ def file_exist(file):
 
 def chk_ip(ip):
     global regions
-    
+
     if ip.lower() not in regions:
         raise argparse.ArgumentTypeError("Replace {} IP is not supported. Here is the list of supported "
                                          "regions: {}".format(ip,regions.keys())) 
@@ -330,7 +355,7 @@ def chk_ip(ip):
 
 def chk_platform(platform):
     global platforms
-    
+
     if platform.lower() not in platforms:
         raise argparse.ArgumentTypeError("{} platform is not supported. Here is the list of supported "
                                          "platforms: {}".format(platform,platforms.keys())) 
@@ -373,9 +398,9 @@ def parse_cmdline():
 #######################################################################################################
 def copy_file(files,dir):
     status = 0
-   
+
     for  file in files:  
-   
+
        try:
           shutil.copy(file,dir)
        except IOError as error:
@@ -386,9 +411,9 @@ def copy_file(files,dir):
           print("\nUnexpected error. %s" % e)
           status = 1
           break
-      
+
     return status
-   
+
 #####################################################################################################################################
 ##
 ##  Setup enviroment variables 
@@ -401,11 +426,10 @@ def copy_file(files,dir):
 def main():
     args = parse_cmdline()
     envVars = set_environment_vars()
-   
+
     #current directory and working director
     dirs=[os.getcwd(),'SIIP_wrkdir']
-   
-    
+
    #Create working directory
     try:
        os.mkdir(dirs[1])
@@ -413,14 +437,14 @@ def main():
        sys.exit("\nUnable to create directory: {}\n{}".format(dirs[1],exception))
     except:
        sys.exit("\nUnexpected error occuring when trying to create directory")
-   
+
     # move files to working directory
     filenames = [args.IFWI_IN.name, args.IPNAME_IN.name, args.PRIV_KEY]
     status= copy_file(filenames,dirs[1])
     if status !=0:
        cleanup(dirs)
        sys.exit()
-   
+
     ## files copied to working directory
 
     # change to working directory
@@ -434,7 +458,7 @@ def main():
 
     #search for firmware volume
     status, fwVolume = search_for_fv(args.IFWI_IN.name,envVars)
-   
+
     # Check for error in using FMMT.exe or if firmware volume was not found.
     if status ==1 or fwVolume == None:
        cleanup(dirs)
@@ -460,9 +484,9 @@ def main():
 
     cleanup(dirs)
     return
-   
+
 if __name__== "__main__":
   main()
-        
+
 
 
