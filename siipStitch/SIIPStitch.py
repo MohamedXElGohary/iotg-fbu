@@ -5,7 +5,7 @@
 #################################################################################################
 ##Copyright (c) 2019, Intel Corporation. All rights reserved.
 #
-INTEL CONFIDENTIAL
+#INTEL CONFIDENTIAL
 # Copyright 2016 Intel Corporation.
 #
 # The source code contained or described herein and all documents related to the

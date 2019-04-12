@@ -33,7 +33,7 @@ import filecmp
 import shutil
 import platform
 
-SIIPSTITCH = 'C:\platform_tools\SIIPStitch_Tool\SIIPStitch\SIIPStitch.py'
+SIIPSTITCH = 'C:\gitlab\pmt\siip_tools\siipStitch\SIIPStitch.py'
 
 
 ###############################################################################################################################
