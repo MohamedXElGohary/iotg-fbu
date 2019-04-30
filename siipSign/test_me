@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+dd if=/dev/urandom of=payload.bin bs=1024 count=1024
+
+echo "*** Generating test key ..."
+openssl genrsa -out rsa_priv2048.pem 2048
+openssl rsa -in rsa_priv2048.pem -outform PEM -pubout -out rsa_pub2048.pem
+
+echo "*** Signing ..."
+./SIIPSign.py sign -i payload.bin -o out.bin -k rsa_priv2048.pem
+
+echo "*** Verifying using public key ..."
+./SIIPSign.py verify -i out.bin -p rsa_pub2048.pem
+
+echo "*** Decomposing ..."
+./SIIPSign.py decompose -i out.bin
+
+echo Done!
+
+
+
