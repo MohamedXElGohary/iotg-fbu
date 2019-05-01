@@ -2,20 +2,31 @@
 
 set -e
 
-dd if=/dev/urandom of=payload.bin bs=1024 count=1024
+HASH=sha384
+FKM_KEY=fkm_privkey.pem
+FBM_KEY=fbm_privkey.pem
+FKM_PUK=fkm_pubkey.pem
+FBM_PUK=fbm_pubkey.pem
+PLDFILE=payload.bin
+OUTFILE=out.bin
 
-echo "*** Generating test key ..."
-openssl genrsa -out rsa_priv2048.pem 2048
-openssl rsa -in rsa_priv2048.pem -outform PEM -pubout -out rsa_pub2048.pem
+
+dd if=/dev/urandom of=${PLDFILE} bs=1024 count=1024
+
+echo "*** Generating test keys ..."
+openssl genrsa -out ${FKM_KEY} 2048
+openssl rsa -in ${FKM_KEY} -outform PEM -pubout -out ${FKM_PUK}
+openssl genrsa -out ${FBM_KEY} 2048
+openssl rsa -in ${FBM_KEY} -outform PEM -pubout -out ${FBM_PUK}
 
 echo "*** Signing ..."
-./SIIPSign.py sign -i payload.bin -o out.bin -k rsa_priv2048.pem
+./SIIPSign.py sign -i ${PLDFILE}:${FBM_KEY} -o ${OUTFILE} -k ${FKM_KEY} -s ${HASH}
 
-echo "*** Verifying using public key ..."
-./SIIPSign.py verify -i out.bin -p rsa_pub2048.pem
+echo "*** Verifying with public key ..."
+./SIIPSign.py verify -i ${OUTFILE}:${FBM_PUK} -p ${FKM_PUK} -s ${HASH}
 
 echo "*** Decomposing ..."
-./SIIPSign.py decompose -i out.bin
+./SIIPSign.py decompose -i ${OUTFILE}
 
 echo Done!
 

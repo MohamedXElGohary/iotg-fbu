@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# INTEL CONFIDENTIAL
 # Copyright 2019 Intel Corporation.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# This software and the related documents are Intel copyrighted 
-# materials, and your use of them is governed by the express license 
-# under which they were provided to you ("License"). Unless the License
-# provides otherwise, you may not use, modify, copy, publish, 
-# distribute, disclose or transmit this software or the related 
-# documents without Intel's prior written permission.
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
 #
-# This software and the related documents are provided as is, with no 
-# express or implied warranties, other than those that are expressly 
-# stated in the License.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#     and/or other materials provided with the distribution.
 #
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 
 from __future__ import print_function
 
@@ -27,6 +36,7 @@ import shutil
 import subprocess
 import argparse
 import collections
+from datetime import datetime
 
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
@@ -50,12 +60,31 @@ except ImportError:
     sys.exit(1)
 
 
-__version__ = "0.0.2"
+__version__ = "0.2.0"
 
 RSA_KEYMOD_SIZE = 256
 RSA_KEYEXP_SIZE = 4
 KB = 1024
 MB = 1024 * KB
+
+HASH_CHOICES = {
+  'sha1': (hashes.SHA1(), 1),
+  'sha256': (hashes.SHA256(), 2),
+  'sha384': (hashes.SHA384(), 3),
+  'sha512': (hashes.SHA512(), 4),
+}
+
+HASH_OPTION = None
+HASH_SIZE = 0
+
+
+def hex_dump(data, n=16, indent=0, msg='Hex Dump'):
+    print('%s (%d Bytes):' % (msg, len(data)))
+    for i in range(0, len(data), n):
+        line = bytearray(data[i:i+n])
+        hex = ' '.join('%02x' % c for c in line)
+        text = ''.join(chr(c) if 0x21 <= c <= 0x7e else '.' for c in line)
+        print('%*s%-*s %s' % (indent, '', n*3, hex, text))
 
 
 def pack_num(val, minlen=0):
@@ -73,7 +102,9 @@ def pack_num(val, minlen=0):
 def compute_hash(data):
     '''Compute hash from data'''
 
-    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+    global HASH_OPTION
+
+    digest = hashes.Hash(HASH_OPTION, backend=default_backend())
     digest.update(data)
     result = digest.finalize()
 
@@ -85,6 +116,8 @@ def verify_hash(data, expected_hash):
 
     result = compute_hash(data)
     if result != expected_hash:
+        hex_dump(result, indent=4, msg='Actual')
+        hex_dump(expected_hash, indent=4, msg='Expected')
         raise Exception('Hash values mismatch!')
 
     return result
@@ -92,6 +125,8 @@ def verify_hash(data, expected_hash):
 
 def compute_signature(data, privkey_pem):
     '''Compute signature from data'''
+
+    global HASH_OPTION
 
     with open(privkey_pem, 'rb') as privkey_file:
         key = serialization.load_pem_private_key(
@@ -102,7 +137,7 @@ def compute_signature(data, privkey_pem):
 
     # Calculate signature using private key
     signature = key.sign(
-        bytes(data), crypto_padding.PKCS1v15(), hashes.SHA256())
+        bytes(data), crypto_padding.PKCS1v15(), HASH_OPTION)
 
     return (signature, key)
 
@@ -110,12 +145,30 @@ def compute_signature(data, privkey_pem):
 def verify_signature(signature, data, pubkey_pem):
     '''Verify signature with public key'''
 
+    global HASH_OPTION
+
     with open(pubkey_pem, 'rb') as pubkey_file:
         puk = serialization.load_pem_public_key(
             pubkey_file.read(), backend=default_backend())
 
     # Raises InvalidSignature error if not match
-    puk.verify(signature, data, crypto_padding.PKCS1v15(), hashes.SHA256())
+    puk.verify(signature, data, crypto_padding.PKCS1v15(), HASH_OPTION)
+
+
+def compute_pubkey_hash(pubkey_pem_file):
+    '''Compute hash of the public key provided in PEM file'''
+
+    with open(pubkey_pem_file, 'rb') as pubkey_pem_fd:
+        puk = serialization.load_pem_public_key(
+            pubkey_pem_fd.read(), backend=default_backend())
+
+    puk_num = puk.public_numbers()
+    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
+    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+
+    puk_hash = compute_hash(bytes(mod_buf + exp_buf))
+
+    return puk_hash
 
 
 def parse_cpd_header(cpd_data):
@@ -176,8 +229,8 @@ class METADATA_FILE_STRUCT(Structure):
         ('module_version', c_uint32),
         ('module_hash_size', c_uint32),
         ('module_entry_point', c_uint32),
-        ('module_hash_alogorithm', c_uint32),
-        ('module_hash_value', ARRAY(c_uint8, 32)),
+        ('module_hash_algorithm', c_uint32),
+        ('module_hash_value', ARRAY(c_uint8, 64)),
         ('num_of_keys', c_uint32),
         ('key_usage_id', ARRAY(c_uint8, 16)),
         # Size of non-standard section follows
@@ -214,7 +267,7 @@ class KEY_USAGE_STRUCTURE(Structure):
         ('key_policy', c_uint8),
         ('key_hash_algorithm', c_uint8),
         ('key_hash_size', c_uint16),
-        ('key_hash', ARRAY(c_uint8, 64)),  # TODO: spec requires is 64
+        ('key_hash', ARRAY(c_uint8, 64)),
     ]
 
 
@@ -244,7 +297,7 @@ class METADATA_ENTRY(Structure):
         ('hash_algorithm', c_uint8),
         ('hash_size', c_uint16),
         ('size', c_uint32),
-        ('hash', ARRAY(c_uint8, 32)),
+        ('hash', ARRAY(c_uint8, 64)),
     ]
 
 
@@ -266,8 +319,26 @@ class FIRMWARE_BLOB_MANIFEST(Structure):
     ]
 
 
-def create_image(payload_file, outfile, privkey):
+def create_image(payload_file, outfile, privkey, hash_option):
     '''Create a new image with manifest data in front it'''
+
+    global HASH_OPTION
+    global HASH_SIZE
+
+    HASH_OPTION = HASH_CHOICES[hash_option][0]
+    HASH_SIZE   = HASH_OPTION.digest_size
+
+    print('Hashing Algorithm : %s' % HASH_OPTION.name)
+
+    payload_cfg = payload_file.split(':') # <file>:<signing_key>
+    if len(payload_cfg) == 2:
+        payload_privkey = payload_cfg[1]
+        payload_file    = payload_cfg[0]
+    else:
+        payload_privkey = privkey # Use the same key from -k commandline
+
+    print('FKM signing key : %s' % privkey)
+    print('FBM signing key : %s' % payload_privkey)
 
     with open(payload_file, 'rb') as in_fd:
         in_data = bytearray(in_fd.read())
@@ -290,7 +361,7 @@ def create_image(payload_file, outfile, privkey):
     cpd.header_version = 1
     cpd.entry_version = 1
     cpd.header_length = 0x10
-    cpd.check_sum = 0xFF  # TODO: 8-bit XOR checksum
+    cpd.check_sum = 0  # 8-bit checksum
     cpd.subpart_name = bytes('SIIP', encoding='Latin-1')
 
     files_info = [('FKM', fkm_length), ('FBM', fbm_length),
@@ -306,32 +377,39 @@ def create_image(payload_file, outfile, privkey):
         ptr += sizeof(SUBPART_DIR_ENTRY)
         offset += files_info[i][1]
 
+    # Fill 8-bit checksum
+    cpd_buf    = (c_uint8 * offset).from_buffer(data)
+    cpd.check_sum = (~sum(cpd_buf) + 1) & 0xFF
+
     fkm = FIRMWARE_KEY_MANIFEST.from_buffer(data, ptr)
     fkm.manifest_header.type = 0x4
     fkm.manifest_header.length = sizeof(FIRMWARE_KEY_MANIFEST) // 4  # In DWORD
     fkm.manifest_header.version = 0x10000
     fkm.manifest_header.flags = 0x0
     fkm.manifest_header.vendor = 0x8086  # Intel device
+    create_date = datetime.now().strftime('%Y%m%d')
+#    fkm.manifest_header.date = int(create_date, 16)
     fkm.manifest_header.date = 0x20190418
     fkm.manifest_header.size = fkm.manifest_header.length
     fkm.manifest_header.id = 0x324e4d24  # '$MN2'
-    fkm.manifest_header.num_of_metadata = 1  # Only 1 Metadata module for now
+    fkm.manifest_header.num_of_metadata = 0  # FKM has no metadata appended
     fkm.manifest_header.structure_version = 0x1000
     fkm.manifest_header.modulus_size = 64  # In DWORD
     fkm.manifest_header.exponent_size = 1
 
-    # Calculate payload signature using private key
-    (signature, key) = compute_signature(bytes(in_data), privkey)
+    # Calculate payload signature using payload private key
+    (signature, key) = compute_signature(bytes(in_data), payload_privkey)
     puk = key.public_key()
     puk_num = puk.public_numbers()
 
     mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
     exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    hex_dump((mod_buf + exp_buf), msg='Payload Public Key')
 
     fkm.extension_type = 14  # CSE Key Manifest Extension Type
     fkm.extension_length = 36 + 68 * FIRMWARE_KEY_MANIFEST.NUM_OF_KEYS
     # 3: SIIP OEM Firmware Manifest; 4: SIIP Intel Firmware Manifest
-    fkm.key_manifest_type = 3
+    fkm.key_manifest_type = 4
     fkm.key_manifest_svn = 0
     fkm.oem_id = 0
     fkm.key_manifest_id = 0  # Not used
@@ -339,9 +417,8 @@ def create_image(payload_file, outfile, privkey):
     fkm.key_usage_array[0].key_usage[14] = 0x80  # 1 << 59 in arr[16]
     fkm.key_usage_array[0].key_reserved[:] = [0] * 16
     fkm.key_usage_array[0].key_policy = 1  # may signed only by Intel
-    # 0: reserved; 1: SHA256; 2: SHA384; 3: SHA-512
-    fkm.key_usage_array[0].key_hash_algorithm = 1
-    fkm.key_usage_array[0].key_hash_size = 32  # Size of the hash in bytes
+    fkm.key_usage_array[0].key_hash_algorithm = HASH_CHOICES[hash_option][1]
+    fkm.key_usage_array[0].key_hash_size = HASH_SIZE
     fkm.key_usage_array[0].key_hash[:] = [0xFF] * \
         64  # Hash of public key in FBM header
 
@@ -354,10 +431,11 @@ def create_image(payload_file, outfile, privkey):
     fbm.manifest_header.version = 0x10000
     fbm.manifest_header.flags = 0x0
     fbm.manifest_header.vendor = 0x8086  # Intel device
+#    fbm.manifest_header.date = int(create_date)
     fbm.manifest_header.date = 0x20190418
     fbm.manifest_header.size = fbm.manifest_header.length
     fbm.manifest_header.id = 0x324e4d24  # '$MN2'
-    fbm.manifest_header.num_of_metadata = 1  # Only 1 Metadata module for now
+    fbm.manifest_header.num_of_metadata = 1  # FBM has exactly one metadata appended
     fbm.manifest_header.structure_version = 0x1000
     fbm.manifest_header.modulus_size = 64  # In DWORD
     fbm.manifest_header.exponent_size = 1
@@ -374,10 +452,10 @@ def create_image(payload_file, outfile, privkey):
     fbm.metadata_entries[0].id = 0xDEADBEEF
     # 0: process; 1: shared lib; 2: data (for SIIP)
     fbm.metadata_entries[0].type = 2
-    fbm.metadata_entries[0].hash_algorithm = 2  # SHA256
-    fbm.metadata_entries[0].hash_size = 32
+    fbm.metadata_entries[0].hash_algorithm = HASH_CHOICES[hash_option][1]
+    fbm.metadata_entries[0].hash_size = HASH_SIZE 
     fbm.metadata_entries[0].size = sizeof(METADATA_FILE_STRUCT)
-    fbm.metadata_entries[0].hash[:] = [0xAA] * 32  # Hash of the metadata file
+    fbm.metadata_entries[0].hash[:] = [0] * 64
 
     ptr += sizeof(FIRMWARE_BLOB_MANIFEST)
 
@@ -390,14 +468,15 @@ def create_image(payload_file, outfile, privkey):
     metadata.module_size = len(in_data)
     metadata.module_version = 0
     metadata.module_version = 0
-    metadata.module_hash_size = 32
+    metadata.module_hash_size = HASH_SIZE
     metadata.module_entry_point = 0x44332211
-    metadata.module_hash_alogorithm = 2  # SHA256
+    metadata.module_hash_algorithm = HASH_CHOICES[hash_option][1]
 
     # STEP 1: Calculate payload hash and store it in Metadata file
     hash_result = compute_hash(bytes(in_data))
+    hex_dump(hash_result, msg='Payload Hash')
 
-    metadata.module_hash_value[:] = hash_result
+    metadata.module_hash_value[:HASH_SIZE] = hash_result
     metadata.num_of_keys = 1
     metadata.key_usage_id[14] = 0x80  # 1 << 59 in arr[16]
 
@@ -406,7 +485,7 @@ def create_image(payload_file, outfile, privkey):
     metadata_limit = metadata_offset + metadata_length
 
     hash_result = compute_hash(bytes(data[metadata_offset:metadata_limit]))
-    fbm.metadata_entries[0].hash[:] = hash_result
+    fbm.metadata_entries[0].hash[:HASH_SIZE] = hash_result
 
     # STEP 3: Calculate signature of FBM (except signature and public keys) and store it in FBM header
     fbm_offset = cpd_length + fkm_length
@@ -415,7 +494,13 @@ def create_image(payload_file, outfile, privkey):
     fbm.manifest_header.exponent[:] = [0] * 4
     fbm.manifest_header.signature[:] = [0] * 256
     (signature, key) = compute_signature(bytes(data[fbm_offset:fbm_limit]),
-                                         privkey)
+                                         payload_privkey)
+    puk = key.public_key()
+    puk_num = puk.public_numbers()
+
+    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
+    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    hex_dump((mod_buf + exp_buf), msg='FBM Public Key')
 
     fbm.manifest_header.public_key[:] = mod_buf
     fbm.manifest_header.exponent[:] = exp_buf
@@ -424,8 +509,8 @@ def create_image(payload_file, outfile, privkey):
     # STEP 4: Calculate public key hash in FBM header and store it in FKM
     pubkey_data = mod_buf + exp_buf
     hash_result = compute_hash(bytes(pubkey_data))
-    # TODO: There is mismatch in the spec
-    fkm.key_usage_array[0].key_hash[:] = hash_result + bytes(32)
+    fkm.key_usage_array[0].key_hash[:] = hash_result + \
+                                bytes(64 - HASH_SIZE)
 
     # STEP 5: Calculate signature of FKM (except signature and public key) and store it in FKM header
     fkm_offset = cpd_length
@@ -433,6 +518,12 @@ def create_image(payload_file, outfile, privkey):
 
     (signature, key) = compute_signature(bytes(data[fkm_offset:fkm_limit]),
                                          privkey)
+    puk = key.public_key()
+    puk_num = puk.public_numbers()
+
+    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
+    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    hex_dump((mod_buf + exp_buf), msg='FKM Public Key')
 
     fkm.manifest_header.public_key[:] = mod_buf
     fkm.manifest_header.exponent[:] = exp_buf
@@ -445,11 +536,9 @@ def create_image(payload_file, outfile, privkey):
     cpd_limit = sizeof(SUBPART_DIR_HEADER) + 4 * sizeof(SUBPART_DIR_ENTRY)
     files = parse_cpd_header(data[0:cpd_limit])
 
-    count = 0
-    for name, ioff, ilen in files:
+    for idx, (name, ioff, ilen) in enumerate(files):
         print('[%d] %s @ [0x%08x-0x%08x] len: 0x%x (%d) Bytes' %
-              (count, name, ioff, ioff + ilen, ilen, ilen))
-        count += 1
+              (idx, name, ioff, ioff + ilen, ilen, ilen))
 
     sys.stdout.write('Writing... ')
     with open(outfile, 'wb') as out_fd:
@@ -470,21 +559,32 @@ def decompose_image(infile_signed):
     # Extract images
     if not os.path.exists('extract'):
         os.makedirs('extract')
-    count = 0
-    for name, ioff, ilen in files:
-        print('[%d] Extracting to %s.bin @ [0x%08x-0x%08x] len: 0x%x (%d) Bytes' %
-              (count, name, ioff, ioff + ilen, ilen, ilen))
+    for idx, (name, ioff, ilen) in enumerate(files):
+        print('[%d] Extracting to %s.bin @ [0x%08x-0x%08x] len: 0x%x (%d) Bytes' % (idx, name, ioff, ioff + ilen, ilen, ilen))
         with open(os.path.join('extract', '%s.bin' % name), 'wb') as out_fd:
             out_fd.write(in_data[ioff:ioff + ilen])
-        count += 1
 
 
-def verify_image(infile_signed, pubkey_pem_file):
+def verify_image(infile_signed, pubkey_pem_file, hash_option):
     '''Verify a signed image with public key end-to-end'''
+
+    global HASH_OPTION
+    global HASH_SIZE
+
+    HASH_OPTION = HASH_CHOICES[hash_option][0]
+    HASH_SIZE   = HASH_OPTION.digest_size
+
+    puk_cfg = infile_signed.split(':')  # <infile>:<puk.pem> 
+    if len(puk_cfg) == 2:
+        payload_puk_file = puk_cfg[1]
+        infile_signed = puk_cfg[0]
+    else:
+        payload_puk_file = pubkey_pem_file
 
     with open(infile_signed, 'rb') as in_fd:
         in_data = bytearray(in_fd.read())
 
+    # STEP 1: Validate FKM key hash then signature
     with open(pubkey_pem_file, 'rb') as pubkey_pem_fd:
         puk = serialization.load_pem_public_key(
             pubkey_pem_fd.read(), backend=default_backend())
@@ -503,8 +603,6 @@ def verify_image(infile_signed, pubkey_pem_file):
     if fkm.manifest_header.id != 0x324e4d24:
         print('Bad FKM signature.')
         exit(1)
-
-    # STEP 1: Validate FKM key hash then signature
 
     # Calculate public key hash in FKM header
     pubkey_n = fkm.manifest_header.public_key[:]
@@ -533,6 +631,8 @@ def verify_image(infile_signed, pubkey_pem_file):
         exit(1)
 
     # STEP 2: Validate FBM key hash and signature
+    hash_expected = compute_pubkey_hash(payload_puk_file)
+
     name, ioff, ilen = files[1]  # FBM
     fbm_offset = ioff
     fbm_limit = fbm_offset + ilen
@@ -568,7 +668,7 @@ def verify_image(infile_signed, pubkey_pem_file):
         fbm.manifest_header.signature[:] = [0] * 256
 
         verify_signature(fbm_sig, bytes(in_data[fbm_offset:fbm_limit]),
-                         pubkey_pem_file)
+                         payload_puk_file)
         print('Okay')
     except:
         print('Failed')
@@ -584,9 +684,9 @@ def verify_image(infile_signed, pubkey_pem_file):
     hash_actual = compute_hash(bytes(in_data[metafile_offset:metafile_limit]))
     hash_actual = [x for x in hash_actual]  # Convert to list
 
-    hash_expected = fbm.metadata_entries[0].hash[:]
+    hash_expected = fbm.metadata_entries[0].hash[:len(hash_actual)]
     if (hash_actual != hash_expected):
-        Raise('Verification failed: Metadata hash mismatch')
+        raise Exception('Verification failed: Metadata hash mismatch')
 
     # STEP 4: Validate payload
     name, ioff, ilen = files[3]  # Payload
@@ -596,9 +696,9 @@ def verify_image(infile_signed, pubkey_pem_file):
     hash_actual = compute_hash(bytes(in_data[payload_offset:payload_limit]))
     hash_actual = [x for x in hash_actual]  # Convert to list
 
-    hash_expected = metadata.module_hash_value[:]
+    hash_expected = metadata.module_hash_value[:len(hash_actual)]
     if (hash_actual != hash_expected):
-        raise('Verification failed: payload hash mismatch')
+        raise Exception('Verification failed: payload hash mismatch')
 
     print('Verification success!')
 
@@ -613,7 +713,10 @@ def main():
     def cmd_create(args):
         print('Creating image with manifest data using key %s ...' %
               args.private_key)
-        create_image(args.input_file, args.output_file, args.private_key)
+        create_image(args.input_file, 
+                     args.output_file,
+                     args.private_key,
+                     args.hash_option)
 
     signp = sp.add_parser('sign', help='Sign an image')
     signp.add_argument('-i', '--input-file',
@@ -628,6 +731,11 @@ def main():
                        required=True,
                        type=str,
                        help='RSA signing key in PEM format')
+    signp.add_argument('-s', '--hash-option',
+                       default='sha256',
+                       choices=list(HASH_CHOICES.keys()),
+                       help='Hashing algorithm')
+
     signp.set_defaults(func=cmd_create)
 
     def cmd_decomp(args):
@@ -643,7 +751,7 @@ def main():
 
     def cmd_verify(args):
         print('Verifying a signed image ...')
-        verify_image(args.input_file, args.pubkey_pem_file)
+        verify_image(args.input_file, args.pubkey_pem_file, args.hash_option)
 
     verifyp = sp.add_parser(
         'verify', help='Verify a signed image')
@@ -655,6 +763,10 @@ def main():
                          required=True,
                          type=str,
                          help='Public key in PEM format')
+    verifyp.add_argument('-s', '--hash-option',
+                       default='sha256',
+                       choices=list(HASH_CHOICES.keys()),
+                       help='Hashing algorithm')
     verifyp.set_defaults(func=cmd_verify)
 
     ap.add_argument('-V', '--version', action='version',
