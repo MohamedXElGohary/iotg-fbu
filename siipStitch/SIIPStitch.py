@@ -42,7 +42,7 @@
 ##  File Description:
 ##   
 ## License: {license}
-## Version: 0.5.1
+## Version: 0.6.0
 ## Status: Intial Development
 #################################################################################################
 
@@ -55,7 +55,7 @@ import shutil
 import shlex 
 import stat
 
-__version__ = '0.5.1'
+__version__ = '0.6.0'
 ################################################################################################
 ##
 ## Global Variables
@@ -68,14 +68,21 @@ prog = ['GenSec','LzmaCompress', 'GenFfs', 'FMMT.exe']
 #data dictionary of regions that can be replaced
 regions = {
           #IP/Region : Fileguid
-          'pse':['EE4E5898-3914-4259-9D6E-DC7BD79403CF','EBA4A247-42C0-4C11-A167-A4058BC9D423']
+          'pse'  :['EE4E5898-3914-4259-9D6E-DC7BD79403CF','EBA4A247-42C0-4C11-A167-A4058BC9D423'],
+          'tmac' :[None,'12E29FB4-AA56-4172-B34E-DD5F4B440AA9'],
+          'ptmac':[None,'4FB7994D-D878-4BD1-8FE0-777B732D0A31'],
+          'tcc'  :[None, '7F6AD829-15E9-4FDE-9DD3-0548BB7F56F3'],
+          'oob'  :[None, '4DB2A373-C936-4544-AA6D-8A194AA9CA7F']
           }
-
 
 # options used to replace regions
 ipOptions = {
             # Region:[Options]
-            'pse':['IntelOseFw', 'PROCESSING_REQUIRED', '1K']
+            'pse'  :['IntelOseFw', 'PROCESSING_REQUIRED', '1K', 'PI_NONE' ],
+            'tmac' :['IntelTsnMacAddrFv',None, '1K', 'PI_NONE'],
+            'ptmac':['IntelOseTsnMacConfig',None,'1K', 'PI_NONE'],
+            'tcc'  :['IntelTccConfig',None,'1K', 'PI_NONE'],
+            'oob'  :['IntelOob2Config',None,'1K', 'PI_NONE']
             }
 
 #################################################################################################
@@ -94,7 +101,12 @@ print('#########################################################################
 ##   
 ########################################################################################################
 
-def search_for_fv(inputfile, myenv):
+def search_for_fv(inputfile, ipname, myenv):
+    global ipOptions
+
+    # use to find the name of the firmware in order to locate the firmware volume
+    ipFilename = ipOptions.get(ipname)
+       
     print("\nFinding the Firmware Volume")
     fwvol = None
     status = 0
@@ -125,11 +137,13 @@ def search_for_fv(inputfile, myenv):
           if 'FV' in currentline:
              fv = currentline.split(' :')
              # Keyword 'FV was found so search next lines for IntelOseFw or for Child
-             while not (peek_line(searchfile).startswith('FV')):
+             while not peek_line(searchfile).startswith('FV'):
                 nextline = searchfile.readline()
-
+                if nextline == '':
+                   break
                 # check to see if new firmware or Child Firmware
-                if 'IntelOseFw' in nextline:
+                #if section name in nextline:
+                if ipFilename[0] in nextline:
                    fwvol=fv[0]
                    fwvol_found = True
                    break
@@ -163,6 +177,55 @@ def peek_line(file):
    file.seek(current_pos)
    return line
 
+###############################################################################################
+##
+## Create Commands for the merge and replace of firmware section
+##
+###############################################################################################
+def create_commands(filename, ipname, fwvol):
+    global prog, regions, ipOptions
+    options = ['-s','-n','-o','-e','-g','-r','-t','-a','-i','-c']
+    tempfile = ['tempSect.sec','temp.raw','temp.cmps','temp.guided','temp.ffs']
+    section_type=['EFI_SECTION_USER_INTERFACE','EFI_SECTION_RAW','EFI_SECTION_GUID_DEFINED','EFI_FV_FILETYPE_FREEFORM']
+    guid_values = regions.get(ipname)
+    option_strings = ipOptions.get(ipname)
+    cmds = []
+
+    #GenSec.exe -s EFI_SECTION_USER_INTERFACE -n "IntelOseFw" -o IntelOseFw.sec
+    cmd0 = [prog[0],options[0],section_type[0],options[1],"'{}'".format(option_strings[0]),options[2],tempfile[0]]
+
+    #GenSec.exe -s EFI_SECTION_RAW -c PI_STD -o IntelOseFw.raw OseFw.bin
+    cmd1 = [prog[0],options[0],section_type[1],options[9],option_strings[3],filename[1],options[2],tempfile[1]]
+    #cmd1 = [prog[0],options[0],section_type[1],filename[1],options[2],tempfile[1]]
+
+    #GenSec.exe  IntelOseFw.raw IntelOseFw.sec -o IntelOseFw.raw
+    cmd2 = [prog[0],tempfile[1],tempfile[0],options[2],tempfile[1]]
+
+    # add commands to cmd list
+    cmds.extend([cmd0,cmd1,cmd2])
+
+    #determine if compression will be used for firmware section
+    if option_strings[1] != None :
+       num=3
+       #LZMAcompress -e IntelOseFw.raw -o IntelOseFw.tmp
+       cmd3 = [prog[1],options[3],tempfile[1],options[2],tempfile[2]]
+
+       #GenSec -s EFI_SECTION_GUID_DEFINED -g EE4E5898-3914-4259-9D6E-DC7BD79403CF -r PROCESSING_REQUIRED IntelOseFw.tmp -o OseFw.guided 
+       cmd4 = [prog[0],options[0],section_type[2],options[4],guid_values[0],options[5], option_strings[1],tempfile[2],options[2],tempfile[3]]
+       #update cmds list with commands
+       cmds.extend([cmd3,cmd4])
+    else:
+       num=1 # Skips the files used for compression
+
+    #GenFfs.exe -t EFI_FV_FILETYPE_FREEFORM -g EBA4A247-42C0-4C11-A167-A4058BC9D423 -a 1K -i OseFw.guided   -o IntelOseFw.ffs
+    cmd5 = [prog[2],options[6],section_type[3],options[4],guid_values[1],options[7],option_strings[2], options[8],tempfile[num], options[2],tempfile[4]]
+
+    #FMMT.exe -r BIOS.bin %FIRMWARE_VOLUME% IntelOseFw IntelOseFw.ffs BIOS_OUTPUT.bin
+    cmd6 = [prog[3],options[5],filename[0], fwvol,option_strings[0], tempfile[4],filename[2]]
+
+    cmds.extend([cmd5,cmd6])      
+
+    return cmds
 
 ###############################################################################################
 ##
@@ -170,51 +233,17 @@ def peek_line(file):
 ##
 ###############################################################################################
 def merge_and_replace(filename, guid_values, fwvol, env_vars):
-    global prog, ipOptions, regions
 
-    options = [ '-s','-n','-o','-e','-g','-r','-t','-a','-i']
-    #option_strings = ['IntelOseFw', 'PROCESSING_REQUIRED', '1K']
-    tempfile = ['tempSect.sec','temp.raw','temp.cmps','temp.guided','temp.ffs']
-    section_type=['EFI_SECTION_USER_INTERFACE','EFI_SECTION_RAW','EFI_SECTION_GUID_DEFINED','EFI_FV_FILETYPE_FREEFORM']
-
-
-    #find the ipname to replace using the guid_values
-    ipname = [key for key, value in regions.items() if value == guid_values][0]
-
-    #get the options strings for replace firmware volume
-    option_strings = ipOptions.get(ipname)
-
-    cmds = {
-            #GenSec.exe -s EFI_SECTION_USER_INTERFACE -n "IntelOseFw" -o IntelOseFw.sec
-           'cmd0' : [prog[0],options[0],section_type[0],options[1],"'{}'".format(option_strings[0]),options[2],tempfile[0]],
-
-           #GenSec.exe -s EFI_SECTION_RAW -o IntelOseFw.raw OseFw.bin
-           'cmd1' : [prog[0],options[0],section_type[1],options[2],tempfile[1],filename[1]],
-
-           #GenSec.exe -o IntelOseFw.raw IntelOseFw.raw IntelOseFw.sec
-           'cmd2' : [prog[0],options[2],tempfile[1],tempfile[1],tempfile[0]],
-
-           #LZMAcompress -e IntelOseFw.raw -o IntelOseFw.tmp
-           'cmd3' : [prog[1],options[3],tempfile[1],options[2],tempfile[2]],
-
-           #GenSec -s EFI_SECTION_GUID_DEFINED -g EE4E5898-3914-4259-9D6E-DC7BD79403CF -r PROCESSING_REQUIRED -o OseFw.guided   IntelOseFw.tmp
-           'cmd4' : [prog[0],options[0],section_type[2],options[4],guid_values[0],options[5], option_strings[1], options[2],tempfile[3],tempfile[2]],
-
-           #GenFfs.exe -t EFI_FV_FILETYPE_FREEFORM -g EBA4A247-42C0-4C11-A167-A4058BC9D423  -a 1K -i  OseFw.guided   -o IntelOseFw.ffs
-           'cmd5' : [prog[2],options[6],section_type[3],options[4],guid_values[1],options[7],option_strings[2], options[8],tempfile[3], options[2],tempfile[4]],
-
-           #FMMT.exe -r BIOS.bin %FIRMWARE_VOLUME% IntelOseFw IntelOseFw.ffs BIOS_OUTPUT.bin
-           'cmd6' : [prog[3],options[5],filename[0], fwvol,option_strings[0], tempfile[4],filename[2]]
-    }
+    cmds = create_commands(filename,guid_values,fwvol)
 
     print("\nStarting merge and replacement of section")
-
+   
    #Merging and Replacing
-    for cmd_name, command in sorted(cmds.items()):
+    for command in cmds:
        try:
           subprocess.check_call(command, env=env_vars, shell=True)
        except subprocess.CalledProcessError as status:
-          print("\nError executing {}".format(cmd_name))
+          print("\nError executing {}".format(command[0]))
           return 1
 
     return 0
@@ -341,6 +370,22 @@ def file_exist(file):
 
 def chk_ip(ip):
     global regions
+    
+    if ip.lower() not in regions:
+        raise argparse.ArgumentTypeError("Replace {} IP is not supported. Here is the list of supported "
+                                         "regions: {}".format(ip,regions.keys())) 
+    #return regions.get(ip.lower())
+    return ip.lower()
+    
+##################################################################################################
+##
+## 'Type' for argparse = chk_ip
+## Verify valid IP or region name to be replaced
+##
+##################################################################################################
+
+def chk_ip2(ip):
+    global regions
 
     if ip.lower() not in regions:
         raise argparse.ArgumentTypeError("Replace {} IP is not supported. Here is the list of supported "
@@ -458,7 +503,7 @@ def main():
        sys.exit("\nUnexpected error:{}".format(sys.exc_info()))
 
     #search for firmware volume
-    status, fwVolume = search_for_fv(args.IFWI_IN.name,envVars)
+    status, fwVolume = search_for_fv(args.IFWI_IN.name,args.ipname, envVars)
 
     # Check for error in using FMMT.exe or if firmware volume was not found.
     if status ==1 or fwVolume == None:
