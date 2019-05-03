@@ -13,7 +13,7 @@ SIIP Stitch Tool supports python 2.7.15 or 3.7.2. Additionally, it utilizes the 
 
 * Firmware Module Management Tool ([FMMT](https://firmware.intel.com/develop))
 * [EDK II Base Tools](https://github.com/tianocore/tianocore.github.io/wiki/EDK-II-Tools-List)
-* [OpenSSL](https://www.openssl.org)
+* [OpenSSL ver 1.1.1](https://www.openssl.org)
 
 
 SIIP Stitch Tool runs on Windows 10 OS. Linux is not yet supported.
@@ -21,7 +21,7 @@ SIIP Stitch Tool runs on Windows 10 OS. Linux is not yet supported.
 ## Usage
 
 ```
-usage: SIIPStitch [-h] -k priv_key.pem -ip ipname [-v] [-o FileName]
+usage: SIIPStitch [-h] -k privkey.pem -ip ipname [-v] [-o FileName]
                   IFWI_IN IPNAME_IN
 
 positional arguments:
@@ -32,7 +32,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            Shows this help message and exit.
-  -k priv_key.pem, --priv_key priv_key.pem
+  -k privkey.pem, --privkey privkey.pem
                         Private RSA 2048 key in PEM format to sign IFWI_IN.
                         This is required.
   -ip ipname, --ipname ipname
