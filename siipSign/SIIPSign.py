@@ -37,6 +37,7 @@ import subprocess
 import argparse
 import collections
 from datetime import datetime
+import binascii
 
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
@@ -76,7 +77,6 @@ HASH_CHOICES = {
 
 HASH_OPTION = None
 HASH_SIZE = 0
-
 
 def hex_dump(data, n=16, indent=0, msg='Hex Dump'):
     print('%s (%d Bytes):' % (msg, len(data)))
@@ -183,6 +183,17 @@ def parse_cpd_header(cpd_data):
     files = []
     entry_count = cpd.num_of_entries
 
+    expected_crc = cpd.crc32
+    cpd.crc32 = 0
+    cpd_length = sizeof(SUBPART_DIR_HEADER) + \
+                   entry_count * sizeof(SUBPART_DIR_ENTRY)
+    actual_crc = binascii.crc32(cpd_data[0:cpd_length])
+
+    if expected_crc != actual_crc:
+        print('CPD header CRC32 invalid (exp: 0x%x, actual: 0x%x)' %
+            (expected_crc, actual_crc))
+        exit(1)
+
     ptr += sizeof(SUBPART_DIR_HEADER)
     for i in range(entry_count):
         cpd_entry = SUBPART_DIR_ENTRY.from_buffer(cpd_data, ptr)
@@ -201,8 +212,9 @@ class SUBPART_DIR_HEADER(Structure):
         ('header_version', c_uint8),
         ('entry_version', c_uint8),
         ('header_length', c_uint8),
-        ('check_sum', c_uint8),
+        ('reserved', c_uint8),
         ('subpart_name', ARRAY(c_char, 4)),
+        ('crc32', c_uint32),
     ]
 
 
@@ -358,11 +370,12 @@ def create_image(payload_file, outfile, privkey, hash_option):
     cpd = SUBPART_DIR_HEADER.from_buffer(data, ptr)
     cpd.header_marker = 0x44504324   # '$CPD'
     cpd.num_of_entries = 4  # FKM, FBM, Metadata and payload
-    cpd.header_version = 1
+    cpd.header_version = 2  # 1: layout v1.5/1.6/2.0; 2: layout v1.7
     cpd.entry_version = 1
-    cpd.header_length = 0x10
-    cpd.check_sum = 0  # 8-bit checksum
+    cpd.header_length = sizeof(SUBPART_DIR_HEADER)
+    cpd.reserved = 0  # was 8-bit checksum
     cpd.subpart_name = bytes('SIIP', encoding='Latin-1')
+    cpd.crc32 = 0 # New in layout 1.7
 
     files_info = [('FKM', fkm_length), ('FBM', fbm_length),
                   ('METADATA', metadata_length), ('PAYLOAD', payload_length)]
@@ -377,9 +390,9 @@ def create_image(payload_file, outfile, privkey, hash_option):
         ptr += sizeof(SUBPART_DIR_ENTRY)
         offset += files_info[i][1]
 
-    # Fill 8-bit checksum
-    cpd_buf    = (c_uint8 * offset).from_buffer(data)
-    cpd.check_sum = (~sum(cpd_buf) + 1) & 0xFF
+    # Fill CRC32 checksum
+    cpd.crc32 = binascii.crc32(data[0:ptr])
+    print('CPD Header CRC32 : 0x%X' % cpd.crc32)
 
     fkm = FIRMWARE_KEY_MANIFEST.from_buffer(data, ptr)
     fkm.manifest_header.type = 0x4
