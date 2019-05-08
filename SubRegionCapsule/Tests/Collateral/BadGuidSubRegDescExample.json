@@ -1,0 +1,20 @@
+{
+  "FmpGuid": "xxxxxxxxxxxxxx-yyyy-yyyy-zzzz",
+  "Version": 1,
+  "FV" :
+  {
+    "FvGuid": "1A803C55-F034-4E60-AD9E-9D3F32CE273C",
+    "FfsFiles":
+    [
+      {
+        "FileGuid": "12E29FB4-AA56-4172-B34E-DD5F4B440AA9",
+        "Compression": false,
+        "Data" :
+        [
+          ["field_one", "DECIMAL", 1, 0],
+          ["field_two", "HEXADECIMAL", 2, "20C"]
+        ]
+      }
+    ]
+  }
+}
