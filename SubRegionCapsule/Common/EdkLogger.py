@@ -202,7 +202,7 @@ def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=Non
     if RaiseError and IsRaiseError:
         raise FatalError(ErrorCode)
 
-# Log information which should be always put out
+# Log information which should always be put out
 quiet   = _ErrorLogger.error
 
 ## Initialize log system
