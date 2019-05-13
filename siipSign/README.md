@@ -1,11 +1,23 @@
 
 # SIIP Sign Tool
 
-SoC Independent Intellectual Property (SIIP) refers to a new BIOS firmware loading architecture that specifies an unified flow loading one or more firmware modules of SoC IP components from SPI flash to memory by BIOS.
+SoC Independent Intellectual Property (SIIP) refers to a new BIOS firmware loading architecture that specifies an unified flow for loading one or more firmware modules of SoC IP components from SPI flash to memory by BIOS.
 
-Before an SIIP firmware image is loaded to memory, BIOS should validate the authenticity and integrity by verifying manifest data attached with the firmware.
+Before an SIIP firmware image is loaded to memory, BIOS validates the authenticity and integrity by verifying manifest data associated with the firmware image.
 
 The SIIP Sign Tool is used to create manifest data for the firmware image to be authenticated.
+
+## Features
+
+* Generate a signed image from a single payload
+* Decompose a signed image to multiple files including FKM, FBM, Metafile and payload (developer use)
+* Run a self-test that mimics SIIP verification flow BIOS performs (developer use)
+* RSA Padding scheme supported: PKCS#1 v1.5
+* Hashing algorithm supported:
+  - SHA1
+  - SHA256
+  - SHA384
+  - SHA512
 
 
 ## Environment Requirements
@@ -81,4 +93,4 @@ For example:
 
 ```
 
-The new image `out.bin` is generated with manifest data and `OseFw.bin` combined. 
+The new image `out.bin` is generated with manifest data and `OseFw.bin` combined.
