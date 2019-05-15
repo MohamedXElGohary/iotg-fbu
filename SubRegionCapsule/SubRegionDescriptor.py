@@ -140,13 +140,13 @@ class SubRegionDescriptor (object):
             ValidFile = False
 
         for DataField in FfsFile.Data:
-            if type (DataField.Name) not in [str, unicode]:
+            if type (DataField.Name) not in [str]:
                 ValidFile = False
             if DataField.Type not in DataTypes:
                 ValidFile = False
             if DataField.ByteSize <= 0:
                 ValidFile = False
-            if type (DataField.Value) not in [str, int, unicode]:
+            if type (DataField.Value) not in [str, int]:
                 ValidFile = False
 
         return ValidFile

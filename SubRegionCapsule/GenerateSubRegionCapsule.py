@@ -20,10 +20,15 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 
+import sys
+import argparse
+import subprocess
+
 import SubRegionImage as sri
 import SubRegionDescriptor as srd
-import subprocess
-import argparse
+
+if sys.version_info[0] < 3:
+    raise Exception("Must be using Python 3 (for now)")
 
 #
 # Globals for help information
