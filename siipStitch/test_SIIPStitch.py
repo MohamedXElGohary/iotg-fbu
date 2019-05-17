@@ -34,18 +34,11 @@ import filecmp
 import shutil
 import platform
 
+
+
 SIIPSTITCH=os.path.join(os.path.dirname(__file__), 'SIIPStitch.py')
-BASETOOLS =os.path.join(os.path.dirname(__file__), 'BaseTools')
 TMPDIR=os.path.join(os.path.dirname(__file__), 'TMPDIR')
-BASETOOLSDIR=os.path.join(os.getcwd(),'BASETOOLS')
 
-def setUpModule():
-    #copy basetools directory in test directory
-    shutil.copytree(BASETOOLS, BASETOOLSDIR, symlinks=False, ignore=None)
-
-def tearDownModule():
-    shutil.rmtree(BASETOOLSDIR)
- 
 ###############################################################################################################################
 ##MyTestSet1:
 ## Test general functionality of SIIPStitch Tool

@@ -1,6 +1,6 @@
 # SIIP Stitch Tool
 
-SoC Independent Intellectual Property (SIIP) refers to a new BIOS firmware loading architecture that specifies an unified flow loading one or more firmware modules of SoC IP components from SPI flash to memory by BIOS.
+SoC Independent Intellectual Property (SIIP) refers to a new BIOS firmware for loading architecture that specifies an unified flow loading one or more firmware modules of SoC IP components from SPI flash to memory by BIOS.
 
 The SIIP firmware image is stored in the BIOS region. A post processing step, knowns as stitching is required to replace the pre-built firmware module into the BIOS region.
 
@@ -16,7 +16,7 @@ The SIIP Stitch Tool supports replacing the following regions:
 
 ## Environment Requirements
 
-SIIP Stitch Tool supports python 2.7.15 or 3.7.2. Additionally, it utilizes the following utilities and tools to perform required functions:
+SIIP Stitch Tool supports python 3.7.2. Additionally, it utilizes the following utilities and tools to perform required functions:
 
 * Firmware Module Management Tool ([FMMT](https://firmware.intel.com/develop))
 * [EDK II Base Tools](https://github.com/tianocore/tianocore.github.io/wiki/EDK-II-Tools-List)
@@ -55,14 +55,29 @@ optional arguments:
 
 ## Step-by-Step Instructions
 
-### STEP 1: Unpack SIIP Tools package into a new directory (e.g., `C:\SIIPStitch`)
+### STEP 1: Unpack SIIP Tools package into a new directory (e.g., `C:\Siip_Tools`)
 
-### STEP 2: Copy RSA private key and rename to `privkey.pem` into the same working directory
+At this point the directory should contain the following files and directory:
 
-### STEP 3a: Verify that OpenSSL is located on system using the which command (e.g., `which OpenSSL`)
+```
+Directory of c:\siip_tools
 
-### STEP 3b: If OpenSSL is not on system, download the openSSL and put it in the following directory \BaseTools\bin\win32\ (e.g `C:\SIIPStitch \BaseTools\bin\win32\`)
-### STEP 4: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `OseFw.bin`)
+05/17/2019  08:16 AM    <DIR>          .
+05/17/2019  08:16 AM    <DIR>          ..
+05/17/2019  08:12 AM    <DIR>          siipStitch
+05/15/2019  04:01 PM    <DIR>          siipSupport
+05/16/2019  11:48 AM             2,276 SIIP_Support.py
+
+```
+
+### STEP 2: Cd into `siipStitch` directory.
+
+### STEP 3: Copy RSA private key and rename to `privkey.pem` into the same working directory
+
+### STEP 4a: Verify that OpenSSL is located on system using the which command (e.g., `which OpenSSL`)
+
+### STEP 4b: If OpenSSL is not on system, download the openSSL and put it in the following directory \BaseTools\bin\win32\ (e.g `C:\SIIPStitch \BaseTools\bin\win32\`)
+### STEP 5: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `OseFw.bin`)
 
 At this point, the working directory should contain the following files and directories:
 
@@ -72,15 +87,13 @@ Directory of C:\SIIPStitch
 
 05/01/2019  06:00 PM    <DIR>          .
 05/01/2019  06:00 PM    <DIR>          ..
-04/25/2019  09:39 AM    <DIR>          BaseTools
 01/08/2019  12:44 AM        33,554,432 BIOS.BIN
 12/18/2018  09:37 PM            56,076 OseFw.bin
 04/12/2019  11:56 AM             1,706 privkey.pem
 04/11/2019  12:09 PM            44,851 README.md.html
 04/15/2019  02:49 PM            52,277 Releasenotes.docx
 04/15/2019  02:49 PM            19,584 SIIPStitch.py
-              6 File(s)     33,728,926 bytes
-              3 Dir(s)  331,657,428,992 bytes free
+            
 
 ```
 

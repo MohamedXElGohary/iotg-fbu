@@ -22,6 +22,8 @@ import os
 import shutil
 import subprocess
 import SubRegionDescriptor as srd
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from SIIP_Support import ToolsLoc as tdir
 
 DefaultWorkspace = "./temp/"
 
@@ -123,7 +125,7 @@ def GenerateSubRegionFv (ImageFile, SubRegionDesc, OutputFvFile="./SubRegion.FV"
     CreateCleanWorkspace(WorkspacePath)
 
     if os.name == 'nt':
-        BinPath = "./Bin/Win32/"
+        BinPath = tdir.TOOLSWINDIR
     else:
         print ("Only support Windows OS")
         exit (-1)
