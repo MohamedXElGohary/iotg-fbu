@@ -49,6 +49,8 @@ import subprocess
 import sys
 import argparse
 import shutil
+import re
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from SIIPSupport import ToolsLoc as tdir
 
@@ -124,64 +126,23 @@ def search_for_fv(inputfile, ipname, myenv):
         print("\nError using FMMT.exe")
         return 1, fwvol
 
-    ##  Starting Search for firmware volume ###########
-
+    # search FFS by name in firmware volumes
     fwvol_found = False
     fwvol_child = False
-
-    #############################################################################################
-    # Note: the 'with open' and 'For in iter' is used instead of 'for in searchfile'            #
-    #       beacause the peek_line function uses 'tell' and they cannot work together           #
-    #############################################################################################
-
     with open('temp.txt', 'r') as searchfile:
-        #Read line from file and search for the Keyword FV
-        for currentline in iter(searchfile.readline, ""):
-            if 'FV' in currentline:
-                fw_vol = currentline.split(' :')
-
-                # Keyword 'FV was found so search next lines for IntelOseFw or for Child
-                while not peek_line(searchfile).startswith('FV'):
-                    nextline = searchfile.readline()
-                    if nextline == '':
-                        break
-                    # check to see if new firmware or Child Firmware
-                    #if section name in nextline:
-                    if  ip_filename[0] in nextline:
-                        fwvol = fw_vol[0]
-                        fwvol_found = True
-                        break
-                    elif 'Child' in nextline:
-                        print("Found a child Firmware volume: {}.".format(fw_vol[0]))
-                        fwvol_child = True
-                        break
-
-               # if child Firmware not found we have new Firmware
-                if fwvol_child is not False:
-                    fwvol = fw_vol[0]
-                    print("Found a new Firmware volume: {}.".format(fw_vol[0]))
-                # Else child found reset flag
-                else:
-                    fwvol_child = False
-
-            #Firmware Volume was found exit loop/
+        for line in searchfile:
+            m = re.match(r'(^FV\d+) :', line)
+            if m:
+                fwvol_found = True
+                fw_vol = m.groups()[0]
+                continue
             if fwvol_found:
-                break
+                n = re.match(r'File "(%s)"' % ip_filename[0], line.lstrip())
+                if n:
+                    break;
 
-    return status, fwvol
+    return status, fw_vol
 
-
-################################################################################################
-##
-## Get nextline but keep pointer to the same line
-##
-################################################################################################
-def peek_line(file):
-    '''Get nextline but keep pointer to the same line'''
-    current_pos = file.tell()
-    line = file.readline()
-    file.seek(current_pos)
-    return line
 
 ###############################################################################################
 ##
