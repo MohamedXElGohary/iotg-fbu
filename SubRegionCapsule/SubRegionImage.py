@@ -23,7 +23,7 @@ import shutil
 import subprocess
 import SubRegionDescriptor as srd
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from SIIP_Support import ToolsLoc as tdir
+from SIIPSupport import ToolsLoc as tdir
 
 DefaultWorkspace = "./temp/"
 
