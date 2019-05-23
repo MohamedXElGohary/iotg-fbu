@@ -95,6 +95,7 @@ if __name__ == "__main__":
     PopenObject = subprocess.Popen (' '.join(GenCapCmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     while PopenObject.returncode == None:
         PopenObject.wait ()
-#    if PopenObject.returncode != 0:
-#        exit (-1)
+
+    sys.exit(PopenObject.returncode)
+
 

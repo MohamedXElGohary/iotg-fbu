@@ -73,13 +73,13 @@ class SubRegionDataField (object):
         self.Value = datafield[3]
         if self.Type == DataTypes.DECIMAL:
             self.dValue = datafield[3]
-            self.sValue = str (datafield[3])
+            self.sValue = str(datafield[3])
         elif self.Type == DataTypes.HEXADECIMAL:
-            self.dValue = int (datafield[3], 16)
-            self.sValue = str (datafield[3])
+            self.dValue = int(datafield[3], 16)
+            self.sValue = str(datafield[3])
         else:
             self.dValue = None
-            self.sValue = str (datafield[3])
+            self.sValue = str(datafield[3])
 
 
 class SubRegionDescriptor (object):

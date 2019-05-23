@@ -38,27 +38,28 @@ def CreateBufferFromDataField (DataField):
     Buffer = None
     if DataField.Type == srd.DataTypes.FILE:
         with open (DataField.Value, 'rb') as DataFile:
-            Buffer = DataFile.read ()
+            Buffer = DataFile.read()
 
     if DataField.Type == srd.DataTypes.STRING:
         if DataField.Value == '_STDIN_':
-            Buffer = sys.stdin.readline ()
+            Buffer = sys.stdin.readline()
         else:
-            Fmt = "{}s".format (DataField.ByteSize)
-            Buffer = struct.pack (Fmt, DataField.sValue)
+            Fmt = "{}s".format(DataField.ByteSize)
+            print(Fmt)
+            Buffer = struct.pack(Fmt, bytes(DataField.sValue, 'utf-8'))
 
     if DataField.Type in [srd.DataTypes.DECIMAL, srd.DataTypes.HEXADECIMAL]:
         if DataField.ByteSize == 1:
-            Buffer = struct.pack ("<B", DataField.dValue)
+            Buffer = struct.pack("<B", DataField.dValue)
         elif DataField.ByteSize == 2:
-            Buffer = struct.pack ("<H", DataField.dValue)
+            Buffer = struct.pack("<H", DataField.dValue)
         elif DataField.ByteSize == 4:
-            Buffer = struct.pack ("<I", DataField.dValue)
+            Buffer = struct.pack("<I", DataField.dValue)
         elif DataField.ByteSize == 8:
-            Buffer = struct.pack ("<Q", DataField.dValue)
+            Buffer = struct.pack("<Q", DataField.dValue)
         else:
-            fmt = "<{0}B".format (DataField.ByteSize)
-            Buffer = struct.pack (fmt, bytearray.fromhex(format(DataField.dValue, 'x')))
+            fmt = "<{0}B".format(DataField.ByteSize)
+            Buffer = struct.pack(fmt, bytearray.fromhex(format(DataField.dValue, 'x')))
     return Buffer
 
 

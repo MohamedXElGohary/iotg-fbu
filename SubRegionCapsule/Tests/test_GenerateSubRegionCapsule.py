@@ -22,7 +22,7 @@ from math import log
 class JsonPayloadParserTestCase(unittest.TestCase):
     def test_ParseJsonSubRegDescriptorFiles(self):
         SubRegionDesc = srd.SubRegionDescriptor()
-        SubRegionDesc.ParseJsonData("./Collateral/GoodSubRegDescExample.json")
+        SubRegionDesc.ParseJsonData("./Tests/Collateral/GoodSubRegDescExample.json")
         self.assertEqual(srd.gFmpCapsuleTsnMacAddrFileGuid, SubRegionDesc.FmpGuid)
         self.assertEqual(1, SubRegionDesc.Version)
         SampleFfsFile = SubRegionDesc.FfsFiles[0]
@@ -40,19 +40,19 @@ class JsonPayloadParserTestCase(unittest.TestCase):
 
         # Json with missing fields
         with self.assertRaises(srd.SubRegionDescSyntaxError):
-            SubRegionDesc.ParseJsonData("./Collateral/MissingFieldSubRegDescExample.json")
+            SubRegionDesc.ParseJsonData("./Tests/Collateral/MissingFieldSubRegDescExample.json")
 
         # Json with bad guid
         with self.assertRaises(srd.SubRegionDescSyntaxError):
-            SubRegionDesc.ParseJsonData("./Collateral/BadGuidSubRegDescExample.json")
+            SubRegionDesc.ParseJsonData("./Tests/Collateral/BadGuidSubRegDescExample.json")
 
         # Json with unknown guid
         with self.assertRaises(srd.UnknownSubRegionError):
-            SubRegionDesc.ParseJsonData("./Collateral/UnknownGuidSubRegDescExample.json")
+            SubRegionDesc.ParseJsonData("./Tests/Collateral/UnknownGuidSubRegDescExample.json")
 
         # Json with bad data field
         with self.assertRaises(srd.SubRegionDescSyntaxError):
-            SubRegionDesc.ParseJsonData("./Collateral/BadDataFieldSubRegDescExample.json")
+            SubRegionDesc.ParseJsonData("./Tests/Collateral/BadDataFieldSubRegDescExample.json")
 
     def test_CheckIfDataFieldValid(self):
         SubRegionDesc = srd.SubRegionDescriptor()
@@ -150,8 +150,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         #self.assertEqual(struct.pack("<H", ONE_BYTE_VAL), DataBuffer)
 
     def test_HandleFileDataFields(self):
-        DUMMY_FILE = "./Collateral/DummyFile.txt"
-        DUMMY_BIN = "./Collateral/DummyBin.Bin"
+        DUMMY_FILE = "./Tests/Collateral/DummyFile.txt"
+        DUMMY_BIN = "./Tests/Collateral/DummyBin.Bin"
 
         DataFieldFile  = srd.SubRegionDataField(["field_1", srd.DataTypes.FILE, 8, DUMMY_FILE])
 
@@ -173,17 +173,17 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         #DataBuffer = sri.CreateBufferFromDataField(DataFieldStdin)
         #self.assertEqual(DUMMY_INPUT, DataBuffer)
         DataBuffer = sri.CreateBufferFromDataField(DataFieldString)
-        self.assertEqual(DUMMY_TXT, DataBuffer)
+        self.assertEqual(bytes(DUMMY_TXT, 'utf-8'), DataBuffer)
 
         DataBuffer = sri.CreateBufferFromDataField(DataFieldStringTrunc)
-        self.assertEqual(DUMMY_TXT[:len(DUMMY_TXT)-1], DataBuffer)
+        self.assertEqual(bytes(DUMMY_TXT[:len(DUMMY_TXT)-1], 'utf-8'), DataBuffer)
 
         DataBuffer = sri.CreateBufferFromDataField(DataFieldStringPad)
-        self.assertEqual(DUMMY_TXT+"\0", DataBuffer)
+        self.assertEqual(bytes(DUMMY_TXT+"\0", 'utf-8'), DataBuffer)
 
     def test_CreateGenCommands(self):
         SubRegionDesc = srd.SubRegionDescriptor()
-        SubRegionDesc.ParseJsonData("./Collateral/GoodSubRegDescExample.json")
+        SubRegionDesc.ParseJsonData("./Tests/Collateral/GoodSubRegDescExample.json")
         FmpGuid = "8C8CE578-8A3D-4F1C-9935-896185C32DD3"
         DummyFile = "somefile.bin"
         DummyUiName = "DummyUi"
