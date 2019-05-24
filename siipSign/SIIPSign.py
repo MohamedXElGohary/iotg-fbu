@@ -786,7 +786,10 @@ def main():
                     version='%(prog)s ' + __version__)
 
     args = ap.parse_args()
-    args.func(args)
+    if not 'func' in args:
+        ap.print_usage()
+        sys.exit(2)
+    sys.exit(args.func(args))
 
 
 if __name__ == '__main__':
