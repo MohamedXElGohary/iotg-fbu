@@ -36,7 +36,7 @@ import platform
 
 
 
-SIIPSTITCH=os.path.join(os.path.dirname(__file__), 'SIIPStitch.py')
+SIIPSTITCH=os.path.join('SIIPStitch.py')
 TMPDIR=os.path.join(os.path.dirname(__file__), 'TMPDIR')
 
 ###############################################################################################################################

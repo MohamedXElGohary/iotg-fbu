@@ -12,12 +12,16 @@
 #
 
 import unittest
-import SubRegionDescriptor as srd
-import SubRegionImage as sri
 import uuid
 import struct
 from math import log
 
+import sys, os
+print(sys.path)
+print(os.getcwd())
+
+import SubRegionDescriptor as srd
+import SubRegionImage as sri
 
 class JsonPayloadParserTestCase(unittest.TestCase):
     def test_ParseJsonSubRegDescriptorFiles(self):
