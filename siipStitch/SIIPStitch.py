@@ -162,7 +162,7 @@ def create_commands(filename, ipname, fwvol):
     cmds = []
 
     #GenSec.exe -s EFI_SECTION_USER_INTERFACE -n "IntelOseFw" -o IntelOseFw.sec
-    cmd0 = [PROG[0], options[0], section_type[0], options[1], "'{}'".format(option_strings[0]), \
+    cmd0 = [PROG[0], options[0], section_type[0], options[1], option_strings[0], \
            options[2], tempfile[0]]
 
     #GenSec.exe -s EFI_SECTION_RAW -c PI_STD -o IntelOseFw.raw OseFw.bin
