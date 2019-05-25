@@ -40,7 +40,7 @@
 ##  File Description:
 ##
 ## License: {license}
-## Version: 0.6.0
+## Version: 0.5.2
 ## Status: Intial Development
 #################################################################################################
 import os
@@ -56,7 +56,7 @@ from SIIPSupport import ToolsLoc as tdir
 
 
 
-__version__ = '0.6.0'
+__version__ = '0.5.2'
 ################################################################################################
 ##
 ## Global Variables
