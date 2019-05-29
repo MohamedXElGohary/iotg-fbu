@@ -343,22 +343,6 @@ def file_exist(file):
         raise argparse.ArgumentTypeError("{} does not exist!".format(file))
     return file
 
-##################################################################################################
-##
-## 'Type' for argparse = chk_ip
-## Verify valid IP or region name to be replaced
-##
-##################################################################################################
-
-def chk_ip(ip_name):
-    ''' Verify valid IP or region name to be replaced.'''
-    global REGIONS
-
-    if ip_name.lower() not in REGIONS:
-        raise argparse.ArgumentTypeError("Replace {} IP is not supported. \nHere is the list of \
-                                          supported regions: {}".format(ip_name, REGIONS.keys()))
-    return ip_name.lower()
-
 
 ##################################################################################################
 ##
@@ -379,8 +363,8 @@ def parse_cmdline():
     parser.add_argument("-k", "--priv_key", dest="PRIV_KEY", type=file_exist, \
                        help="Private RSA 2048 key in PEM format to decode the firmware volume.\
                        This is required.", metavar="priv_key.pem", required=True)
-    parser.add_argument("-ip", "--ipname", type=chk_ip, help="The name of the IP in the IFWI_IN \
-                       file to be replaced. This is required.", metavar="ipname", required=True)
+    parser.add_argument("-ip", "--ipname", help="The name of the IP in the IFWI_IN \
+                       file to be replaced. This is required.", metavar="ipname", required=True, choices=list(REGIONS.keys()))
     parser.add_argument("-v", "--version", help="Shows the current version of the Bio Stitching \
                        Tool", action="version", version="%(PROG)s {version}".\
                        format(version=__version__))
