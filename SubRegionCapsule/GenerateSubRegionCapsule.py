@@ -94,7 +94,9 @@ if __name__ == "__main__":
 
     PopenObject = subprocess.Popen (' '.join(GenCapCmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     while PopenObject.returncode == None:
-        PopenObject.wait ()
+        out, err = PopenObject.communicate ()
+        print('Error messages  :\n%s' % err.decode('utf-8'))
+        print('Output messages :\n%s' % out.decode('utf-8'))
 
     sys.exit(PopenObject.returncode)
 
