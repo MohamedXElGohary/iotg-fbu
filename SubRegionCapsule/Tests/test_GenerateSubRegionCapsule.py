@@ -168,14 +168,16 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         STDIN = "_STDIN_"
         DUMMY_TXT = "Can't touch this"
 
-        DataFieldStdin = srd.SubRegionDataField(["field_1", srd.DataTypes.STRING, 1, STDIN])
+        DataFieldStdin = srd.SubRegionDataField(["field_1", srd.DataTypes.STRING, len(DUMMY_TXT), STDIN])
         DataFieldString = srd.SubRegionDataField(["field_1", srd.DataTypes.STRING, len(DUMMY_TXT), DUMMY_TXT])
         DataFieldStringTrunc = srd.SubRegionDataField(["field_1", srd.DataTypes.STRING, len(DUMMY_TXT)-1, DUMMY_TXT])
         DataFieldStringPad = srd.SubRegionDataField(["field_1", srd.DataTypes.STRING, len(DUMMY_TXT)+1, DUMMY_TXT])
 
         # Stdin (need to write test)
-        #DataBuffer = sri.CreateBufferFromDataField(DataFieldStdin)
-        #self.assertEqual(DUMMY_INPUT, DataBuffer)
+        sri.sys.stdin.readline = lambda : DUMMY_TXT
+        DataBuffer = sri.CreateBufferFromDataField(DataFieldStdin)
+        self.assertEqual(bytes(DUMMY_TXT, 'utf-8'), DataBuffer)
+
         DataBuffer = sri.CreateBufferFromDataField(DataFieldString)
         self.assertEqual(bytes(DUMMY_TXT, 'utf-8'), DataBuffer)
 

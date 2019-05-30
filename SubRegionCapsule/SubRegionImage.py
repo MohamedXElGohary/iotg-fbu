@@ -41,11 +41,10 @@ def CreateBufferFromDataField (DataField):
             Buffer = DataFile.read()
 
     if DataField.Type == srd.DataTypes.STRING:
+        Fmt = "{}s".format(DataField.ByteSize)
         if DataField.Value == '_STDIN_':
-            Buffer = sys.stdin.readline()
+            Buffer = struct.pack(Fmt, bytes(sys.stdin.readline(), 'utf-8'))
         else:
-            Fmt = "{}s".format(DataField.ByteSize)
-            print(Fmt)
             Buffer = struct.pack(Fmt, bytes(DataField.sValue, 'utf-8'))
 
     if DataField.Type in [srd.DataTypes.DECIMAL, srd.DataTypes.HEXADECIMAL]:
