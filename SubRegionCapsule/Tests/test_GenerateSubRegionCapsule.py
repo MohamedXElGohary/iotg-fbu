@@ -12,13 +12,13 @@
 #
 
 import unittest
+import os
+import sys
+import subprocess
 import uuid
 import struct
 from math import log
 
-import sys, os
-print(sys.path)
-print(os.getcwd())
 
 import SubRegionDescriptor as srd
 import SubRegionImage as sri
@@ -119,7 +119,24 @@ class JsonPayloadParserTestCase(unittest.TestCase):
 
 class SubRegionImageGeneratorTestCase(unittest.TestCase):
     def test_GenerateSubRegionImage(self):
-        pass
+        
+        PrivateCert = os.path.join('Tests', 'Collateral', 'TestCert.pem')
+        PublicCert  = os.path.join('Tests', 'Collateral', 'TestSub.pub.pem')
+        TrustedCert = os.path.join('Tests', 'Collateral', 'TestRoot.pub.pem')
+        InputJson   = os.path.join('Tests', 'Collateral', 'TsnMacAddressDescExample.json')
+        OutputFile  = 'capsule.out.bin'
+
+        FullCmdLine = [ 'GenerateSubRegionCapsule.py',
+                         '-o', OutputFile,
+                         '--signer-private-cert=%s' % PrivateCert,
+                         '--other-public-cert=%s' % PublicCert,
+                         '--trusted-public-cert=%s' % TrustedCert,
+                         InputJson
+                       ]
+
+        subprocess.check_call(FullCmdLine, shell=True)
+        # TODO: check data fields match the input data and key used
+
 
     def test_HandleNumberDataFields(self):
         ONE_BYTE_VAL = 0xAB
@@ -217,6 +234,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         GenFvCmdExp  = "GenFv -o OutputFile.Fv -b 0x10000 -f " + DummyFfsFile[0] + " -g " + FmpGuid + " --FvNameGuid " + SubRegionDesc.sFvGuid
         GenFvCmd = sri.CreateGenFvCommand(SubRegionDesc, "OutputFile.Fv", DummyFfsFile)
         self.assertEqual(GenFvCmdExp, ' '.join(GenFvCmd))
+
 
 if __name__ == '__main__':
     unittest.main()
