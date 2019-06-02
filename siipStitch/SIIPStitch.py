@@ -292,19 +292,7 @@ def set_environment_vars():
    # path to Base Tools
     edk_tools_path = os.path.join(os.sep, my_path, tdir.TOOLSDIR)
     edk_tools_bin = os.path.join(os.sep, edk_tools_path, os_dir)
-
-    if not os.environ.get('EDK_TOOLS_PATH'):
-        if os.path.isdir(edk_tools_path):
-            myenv["EDK_TOOLS_PATH"] = edk_tools_path
-            myenv["WORKSPACE_TOOLS_PATH"] = edk_tools_path
-        else:
-            sys.exit("\nError: Cannot find the tools path{}".format(edk_tools_bin))
-    if not os.environ.get('EDK_TOOLS_BIN'):
-        if os.path.isdir(edk_tools_path):
-            myenv["EDK_TOOLS_BIN"] = edk_tools_bin
-            myenv["PATH"] = myenv["EDK_TOOLS_BIN"] + ';'  + path
-        else:
-            sys.exit("\nError: Cannot find the tools path{}".format(edk_tools_bin))
+    myenv["PATH"] = edk_tools_bin + ';'  + path
 
     #redirect output
     dev_null = open(os.devnull, 'w')
