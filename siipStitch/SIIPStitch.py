@@ -106,7 +106,7 @@ if sys.version_info[0] < 3:
 ##
 #################################################################################################
 
-def search_for_fv(inputfile, ipname, myenv):
+def search_for_fv(inputfile, ipname, myenv, workdir):
     '''Search for the firmware volume.'''
 
     global IP_OPTIONS
@@ -118,10 +118,11 @@ def search_for_fv(inputfile, ipname, myenv):
     fwvol = None
     status = 0
 
-    command = ['FMMT.exe', '-v', inputfile, '>', 'temp.txt']
+    command = ['FMMT.exe', '-v', os.path.abspath(inputfile), '>', 'temp.txt']
 
     try:
-        subprocess.check_call(command, env=myenv, shell=True)
+        print(' '.join(command))
+        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe")
         return 1, fwvol
@@ -129,7 +130,7 @@ def search_for_fv(inputfile, ipname, myenv):
     # search FFS by name in firmware volumes
     fwvol_found = False
     fwvol_child = False
-    with open('temp.txt', 'r') as searchfile:
+    with open(os.path.join(workdir, 'temp.txt'), 'r') as searchfile:
         for line in searchfile:
             m = re.match(r'(^FV\d+) :', line)
             if m:
@@ -208,7 +209,7 @@ def create_commands(filename, ipname, fwvol):
 ## Perform merge and replace of section using different excutables
 ##
 ###############################################################################################
-def merge_and_replace(filename, guid_values, fwvol, env_vars):
+def merge_and_replace(filename, guid_values, fwvol, env_vars, workdir):
     '''Perform merge and replace of section using different excutables.'''
 
     cmds = create_commands(filename, guid_values, fwvol)
@@ -218,7 +219,8 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars):
    #Merging and Replacing
     for command in cmds:
         try:
-            subprocess.check_call(command, env=env_vars, shell=True)
+            print(' '.join(command))
+            subprocess.check_call(command, env=env_vars, cwd=workdir, shell=True)
         except subprocess.CalledProcessError as status:
             print("\nError executing {}".format(command[0]))
             print("\nStatus Message: {}".format(status))
@@ -430,19 +432,8 @@ def main():
         cleanup(dirs)
         sys.exit()
 
-    ## files copied to working directory
-
-    # change to working directory
-
-    try:
-        os.chdir(dirs[1])
-    except IOError as error:
-        sys.exit("\nUnable to change directory : {}{}".format(dirs[1], error))
-    except:
-        sys.exit("\nUnexpected error:{}".format(sys.exc_info()))
-
     #search for firmware volume
-    status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname, env_vars)
+    status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname, env_vars, dirs[1])
 
     # Check for error in using FMMT.exe or if firmware volume was not found.
     if status == 1 or fw_volume is None:
@@ -457,15 +448,10 @@ def main():
 
     # setup files of executable programs to be used to perform the merge and repalce
     filenames = [args.IFWI_IN.name, args.IPNAME_IN.name, args.OUTPUT_FILE]
+    filenames = [os.path.abspath(f) for f in filenames]
 
     # create oseFW header, merge header and replace in Binary
-    status = merge_and_replace(filenames, args.ipname, fw_volume, env_vars)
-
-    # merge and replace was successful move output file to users current directory
-    if status == 0:
-        status = copy_file([args.OUTPUT_FILE], dirs[0])
-        if status == 0:
-            print("\n Firmware Merge complete")
+    status = merge_and_replace(filenames, args.ipname, fw_volume, env_vars, dirs[1])
 
     cleanup(dirs)
 
