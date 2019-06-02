@@ -342,7 +342,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
 
     print('Hashing Algorithm : %s' % HASH_OPTION.name)
 
-    payload_cfg = payload_file.split(':') # <file>:<signing_key>
+    payload_cfg = payload_file.split(',') # <file>,<signing_key>
     if len(payload_cfg) == 2:
         payload_privkey = payload_cfg[1]
         payload_file    = payload_cfg[0]
@@ -735,7 +735,9 @@ def main():
     signp.add_argument('-i', '--input-file',
                        required=True,
                        type=str,
-                       help='Input unsigned file')
+                       help='Input unsigned file, optionally followed by its'
+                            ' signing key, with a comma as seperator. '
+                            'E.g., <file>,<rsa.pem>')
     signp.add_argument('-o', '--output-file',
                        required=True,
                        type=str,
