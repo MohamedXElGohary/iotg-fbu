@@ -266,8 +266,13 @@ def cleanup(wk_dir):
 def set_environment_vars():
     '''Determine platform and set working path and Engine Development Kit path.'''
     os_sys = platform.system()
-    progs = ['GenSec', 'LzmaCompress', 'GenFfs', 'FMMT.exe', 'FmmtConf.ini', 'python27.dll',\
-             'Rsa2048Sha256SignPlatform.bat', 'Rsa2048Sha256Sign.exe']
+    progs = [ 'GenSec',
+              'LzmaCompress',
+              'GenFfs',
+              'FMMT.exe',
+              'FmmtConf.ini',
+              'StripSignature.py',
+            ]
 
    # Determine operating system that script is running
 
@@ -350,9 +355,6 @@ def parse_cmdline():
                        (Ex: IFWI.bin) to be updated with the given input IP firmware")
     parser.add_argument("IPNAME_IN", type=argparse.FileType('rb'), help="Input IP firmware \
                        Binary file (Ex: oseFw.Bin) to be replaced in the IFWI.bin")
-    parser.add_argument("-k", "--priv_key", dest="PRIV_KEY", type=file_exist, \
-                       help="Private RSA 2048 key in PEM format to decode the firmware volume.\
-                       This is required.", metavar="priv_key.pem", required=True)
     parser.add_argument("-ip", "--ipname", help="The name of the IP in the IFWI_IN \
                        file to be replaced. This is required.", metavar="ipname", required=True, choices=list(REGIONS.keys()))
     parser.add_argument("-v", "--version", help="Shows the current version of the Bio Stitching \
@@ -414,7 +416,7 @@ def main():
         sys.exit("\nUnexpected error occuring when trying to create directory")
 
     # move files to working directory
-    filenames = [args.IFWI_IN.name, args.IPNAME_IN.name, args.PRIV_KEY]
+    filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
     status = copy_file(filenames, dirs[1])
     if status != 0:
         cleanup(dirs)
