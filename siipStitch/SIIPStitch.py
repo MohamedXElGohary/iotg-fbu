@@ -83,7 +83,7 @@ IP_OPTIONS = {
     'tmac' : ['IntelTsnMacAddrFv', None, '1K', 'PI_NONE'],
     'ptmac' : ['IntelOseTsnMacConfig', None, '1K', 'PI_NONE'],
     'tcc' : ['IntelTccConfig', None, '1K', 'PI_NONE'],
-    'oob' : ['IntelOob2Config', None, '1K', 'PI_NONE']
+    'oob' : ['IntelOobConfig', None, '1K', 'PI_NONE']
 }
 
 #################################################################################################

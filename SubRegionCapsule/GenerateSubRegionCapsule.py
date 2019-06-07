@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 ## @file
 # Generate a Sub Region capsule.
 #
@@ -23,12 +26,15 @@
 import sys
 import argparse
 import subprocess
-
 import SubRegionImage as sri
 import SubRegionDescriptor as srd
 
+x = sys.version_info[0]
+print(x)
+#C:\Python27\python.exe
+
 if sys.version_info[0] < 3:
-    raise Exception("Must be using Python 3 (for now)")
+    raise Exception("Must be using Python 3 (for now) {}".format(x))
 
 #
 # Globals for help information
