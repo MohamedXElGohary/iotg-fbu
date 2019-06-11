@@ -29,12 +29,9 @@ import subprocess
 import SubRegionImage as sri
 import SubRegionDescriptor as srd
 
-x = sys.version_info[0]
-print(x)
-#C:\Python27\python.exe
 
 if sys.version_info[0] < 3:
-    raise Exception("Must be using Python 3 (for now) {}".format(x))
+    raise Exception("Must be using Python 3 (for now)")
 
 #
 # Globals for help information

@@ -121,7 +121,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
     command = ['FMMT.exe', '-v', os.path.abspath(inputfile), '>', 'temp.txt']
 
     try:
-        print(' '.join(command))
+        #print(' '.join(command))
         subprocess.check_call(command, env=myenv, cwd=workdir, shell=True)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe")
@@ -219,7 +219,7 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars, workdir):
    #Merging and Replacing
     for command in cmds:
         try:
-            print(' '.join(command))
+            #print(' '.join(command))
             subprocess.check_call(command, env=env_vars, cwd=workdir, shell=True)
         except subprocess.CalledProcessError as status:
             print("\nError executing {}".format(command[0]))
