@@ -1,14 +1,14 @@
-# SIIP Capsule Script
+# Sub-Region Capsule Script
 
-The Sub Region Capsule Generator scripts creates a capsule to update SIIP sub regions, which are regions
+The Sub Region Capsule Generator scripts creates a capsule to update sub-regions, which are regions
 
 located within the boot firmware.
 
 ## Environment Requirments
 
-SIIP Stitch scripts supports python 3.x.
+Sub Region Capsule script supports python 3.x.
 
-SIIP Capsule scripts runs on Windows 10 OS
+Sub Region Capsule script runs on Windows 10 OS
 
 
 ## Usage
@@ -82,5 +82,6 @@ data_type - One of the following is supported ["DECIMAL", "HEXADECIMAL", "STRING
 member_value - An integer or string. If a the string is "_STDIN_" then value will come from stdin
 
 ## Example
-
-python GenerateSubRegionCapsule.py  -o .\SiipCapSigned.cap --signer-private-cert=.\TestCert.pem --other-public-cert=.\TestSub.pub.pem --trusted-public-cert=.\TestRoot.pub.pem .\Tests\Collateral\TsnMacConfigDescExample.json
+```
+python GenerateSubRegionCapsule.py  -o .\CapsuleSigned.cap --signer-private-cert=.\TestCert.pem --other-public-cert=.\TestSub.pub.pem --trusted-public-cert=.\TestRoot.pub.pem .\Tests\Collateral\TsnMacConfigDescExample.json
+```
