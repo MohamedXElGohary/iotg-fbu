@@ -122,10 +122,18 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
 
     try:
         #print(' '.join(command))
-        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True)
+        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True, timeout=5)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe")
         return 1, fwvol
+    except subprocess.TimeoutExpired:
+        print ("\nFMMT.exe timed out viewing {}! Check input file for correct format".format(inputfile))
+        result = os.system("taskkill /f /im FMMT.exe")
+        if result == 0:
+            return 1, fwvol
+        else:
+            sys.exit('\nError Must kill process and delete SIIP_wrkdr')
+
 
     # search FFS by name in firmware volumes
     fwvol_found = False
@@ -329,14 +337,21 @@ def file_not_exist(file):
 ##################################################################################################
 ##
 ## 'Type' for argparse
-##  Check if file exist
+##  Check if file is not empty 
 ##
 ##################################################################################################
-def file_exist(file):
-    ''' Check if file exist.'''
-    if not os.path.isfile(file):
-        raise argparse.ArgumentTypeError("{} does not exist!".format(file))
-    return file
+def file_not_empty(files):
+    ''' Check if file is empty.'''
+    status = 0
+    for file in files:
+        if os.path.getsize(file) != 0:
+            continue
+        else:
+            print("\n{} file is empty!".format(file))
+            status = 1
+            break
+           
+    return status
 
 
 ##################################################################################################
@@ -404,8 +419,19 @@ def main():
     args = parse_cmdline()
     env_vars = set_environment_vars()
 
+    
+    #check to see if input files are empty
+    filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
+    
+    status = file_not_empty(filenames)
+    
+    if status != 0:
+        sys.exit()
+    
     #current directory and working director
     dirs = [os.getcwd(), 'SIIP_wrkdir']
+    
+    
 
    #Create working directory
     try:
@@ -415,8 +441,9 @@ def main():
     except:
         sys.exit("\nUnexpected error occuring when trying to create directory")
 
+    
+  
     # move files to working directory
-    filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
     status = copy_file(filenames, dirs[1])
     if status != 0:
         cleanup(dirs)
@@ -432,7 +459,7 @@ def main():
             print("\nError: No Firmware volume found")
         sys.exit()
 
-    # firmeware volume was found
+    # firmware volume was found
     print("\nThe Firmware volume is {}\n".format(fw_volume))
 
 

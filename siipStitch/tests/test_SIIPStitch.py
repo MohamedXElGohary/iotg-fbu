@@ -45,9 +45,10 @@ SIIPSTITCH=os.path.join('..', 'SIIPStitch.py')
 ###############################################################################################################################
 class MyTestSet1(unittest.TestCase):
     def setUp(self):
-        cleanup()
+        pass
 
     def tearDown(self):
+        cleanup()
         pass
 
     def test_help(self):
@@ -69,6 +70,7 @@ class MyTestSet1(unittest.TestCase):
                '-o', 'IFWI.bin']
         subprocess.check_call(cmd, cwd='tests')
         self.assertTrue(os.path.exists(os.path.join('tests', 'IFWI.bin')))
+        os.remove(os.path.join('tests', 'IFWI.BIN'))
 
 ###############################################################################################################################
 ##MyTestSet2:
@@ -76,15 +78,22 @@ class MyTestSet1(unittest.TestCase):
 ##
 ###############################################################################################################################
 class MyTestSet2(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+         os.mkdir(os.path.join('tests', 'TMPDIR'))
+
+    @classmethod
+    def tearDownClass(cls):  
+        shutil.rmtree(os.path.join('tests', 'TMPDIR'))
+
 
     def setUp(self):
-        cleanup()
-        if not os.path.isdir(os.path.join('tests', 'TMPDIR')):
-            os.mkdir(os.path.join('tests', 'TMPDIR'))
+        pass
 
     def tearDown(self):
+        cleanup()
         pass
-                
+
     def test_bios_in_different_dir(self):  #Bios image not in current working directory
         shutil.copy(os.path.join('tests', 'BIOS.bin'), os.path.join('tests', 'TMPDIR'))
         INPUT = os.path.join('TMPDIR', 'BIOS.bin')
@@ -114,6 +123,7 @@ class MyTestSet3(unittest.TestCase):
         pass
 
     def tearDown(self) :  
+        cleanup()
         pass
             
     def test_invalid_ip(self):  #invalid ipname
@@ -124,14 +134,59 @@ class MyTestSet3(unittest.TestCase):
         except subprocess.CalledProcessError:
             pass
     
-    def test_key_wrong_name(self):  #Keyfile has wrong file name
-        cmd = ['python', SIIPSTITCH, 'Hello.bin', 'SIIP.bin', '-ip', 'pse']
+    def test_bios_file_do_not_exist(self):  #Bios input file does not exists
+        cmd = ['python', SIIPSTITCH, 'SIIP.bin', 'OseFw.bin', '-ip', 'pse']
+
+        try:
+            results=subprocess.check_call(cmd, cwd='tests')
+            self.fail('a call process eror should have occured')
+        except subprocess.CalledProcessError as Error:
+            pass
+            
+    def test_ip_file_does_not_exist(self):  #ip input file does not exists
+        cmd = ['python', SIIPSTITCH, 'BIOS.BIN', 'ose.bin', '-ip', 'pse']
 
         try:
             results=subprocess.check_call(cmd, cwd='tests')
             self.fail('a call process eror should have occured')
         except subprocess.CalledProcessError:
             pass
+            
+    def test_bios_file_is_empty(self):  #BIOS input file is blank
+        cmd = ['python', SIIPSTITCH, 'BIOS_NUL.BIN', 'OseFw.bin', '-ip', 'pse']
+        
+        try:
+           results=subprocess.check_output(cmd, cwd='tests')
+           if b'file is empty' in results:
+               pass
+           else:
+               self.fail('Wrong Error has occured')
+        except:
+            self.fail('Error should have been handle by siipStitch')
+            
+    def test_ip_file_is_empty(self):  #BIOS input file is blank
+        cmd = ['python', SIIPSTITCH, 'BIOS.BIN', 'OseFw_NUL.bin', '-ip', 'pse']
+        
+        try:
+           results=subprocess.check_output(cmd, cwd='tests')
+           if b'file is empty' in results:
+               pass
+           else:
+               self.fail('Wrong Error has occured')
+        except:
+            self.fail('Error should have been handle by siipStitch')
+            
+    def test_inputfile_w_incorrect_format(self):  #BIOS input file is not in correct format
+        cmd = ['python', SIIPSTITCH, 'BIOS_badFormat.bin', 'OseFw.bin', '-ip', 'pse']
+        
+        try:
+           results=subprocess.check_output(cmd, cwd='tests')
+           if b'FMMT.exe timed out' in results:
+               pass
+           else:
+               self.fail('Wrong Error has occured')
+        except:
+            self.fail('Error should have been handle by siipStitch')
 
 ###############################################################################################################################
 ##MyTestSet4:
@@ -141,10 +196,10 @@ class MyTestSet3(unittest.TestCase):
 class MyTestSet4(unittest.TestCase):
 
     def setUp(self):
-        cleanup()
+        pass
 
     def tearDown(self):
-        pass
+        cleanup()
 
     def test_replace_TsnMacAdr_using_default(self):  # tmac
         cmd = ['python', SIIPSTITCH, 'EHL_FSPWRAPPER_1172_00.rom', 
@@ -174,8 +229,6 @@ class MyTestSet4(unittest.TestCase):
 def cleanup():
     try:
         os.remove(os.path.join('tests', 'BIOS_OUT.BIN'))
-        os.remove(os.path.join('tests', 'IFWI.bin'))
-        shutil.rmtree(os.path.join('tests', 'TMPDIR'), ignore_errors=True)
-    except (OSError, IOError) as e:
+    except: 
         pass
 
