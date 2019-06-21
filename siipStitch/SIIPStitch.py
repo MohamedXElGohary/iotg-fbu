@@ -115,7 +115,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
     ip_filename = IP_OPTIONS.get(ipname)
 
     print("\nFinding the Firmware Volume")
-    fwvol = None
+    fw_vol = None
     status = 0
 
     command = ['FMMT.exe', '-v', os.path.abspath(inputfile), '>', 'temp.txt']
@@ -125,12 +125,12 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
         subprocess.check_call(command, env=myenv, cwd=workdir, shell=True, timeout=5)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe")
-        return 1, fwvol
+        return 1, fw_vol
     except subprocess.TimeoutExpired:
         print ("\nFMMT.exe timed out viewing {}! Check input file for correct format".format(inputfile))
         result = os.system("taskkill /f /im FMMT.exe")
         if result == 0:
-            return 1, fwvol
+            return 1, fw_vol
         else:
             sys.exit('\nError Must kill process and delete SIIP_wrkdr')
 
@@ -149,7 +149,9 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
                 n = re.match(r'File "(%s)"' % ip_filename[0], line.lstrip())
                 if n:
                     break;
-
+        else:
+           fw_vol = None # firmware volume was not found.
+        
     return status, fw_vol
 
 

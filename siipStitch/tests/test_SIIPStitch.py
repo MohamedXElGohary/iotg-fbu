@@ -188,6 +188,20 @@ class MyTestSet3(unittest.TestCase):
         except:
             self.fail('Error should have been handle by siipStitch')
 
+    def test_no_fv_found(self):  #Firmware volume not found in the file
+        cmd = ['python', SIIPSTITCH,'BIOS.bin', 'dummy_2.bin', '-ip', 'oob']
+
+        try:
+           results=subprocess.check_output(cmd, cwd='tests')
+           if b'No Firmware volume found' in results:
+              pass
+           else:
+              self.fail('\nNot correct error')
+        except:
+           self.fail('\nSIIPStitch should have handled error')
+           
+           
+
 ###############################################################################################################################
 ##MyTestSet4:
 ## Test replacement of the subregions
