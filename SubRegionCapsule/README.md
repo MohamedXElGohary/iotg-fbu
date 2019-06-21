@@ -79,7 +79,7 @@ Format of the JSON payload descriptor file:
 
 data_type - One of the following is supported ["DECIMAL", "HEXADECIMAL", "STRING", "FILE"]
 
-member_value - An integer or string. If a the string is "_STDIN_" then value will come from stdin
+member_value - An integer or string. If a the string is "\_STDIN\_" then value will come from stdin
 
 ## Example
 ```

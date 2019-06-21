@@ -61,7 +61,7 @@ except ImportError:
     sys.exit(1)
 
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 RSA_KEYMOD_SIZE = 256
 RSA_KEYEXP_SIZE = 4
