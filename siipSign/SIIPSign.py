@@ -587,10 +587,10 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     HASH_OPTION = HASH_CHOICES[hash_option][0]
     HASH_SIZE   = HASH_OPTION.digest_size
 
-    puk_cfg = infile_signed.split(':')  # <infile>:<puk.pem> 
+    puk_cfg = infile_signed.split(',')  # <infile>,<puk.pem> 
     if len(puk_cfg) == 2:
+        infile_signed    = puk_cfg[0]
         payload_puk_file = puk_cfg[1]
-        infile_signed = puk_cfg[0]
     else:
         payload_puk_file = pubkey_pem_file
 

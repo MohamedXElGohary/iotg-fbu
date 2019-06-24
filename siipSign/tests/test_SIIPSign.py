@@ -5,6 +5,7 @@ import os
 import unittest
 import subprocess
 import shutil
+import glob
 
 SIIPSIGN = 'SIIPSign.py'
 
@@ -17,15 +18,13 @@ class TestSIIPSign(unittest.TestCase):
 
 	def tearDown(self):
 		'''Clean up generated files'''
+
 		shutil.rmtree('extract', ignore_errors=True)
-		files_to_clean = ['payload.bin', 'signed.bin',
-		                  'test_key.pem', 'public_key.pem',
-		                 ]
+		files_to_clean = glob.glob(os.path.join('*.pem'))
+		files_to_clean += glob.glob(os.path.join('tests', '*.bin'))
+
 		for f in files_to_clean:
-			try:
-				os.remove(os.path.join('tests', f))
-			except OSError:
-				pass
+			os.remove(f)
 
 	def test_empty_args(self):
 		'''Test empty args'''
@@ -84,6 +83,41 @@ class TestSIIPSign(unittest.TestCase):
 
 			cmd = ['python', 'SIIPSign.py', 'verify', '-i', OUTFILE, 
 			         '-p', 'public_key.pem', '-s', hash_alg]
+			subprocess.check_call(cmd)
+
+			cmd = ['python', 'SIIPSign.py', 'decompose', '-i', OUTFILE]
+			subprocess.check_call(cmd)
+
+	def test_signing_with_two_keys(self):
+		'''Test signing with two keys'''
+
+		hash_options = ['sha256', 'sha384', 'sha512']
+		PLDFILE = os.path.join('tests', 'payload.bin')
+		OUTFILE = os.path.join('tests', 'signed.bin')
+		FKM_KEY = ('key1.pem', 'key1.pub.pem')
+		PLD_KEY = ('key2.pem', 'key2.pub.pem')
+
+		with open(PLDFILE, 'wb') as pld:
+			pld.write(os.urandom(1024*1024))
+
+		# Create test keys
+		for priv, pub in [FKM_KEY, PLD_KEY]:
+			cmd = ['openssl', 'genrsa', '-out', priv, '2048']
+			subprocess.check_call(cmd)
+
+			cmd = ['openssl', 'rsa', '-pubout', '-in', priv, '-out', pub]
+			subprocess.check_call(cmd)
+
+		for hash_alg in hash_options:
+			cmd = ['python', 'SIIPSign.py', 'sign', '-i', PLDFILE + ',' + PLD_KEY[0],
+			                                        '-o', OUTFILE,
+			                                        '-k', FKM_KEY[0],
+			                                        '-s', hash_alg]
+			subprocess.check_call(cmd)
+
+			cmd = ['python', 'SIIPSign.py', 'verify', '-i', OUTFILE + ',' + PLD_KEY[1],
+			                                          '-p', FKM_KEY[1],
+			                                          '-s', hash_alg]
 			subprocess.check_call(cmd)
 
 			cmd = ['python', 'SIIPSign.py', 'decompose', '-i', OUTFILE]
