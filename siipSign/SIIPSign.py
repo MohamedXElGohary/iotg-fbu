@@ -123,6 +123,35 @@ def verify_hash(data, expected_hash):
     return result
 
 
+def get_pubkey_from_privkey(privkey_pem):
+    '''Extract public key from private key in PEM format'''
+
+    with open(privkey_pem, 'rb') as privkey_file:
+        key = serialization.load_pem_private_key(
+            privkey_file.read(),
+            password=None,
+            backend=default_backend()
+        )
+
+    return key.public_key()
+
+
+def get_pubkey_hash_from_privkey(privkey_pem):
+    '''Calculate public key hash from a private key in PEM format'''
+
+    puk = get_pubkey_from_privkey(privkey_pem)
+    puk_num = puk.public_numbers()
+
+    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
+    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    hex_dump((mod_buf + exp_buf), msg='Public Key (%s)' % privkey_pem)
+
+    pubkey_data = mod_buf + exp_buf
+    hash_result = compute_hash(bytes(pubkey_data))
+
+    return hash_result
+
+
 def compute_signature(data, privkey_pem):
     '''Compute signature from data'''
 
@@ -169,6 +198,100 @@ def compute_pubkey_hash(pubkey_pem_file):
     puk_hash = compute_hash(bytes(mod_buf + exp_buf))
 
     return puk_hash
+
+
+def create_fkm(privkey, payload_privkey, hash_option):
+    '''Create FKM data from a list of keys'''
+
+    global HASH_CHOICES
+    global HASH_SIZE
+
+    fkm_data = bytearray(sizeof(FIRMWARE_KEY_MANIFEST))
+
+    fkm = FIRMWARE_KEY_MANIFEST.from_buffer(fkm_data, 0)
+    fkm.manifest_header.type = 0x4
+    fkm.manifest_header.length = sizeof(FIRMWARE_MANIFEST_HEADER)
+    fkm.manifest_header.version = 0x10000
+    fkm.manifest_header.flags = 0x0
+    fkm.manifest_header.vendor = 0x8086  # Intel device
+    create_date = datetime.now().strftime('%Y%m%d')
+#    fkm.manifest_header.date = int(create_date, 16)
+    fkm.manifest_header.date = 0x20190418
+    fkm.manifest_header.size = sizeof(FIRMWARE_KEY_MANIFEST)
+    fkm.manifest_header.id = 0x324e4d24  # '$MN2'
+    fkm.manifest_header.num_of_metadata = 0  # FKM has no metadata appended
+    fkm.manifest_header.structure_version = 0x1000
+    fkm.manifest_header.modulus_size = 64  # In DWORD
+    fkm.manifest_header.exponent_size = 1
+
+    # 3: SIIP OEM Firmware Manifest; 4: SIIP Intel Firmware Manifest
+    fkm.extension_type = 14  # CSE Key Manifest Extension Type
+    fkm.key_manifest_type = 4
+    fkm.key_manifest_svn = 0
+    fkm.oem_id = 0
+    fkm.key_manifest_id = 0  # Not used
+    fkm.num_of_keys = FIRMWARE_KEY_MANIFEST.NUM_OF_KEYS
+    fkm.extension_length = 36 + 68 * fkm.num_of_keys # Hardcoded from now
+    fkm.key_usage_array[0].key_usage[7] = 0x08  # 1 << 59 in arr[16]
+    fkm.key_usage_array[0].key_reserved[:] = [0] * 16
+    fkm.key_usage_array[0].key_policy = 1  # may signed only by Intel
+    fkm.key_usage_array[0].key_hash_algorithm = HASH_CHOICES[hash_option][1]
+    fkm.key_usage_array[0].key_hash_size = HASH_SIZE
+
+    # Calculate public key hash used by payload and store it in FKM
+    fkm.key_usage_array[0].key_hash[:] = [0xFF] * 64  # Hash of public key used by FBM
+
+    hash_result = get_pubkey_hash_from_privkey(payload_privkey)
+    fkm.key_usage_array[0].key_hash[:] = hash_result + bytes(64 - HASH_SIZE)
+
+    # Calculate FKM signature (except signature and public key) and store it in FKM header
+
+    (signature, key) = compute_signature(fkm_data, privkey)
+    puk = get_pubkey_from_privkey(privkey)
+    puk_num = puk.public_numbers()
+
+    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
+    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    hex_dump((mod_buf + exp_buf), msg='FKM Public Key')
+
+    fkm.manifest_header.public_key[:] = mod_buf
+    fkm.manifest_header.exponent[:]   = exp_buf
+    fkm.manifest_header.signature[:]  = signature
+
+    return fkm_data
+
+
+def create_cpd_header(files_info):
+    '''Create a new CPD directory'''
+
+    data = bytearray(sizeof(SUBPART_DIR_HEADER) + len(files_info) * sizeof(SUBPART_DIR_ENTRY))
+    ptr  = 0
+
+    cpd = SUBPART_DIR_HEADER.from_buffer(data, ptr)
+    cpd.header_marker = 0x44504324   # '$CPD'
+    cpd.num_of_entries = len(files_info)
+    cpd.header_version = 2  # 1: layout v1.5/1.6/2.0; 2: layout v1.7
+    cpd.entry_version = 1
+    cpd.header_length = sizeof(SUBPART_DIR_HEADER)
+    cpd.reserved = 0  # was 8-bit checksum
+    cpd.subpart_name = bytes('SIIP', encoding='Latin-1')
+    cpd.crc32 = 0 # New in layout 1.7
+
+    ptr += sizeof(SUBPART_DIR_HEADER)
+    offset = len(data)
+    for f in files_info:
+        cpd_entry = SUBPART_DIR_ENTRY.from_buffer(data, ptr)
+        cpd_entry.name = bytes(f[0], encoding='Latin-1')
+        cpd_entry.offset = offset
+        cpd_entry.length = f[1]
+        ptr += sizeof(SUBPART_DIR_ENTRY)
+        offset += f[1]
+
+    # Fill CRC32 checksum
+    cpd.crc32 = binascii.crc32(data)
+    print('CPD Header CRC32 : 0x%X' % cpd.crc32)
+
+    return data
 
 
 def parse_cpd_header(cpd_data):
@@ -222,10 +345,9 @@ class SUBPART_DIR_ENTRY(Structure):
     _pack_ = 1
     _fields_ = [
         ('name', ARRAY(c_char, 12)),
-        ('offset', c_uint32, 24),
-        ('reserved1', c_uint32, 8),
+        ('offset', c_uint32),
         ('length', c_uint32),
-        ('reserved2', c_uint32),
+        ('module_type', c_uint32),
     ]
 
 
@@ -245,7 +367,8 @@ class METADATA_FILE_STRUCT(Structure):
         ('module_hash_value', ARRAY(c_uint8, 64)),
         ('num_of_keys', c_uint32),
         ('key_usage_id', ARRAY(c_uint8, 16)),
-        # Size of non-standard section follows
+        ('non_std_section_size', c_uint32),
+        # Followed by the non-standard section data
     ]
 
 
@@ -253,7 +376,7 @@ class FIRMWARE_MANIFEST_HEADER(Structure):
     _pack_ = 1
     _fields_ = [
         ('type', c_uint32),
-        ('length', c_uint32),  # in DWORDS
+        ('length', c_uint32),
         ('version', c_uint32),  # 0x10000
         ('flags', c_uint32),
         ('vendor', c_uint32),
@@ -318,6 +441,7 @@ class FIRMWARE_BLOB_MANIFEST(Structure):
     _fields_ = [
         ('manifest_header', FIRMWARE_MANIFEST_HEADER),
         ('extension_type', c_uint32),
+        ('extension_length', c_uint32),
         ('package_name', c_uint32),
         ('version_control_num', c_uint64),
         ('usage_bitmap', ARRAY(c_uint8, 16)),
@@ -326,7 +450,7 @@ class FIRMWARE_BLOB_MANIFEST(Structure):
         ('fw_subtype', c_uint8),
         ('reserved', c_uint16),
         ('num_of_devices', c_uint32),
-        ('device_list', ARRAY(c_uint8, 32)),
+        ('device_list', ARRAY(c_uint32, 4)),
         ('metadata_entries', ARRAY(METADATA_ENTRY, 1))
     ]
 
@@ -352,95 +476,40 @@ def create_image(payload_file, outfile, privkey, hash_option):
     print('FKM signing key : %s' % privkey)
     print('FBM signing key : %s' % payload_privkey)
 
+    # Create FKM blob separately required by spec
+    fkm_data = create_fkm(privkey, payload_privkey, hash_option)
+    cpd_data = create_cpd_header([('FKM', len(fkm_data))])
+    with open('fkm.bin', 'wb') as fkm_fd:
+        fkm_fd.write(cpd_data)
+        fkm_fd.write(fkm_data)
+
+    # Create the rest (FBM, Meta Data and payaload) in one piece
     with open(payload_file, 'rb') as in_fd:
         in_data = bytearray(in_fd.read())
 
-    cpd_length = sizeof(SUBPART_DIR_HEADER) + 4 * sizeof(SUBPART_DIR_ENTRY)
-    fkm_length = sizeof(FIRMWARE_KEY_MANIFEST)
-    fbm_length = sizeof(FIRMWARE_BLOB_MANIFEST)
-    metadata_length = sizeof(METADATA_FILE_STRUCT)
-    payload_length = len(in_data)
+    fbm_length       = sizeof(FIRMWARE_BLOB_MANIFEST)
+    metadata_length  = sizeof(METADATA_FILE_STRUCT)
+    payload_length   = len(in_data)
 
-    total_length = cpd_length + fkm_length + \
-        fbm_length + metadata_length + payload_length
+    files_info = [ ('FBM',      fbm_length),
+                   ('METADATA', metadata_length), 
+                   ('PAYLOAD',  payload_length),
+                 ]
 
+    cpd_length       = sizeof(SUBPART_DIR_HEADER) + len(files_info) * sizeof(SUBPART_DIR_ENTRY)
+    fbm_offset       = cpd_length
+    metadata_offset = fbm_offset + fbm_length
+    payload_offset   = metadata_offset + metadata_length
+
+    total_length     = cpd_length + fbm_length + metadata_length + payload_length
     data = bytearray(total_length)
-    ptr = 0
 
-    cpd = SUBPART_DIR_HEADER.from_buffer(data, ptr)
-    cpd.header_marker = 0x44504324   # '$CPD'
-    cpd.num_of_entries = 4  # FKM, FBM, Metadata and payload
-    cpd.header_version = 2  # 1: layout v1.5/1.6/2.0; 2: layout v1.7
-    cpd.entry_version = 1
-    cpd.header_length = sizeof(SUBPART_DIR_HEADER)
-    cpd.reserved = 0  # was 8-bit checksum
-    cpd.subpart_name = bytes('SIIP', encoding='Latin-1')
-    cpd.crc32 = 0 # New in layout 1.7
+    data[0:len(cpd_data)] = create_cpd_header(files_info)
 
-    files_info = [('FKM', fkm_length), ('FBM', fbm_length),
-                  ('METADATA', metadata_length), ('PAYLOAD', payload_length)]
-
-    ptr += sizeof(SUBPART_DIR_HEADER)
-    offset = sizeof(SUBPART_DIR_HEADER) + 4 * sizeof(SUBPART_DIR_ENTRY)
-    for i in range(4):
-        cpd_entry = SUBPART_DIR_ENTRY.from_buffer(data, ptr)
-        cpd_entry.name = bytes(files_info[i][0], encoding='Latin-1')
-        cpd_entry.offset = offset
-        cpd_entry.length = files_info[i][1]
-        ptr += sizeof(SUBPART_DIR_ENTRY)
-        offset += files_info[i][1]
-
-    # Fill CRC32 checksum
-    cpd.crc32 = binascii.crc32(data[0:ptr])
-    print('CPD Header CRC32 : 0x%X' % cpd.crc32)
-
-    fkm = FIRMWARE_KEY_MANIFEST.from_buffer(data, ptr)
-    fkm.manifest_header.type = 0x4
-    fkm.manifest_header.length = sizeof(FIRMWARE_KEY_MANIFEST) // 4  # In DWORD
-    fkm.manifest_header.version = 0x10000
-    fkm.manifest_header.flags = 0x0
-    fkm.manifest_header.vendor = 0x8086  # Intel device
-    create_date = datetime.now().strftime('%Y%m%d')
-#    fkm.manifest_header.date = int(create_date, 16)
-    fkm.manifest_header.date = 0x20190418
-    fkm.manifest_header.size = fkm.manifest_header.length
-    fkm.manifest_header.id = 0x324e4d24  # '$MN2'
-    fkm.manifest_header.num_of_metadata = 0  # FKM has no metadata appended
-    fkm.manifest_header.structure_version = 0x1000
-    fkm.manifest_header.modulus_size = 64  # In DWORD
-    fkm.manifest_header.exponent_size = 1
-
-    # Calculate payload signature using payload private key
-    (signature, key) = compute_signature(bytes(in_data), payload_privkey)
-    puk = key.public_key()
-    puk_num = puk.public_numbers()
-
-    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
-    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
-    hex_dump((mod_buf + exp_buf), msg='Payload Public Key')
-
-    fkm.extension_type = 14  # CSE Key Manifest Extension Type
-    fkm.extension_length = 36 + 68 * FIRMWARE_KEY_MANIFEST.NUM_OF_KEYS
-    # 3: SIIP OEM Firmware Manifest; 4: SIIP Intel Firmware Manifest
-    fkm.key_manifest_type = 4
-    fkm.key_manifest_svn = 0
-    fkm.oem_id = 0
-    fkm.key_manifest_id = 0  # Not used
-    fkm.num_of_keys = FIRMWARE_KEY_MANIFEST.NUM_OF_KEYS
-    fkm.key_usage_array[0].key_usage[14] = 0x80  # 1 << 59 in arr[16]
-    fkm.key_usage_array[0].key_reserved[:] = [0] * 16
-    fkm.key_usage_array[0].key_policy = 1  # may signed only by Intel
-    fkm.key_usage_array[0].key_hash_algorithm = HASH_CHOICES[hash_option][1]
-    fkm.key_usage_array[0].key_hash_size = HASH_SIZE
-    fkm.key_usage_array[0].key_hash[:] = [0xFF] * \
-        64  # Hash of public key in FBM header
-
-    ptr += sizeof(FIRMWARE_KEY_MANIFEST)
-
-    fbm = FIRMWARE_BLOB_MANIFEST.from_buffer(data, ptr)
+    # Create FBM
+    fbm = FIRMWARE_BLOB_MANIFEST.from_buffer(data, fbm_offset)
     fbm.manifest_header.type = 0x4
-    fbm.manifest_header.length = sizeof(
-        FIRMWARE_BLOB_MANIFEST) // 4  # In DWORD
+    fbm.manifest_header.length = sizeof(FIRMWARE_BLOB_MANIFEST)
     fbm.manifest_header.version = 0x10000
     fbm.manifest_header.flags = 0x0
     fbm.manifest_header.vendor = 0x8086  # Intel device
@@ -448,19 +517,21 @@ def create_image(payload_file, outfile, privkey, hash_option):
     fbm.manifest_header.date = 0x20190418
     fbm.manifest_header.size = fbm.manifest_header.length
     fbm.manifest_header.id = 0x324e4d24  # '$MN2'
-    fbm.manifest_header.num_of_metadata = 1  # FBM has exactly one metadata appended
+    fbm.manifest_header.num_of_metadata = 1  # FBM has exactly one metadata
     fbm.manifest_header.structure_version = 0x1000
     fbm.manifest_header.modulus_size = 64  # In DWORD
     fbm.manifest_header.exponent_size = 1
+    fbm.extension_type = 15  # CSME Signed Package Info Extension type
 
     fbm.package_name = 0x45534f24  # '$OSE'
     fbm.version_control_num = 0
-    fbm.usage_bitmap[14] = 0x80  # 1 << 59 in arr[16]
+    fbm.usage_bitmap[7] = 0x08  # Bit 59: OSE firmware
     fbm.svn = 0
     fbm.fw_type = 0
     fbm.fw_subtype = 0
     fbm.reserved = 0
     fbm.num_of_devices = 4
+    fbm.device_list[:] = [0] * fbm.num_of_devices
 
     fbm.metadata_entries[0].id = 0xDEADBEEF
     # 0: process; 1: shared lib; 2: data (for SIIP)
@@ -470,19 +541,19 @@ def create_image(payload_file, outfile, privkey, hash_option):
     fbm.metadata_entries[0].size = sizeof(METADATA_FILE_STRUCT)
     fbm.metadata_entries[0].hash[:] = [0] * 64
 
-    ptr += sizeof(FIRMWARE_BLOB_MANIFEST)
+    fbm.extension_length = sizeof(FIRMWARE_BLOB_MANIFEST) # Hardcoded from now
 
-    metadata = METADATA_FILE_STRUCT.from_buffer(data, ptr)
+    # Create Meta Data
+    metadata = METADATA_FILE_STRUCT.from_buffer(data, metadata_offset)
     metadata.size = sizeof(METADATA_FILE_STRUCT)
-    metadata.id = 0x11223344
+    metadata.id = fbm.metadata_entries[0].id  # Match one of FBM metadata entries by ID 
     metadata.version = 0
     metadata.num_of_modules = 1
     metadata.module_id = 0xFF  # TBD
     metadata.module_size = len(in_data)
     metadata.module_version = 0
-    metadata.module_version = 0
     metadata.module_hash_size = HASH_SIZE
-    metadata.module_entry_point = 0x44332211
+    metadata.module_entry_point = 0
     metadata.module_hash_algorithm = HASH_CHOICES[hash_option][1]
 
     # STEP 1: Calculate payload hash and store it in Metadata file
@@ -491,24 +562,23 @@ def create_image(payload_file, outfile, privkey, hash_option):
 
     metadata.module_hash_value[:HASH_SIZE] = hash_result
     metadata.num_of_keys = 1
-    metadata.key_usage_id[14] = 0x80  # 1 << 59 in arr[16]
+    metadata.key_usage_id[7] = 0x08  # Bit 59: OSE firmware
+    metadata.non_std_section_size = 0 # Empty non-standard section for now
 
     # STEP 2: Calculate Metadata file hash and store it in FBM
-    metadata_offset = cpd_length + fkm_length + fbm_length
-    metadata_limit = metadata_offset + metadata_length
+    metadata_limit  = metadata_offset + metadata_length
 
     hash_result = compute_hash(bytes(data[metadata_offset:metadata_limit]))
     fbm.metadata_entries[0].hash[:HASH_SIZE] = hash_result
 
     # STEP 3: Calculate signature of FBM (except signature and public keys) and store it in FBM header
-    fbm_offset = cpd_length + fkm_length
     fbm_limit = fbm_offset + fbm_length
     fbm.manifest_header.public_key[:] = [0] * 256
     fbm.manifest_header.exponent[:] = [0] * 4
     fbm.manifest_header.signature[:] = [0] * 256
-    (signature, key) = compute_signature(bytes(data[fbm_offset:fbm_limit]),
-                                         payload_privkey)
-    puk = key.public_key()
+    (signature, key) = compute_signature(bytes(data[fbm_offset:fbm_limit]), payload_privkey)
+
+    puk = get_pubkey_from_privkey(payload_privkey)
     puk_num = puk.public_numbers()
 
     mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
@@ -516,38 +586,13 @@ def create_image(payload_file, outfile, privkey, hash_option):
     hex_dump((mod_buf + exp_buf), msg='FBM Public Key')
 
     fbm.manifest_header.public_key[:] = mod_buf
-    fbm.manifest_header.exponent[:] = exp_buf
-    fbm.manifest_header.signature[:] = signature
+    fbm.manifest_header.exponent[:]   = exp_buf
+    fbm.manifest_header.signature[:]  = signature
 
-    # STEP 4: Calculate public key hash in FBM header and store it in FKM
-    pubkey_data = mod_buf + exp_buf
-    hash_result = compute_hash(bytes(pubkey_data))
-    fkm.key_usage_array[0].key_hash[:] = hash_result + \
-                                bytes(64 - HASH_SIZE)
+    # STEP 4: Append payload data as is
+    data[total_length-payload_length:total_length] = in_data
 
-    # STEP 5: Calculate signature of FKM (except signature and public key) and store it in FKM header
-    fkm_offset = cpd_length
-    fkm_limit = fkm_offset + fkm_length
-
-    (signature, key) = compute_signature(bytes(data[fkm_offset:fkm_limit]),
-                                         privkey)
-    puk = key.public_key()
-    puk_num = puk.public_numbers()
-
-    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
-    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
-    hex_dump((mod_buf + exp_buf), msg='FKM Public Key')
-
-    fkm.manifest_header.public_key[:] = mod_buf
-    fkm.manifest_header.exponent[:] = exp_buf
-    fkm.manifest_header.signature[:] = signature
-
-    # STEP 6: Append payload data as is
-    ptr += sizeof(METADATA_FILE_STRUCT)
-    data[total_length - payload_length:total_length] = in_data
-
-    cpd_limit = sizeof(SUBPART_DIR_HEADER) + 4 * sizeof(SUBPART_DIR_ENTRY)
-    files = parse_cpd_header(data[0:cpd_limit])
+    files = parse_cpd_header(data[0:cpd_length])
 
     for idx, (name, ioff, ilen) in enumerate(files):
         print('[%d] %s @ [0x%08x-0x%08x] len: 0x%x (%d) Bytes' %
@@ -597,6 +642,9 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     with open(infile_signed, 'rb') as in_fd:
         in_data = bytearray(in_fd.read())
 
+    with open('fkm.bin', 'rb') as fkm_fd:
+        fkm_data = bytearray(fkm_fd.read())
+
     # STEP 1: Validate FKM key hash then signature
     with open(pubkey_pem_file, 'rb') as pubkey_pem_fd:
         puk = serialization.load_pem_public_key(
@@ -607,12 +655,12 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
 
     hash_expected = compute_hash(bytes(mod_buf + exp_buf))
 
-    cpd = SUBPART_DIR_HEADER.from_buffer(in_data, 0)
-    files = parse_cpd_header(
-        in_data[0:sizeof(SUBPART_DIR_HEADER) + 4 * sizeof(SUBPART_DIR_ENTRY)])
+    files = parse_cpd_header(fkm_data)
 
     name, ioff, ilen = files[0]  # FKM
-    fkm = FIRMWARE_KEY_MANIFEST.from_buffer(in_data, ioff)
+    fkm_offset       = ioff
+    fkm_limit        = fkm_offset + ilen
+    fkm = FIRMWARE_KEY_MANIFEST.from_buffer(fkm_data, fkm_offset)
     if fkm.manifest_header.id != 0x324e4d24:
         print('Bad FKM signature.')
         exit(1)
@@ -633,9 +681,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         fkm.manifest_header.exponent[:] = [0] * 4
         fkm.manifest_header.signature[:] = [0] * 256
 
-        fkm_offset = ioff
-        fkm_limit = fkm_offset + ilen
-        verify_signature(fkm_sig, bytes(in_data[fkm_offset:fkm_limit]),
+        verify_signature(fkm_sig, bytes(fkm_data[fkm_offset:fkm_limit]),
                          pubkey_pem_file)
 
         print('Okay')
@@ -646,17 +692,18 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     # STEP 2: Validate FBM key hash and signature
     hash_expected = compute_pubkey_hash(payload_puk_file)
 
-    name, ioff, ilen = files[1]  # FBM
-    fbm_offset = ioff
-    fbm_limit = fbm_offset + ilen
+    files = parse_cpd_header(in_data)
+    name, ioff, ilen = files[0]  # FBM
+    fbm_offset       = ioff
+    fbm_limit        = fbm_offset + ilen
 
-    fbm = FIRMWARE_BLOB_MANIFEST.from_buffer(in_data, ioff)
-    if fkm.manifest_header.id != 0x324e4d24:
+    fbm = FIRMWARE_BLOB_MANIFEST.from_buffer(in_data, fbm_offset)
+    if fbm.manifest_header.id != 0x324e4d24:
         print('Bad FBM signature.')
         exit(1)
 
     # TODO: compare key usage bitmaps between FKM and FBM. Proceed only when they match
-    print('FBM Usage Bitmap      : 0x%2x' % fbm.usage_bitmap[14])
+    print('FBM Usage Bitmap      : 0x%2x' % fbm.usage_bitmap[7])
 
     hash_data = fkm.key_usage_array[0].key_hash
 
@@ -688,9 +735,9 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         exit(1)
 
     # STEP 3: Validate Metadata hash
-    name, ioff, ilen = files[2]  # Metadata
-    metafile_offset = ioff
-    metafile_limit = metafile_offset + ilen
+    name, ioff, ilen = files[1]  # Metadata
+    metafile_offset  = ioff
+    metafile_limit   = metafile_offset + ilen
 
     metadata = METADATA_FILE_STRUCT.from_buffer(in_data, metafile_offset)
 
@@ -702,9 +749,9 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         raise Exception('Verification failed: Metadata hash mismatch')
 
     # STEP 4: Validate payload
-    name, ioff, ilen = files[3]  # Payload
-    payload_offset = ioff
-    payload_limit = payload_offset + ilen
+    name, ioff, ilen = files[2]  # Payload
+    payload_offset   = ioff
+    payload_limit    = payload_offset + ilen
 
     hash_actual = compute_hash(bytes(in_data[payload_offset:payload_limit]))
     hash_actual = [x for x in hash_actual]  # Convert to list
