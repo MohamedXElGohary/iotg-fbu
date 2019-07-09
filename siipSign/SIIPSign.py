@@ -65,7 +65,6 @@ KB = 1024
 MB = 1024 * KB
 
 HASH_CHOICES = {
-  'sha1': (hashes.SHA1(), 1),
   'sha256': (hashes.SHA256(), 2),
   'sha384': (hashes.SHA384(), 3),
   'sha512': (hashes.SHA512(), 4),
@@ -160,6 +159,9 @@ def compute_signature(data, privkey_pem):
             password=None,
             backend=default_backend()
         )
+
+    if key.key_size < 2048:
+        raise Exception('Key size {} bits is too small.'.format(key.key_size))
 
     # Calculate signature using private key
     signature = key.sign(

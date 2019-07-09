@@ -77,16 +77,35 @@ class TestSIIPSign(unittest.TestCase):
 		subprocess.check_call(cmd)
 
 		for hash_alg in hash_options:
-			cmd = ['python', 'SIIPSign.py', 'sign', '-i', PLDFILE, '-o', OUTFILE, 
+			cmd = ['python', 'SIIPSign.py', 'sign', '-i', PLDFILE, '-o', OUTFILE,
 			          '-k', 'test_key.pem', '-s', hash_alg]
 			subprocess.check_call(cmd)
 
-			cmd = ['python', 'SIIPSign.py', 'verify', '-i', OUTFILE, 
+			cmd = ['python', 'SIIPSign.py', 'verify', '-i', OUTFILE,
 			         '-p', 'public_key.pem', '-s', hash_alg]
 			subprocess.check_call(cmd)
 
 			cmd = ['python', 'SIIPSign.py', 'decompose', '-i', OUTFILE]
 			subprocess.check_call(cmd)
+
+	def test_key_size_too_small(self):
+		'''Test with signing key with size smaller than 2048 bit'''
+
+		PLDFILE = os.path.join('tests', 'payload.bin')
+		OUTFILE = os.path.join('tests', 'signed.bin')
+
+		with open(PLDFILE, 'wb') as pld:
+			pld.write(os.urandom(1024*1024))
+
+		# Create a new test RSA key
+		cmd = ['openssl', 'genrsa', '-out', 'test_key.pem', '1024']
+		subprocess.check_call(cmd)
+
+		cmd = ['python', 'SIIPSign.py', 'sign', '-i', PLDFILE, '-o', OUTFILE,
+		          '-k', 'test_key.pem', '-s', 'sha384']
+		with self.assertRaises(subprocess.CalledProcessError) as cm:
+			subprocess.check_call(cmd)
+		self.assertEqual(cm.exception.returncode, 1)
 
 	def test_signing_with_two_keys(self):
 		'''Test signing with two keys'''
