@@ -7,11 +7,14 @@ The SIIP firmware image is stored in the BIOS region. A post processing step, kn
 The SIIP Stitch Tool is used to swap a SIIP firmware without rebuilding BIOS image.
 
 The SIIP Stitch Tool supports replacing the following regions:
-  * programmable software engine(pse) firmware
+  * programmable software engine (pse) firmware
   * tmac address
-  * pse tmac address
+  * pse tmac (ptmac) address
   * tcc configuration
   * out of band (oob) configuration
+  * Graphical Output Protocol (gop) Driver
+  * PEI Graphics
+  * GOP Visual BIOS Table (vbt)
 
 
 ## Environment Requirements
@@ -43,9 +46,9 @@ optional arguments:
                         ipname is the name of the firmware region to replace in
                         the IFWI_IN (Ex: -ip pse).  This is required.
                         Supported regions that can be replaced
-                        [pse, tmac, ptmac, tcc, oob]
+                        [pse, tmac, ptmac, tcc, oob, gop, pei, vbt]
 
-  -v, --version         Shows the current version of the Bio Stitching Tool.
+  -v, --version         Shows the current version of the BIOS Stitching Tool.
   -o FileName, --outputfile FileName
                         IFWI binary file with the IP replaced with the IPNAME_IN.
 

@@ -200,6 +200,26 @@ class MyTestSet3(unittest.TestCase):
         except:
            self.fail('\nSIIPStitch should have handled error')
            
+    def test_extra_inputfile(self):  #Replacement does not require 2 input files
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin', 'IntelGraphicsPeim.depex', '-ip', 'pse']
+
+        try:
+           results=subprocess.check_output(cmd, cwd='tests')
+           if b'2nd Input file is not required' in results:
+              pass
+           else:
+              self.fail('\nNot correct error')
+        except:
+           self.fail('\nSIIPStitch should have handled error')
+           
+    def test_missing_inputfile(self):  #Replacement require2 2 input files
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', '-ip', 'pei']
+
+       try:
+           results=subprocess.check_call(cmd, cwd='tests')
+           self.fail('a call process eror should have occured')
+       except subprocess.CalledProcessError as error:
+           pass
            
 
 ###############################################################################################################################
@@ -219,7 +239,8 @@ class MyTestSet4(unittest.TestCase):
         cmd = ['python', SIIPSTITCH, 'EHL_FSPWRAPPER_1172_00.rom', 
                'TsnMacAddr_test.bin', '-ip', 'tmac']
         subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(os.path.exists(os.path.join('tests', 'BIOS_OUT.bin')))
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
+                                    os.path.join('tests', 'EHL_FSPWRAPPER_1172_00_tmac.bin')))
 
     def test_replace_ptmac_using_default(self):  # ptmac
         cmd = ['python', SIIPSTITCH, 'EHL_FSPWRAPPER_1172_00.rom',
@@ -239,6 +260,36 @@ class MyTestSet4(unittest.TestCase):
         subprocess.check_call(cmd, cwd='tests')
         self.assertTrue(os.path.exists(os.path.join('tests', 'BIOS_OUT.bin')))
 
+###############################################################################################################################
+##MyTestSet5:
+## Test replacement of the GOP
+##
+###############################################################################################################################
+class MyTestSet5(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        cleanup()
+
+    def test_replace_gopvbt(self):
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','Vbt.bin','-ip', 'vbt']
+       subprocess.check_call(cmd, cwd='tests')
+       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
+                                   os.path.join('tests', 'rom_vbt.bin')))
+ 
+    def test_replace_gopdriver(self):
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGopDriver.efi','-ip', 'gop']
+       subprocess.check_call(cmd, cwd='tests')
+       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
+                                   os.path.join('tests', 'rom_drvr.bin')))  
+
+    def test_replace_peigraphics(self):
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei']
+       subprocess.check_call(cmd, cwd='tests')
+       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
+                                   os.path.join('tests', 'rom_pei.bin')))  
 
 def cleanup():
     try:

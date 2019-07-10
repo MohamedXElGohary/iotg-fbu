@@ -33,11 +33,19 @@ def remove_signature(infile, outfile):
 	with open(outfile, 'wb') as output_file:
 		output_file.write(data[0x210:])
 
+def prefix_signature(infile, outfile):
+  with open(infile, 'rb') as input_file:
+    data = input_file.read()
+  with open(outfile, 'wb') as output_file:
+    output_file.write(bytearray(0x210))
+    output_file.write(data)
+
 def main():
 
   parser = argparse.ArgumentParser(description='Remove signature data from a GUID section')
   group = parser.add_mutually_exclusive_group(required=True)
   group.add_argument("-d", action="store_true", dest='Decode', help='decode file')
+  group.add_argument("-e", action="store_true", dest='Encode', help='encode file')
   parser.add_argument("-o", "--output", dest='OutputFile', type=str, metavar='filename', help="specify the output filename", required=True)
   parser.add_argument("--private-key", dest='PrivateKeyFile', help="specify the private key filename.  If not specified, a test signing key is used.")
   parser.add_argument(metavar="input_file", dest='InputFile', help="specify the input filename")
@@ -47,7 +55,12 @@ def main():
   #
   args = parser.parse_args()
 
-  remove_signature(args.InputFile, args.OutputFile)
+  if args.Decode:
+    remove_signature(args.InputFile, args.OutputFile)
+  elif args.Encode:
+    prefix_signature(args.InputFile, args.OutputFile)
+  else:
+    raise Exception("Invalid command line argument (use either -d or -e)")
 
 
 if __name__ == '__main__':

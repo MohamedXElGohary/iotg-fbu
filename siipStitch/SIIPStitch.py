@@ -40,7 +40,7 @@
 ##  File Description:
 ##
 ## License: {license}
-## Version: 0.5.2
+## Version: 0.6.0
 ## Status: Intial Development
 #################################################################################################
 import os
@@ -50,41 +50,26 @@ import sys
 import argparse
 import shutil
 import re
+from symbol import argument
+from email.policy import default
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from SIIPSupport import ToolsLoc as tdir
+from siip_constants import IP_constants as ip_cnst
 
 
 
-__version__ = '0.5.3'
+
+__version__ = '0.6.0'
 ################################################################################################
 ##
 ## Global Variables
 ##
 ################################################################################################
 
-# excutables used to perform merging and replacing of PSE Firmware
+# executables used to perform merging and replacing of PSE Firmware
 PROG = ['GenSec', 'LzmaCompress', 'GenFfs', 'FMMT.exe']
 
-#data dictionary of REGIONS that can be replaced
-REGIONS = {
-    #IP/Region : Fileguid
-    'pse'  : ['EE4E5898-3914-4259-9D6E-DC7BD79403CF', 'EBA4A247-42C0-4C11-A167-A4058BC9D423'],
-    'tmac' : [None, '12E29FB4-AA56-4172-B34E-DD5F4B440AA9'],
-    'ptmac' : [None, '4FB7994D-D878-4BD1-8FE0-777B732D0A31'],
-    'tcc' : [None, '7F6AD829-15E9-4FDE-9DD3-0548BB7F56F3'],
-    'oob' : [None, '4DB2A373-C936-4544-AA6D-8A194AA9CA7F']
-}
-
-# options used to replace REGIONS
-IP_OPTIONS = {
-    # Region:[Options]
-    'pse' : ['IntelOseFw', 'PROCESSING_REQUIRED', '1K', 'PI_NONE'],
-    'tmac' : ['IntelTsnMacAddrFv', None, '1K', 'PI_NONE'],
-    'ptmac' : ['IntelOseTsnMacConfig', None, '1K', 'PI_NONE'],
-    'tcc' : ['IntelTccConfig', None, '1K', 'PI_NONE'],
-    'oob' : ['IntelOobConfig', None, '1K', 'PI_NONE']
-}
 
 #################################################################################################
 ##
@@ -109,10 +94,11 @@ if sys.version_info[0] < 3:
 def search_for_fv(inputfile, ipname, myenv, workdir):
     '''Search for the firmware volume.'''
 
-    global IP_OPTIONS
 
     # use to find the name of the firmware in order to locate the firmware volume
-    ip_filename = IP_OPTIONS.get(ipname)
+    build_list = ip_options.get(ipname)
+
+    ui_name = build_list[0][1]
 
     print("\nFinding the Firmware Volume")
     fw_vol = None
@@ -137,7 +123,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
 
     # search FFS by name in firmware volumes
     fwvol_found = False
-    fwvol_child = False
+
     with open(os.path.join(workdir, 'temp.txt'), 'r') as searchfile:
         for line in searchfile:
             m = re.match(r'(^FV\d+) :', line)
@@ -146,73 +132,194 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
                 fw_vol = m.groups()[0]
                 continue
             if fwvol_found:
-                n = re.match(r'File "(%s)"' % ip_filename[0], line.lstrip())
+                n = re.match(r'File "(%s)"' % ui_name, line.lstrip())
                 if n:
                     break;
         else:
-           fw_vol = None # firmware volume was not found.
+            fw_vol = None # firmware volume was not found.
         
     return status, fw_vol
 
+###############################################################################################
+##
+## gets the options needed to create commands to replace the ip
+##
+## The Each List represents a command that needs to be created to replace the given IP
+## The following list is for GenSec.exe
+## 'ui' creates EFI_SECTION_USER_INTERFACE
+## 'raw' creates EFI_SECTION_RAW
+## None creaetes EFI_SECTION_ALL that does not require a section header
+## 'guid' creates EFI_SECTION_GUID_DEFINED
+## 'pe32' creates EFI_SECTION_PE32
+## 'depex' creates EFI_SECTION_PEI_DEPEX
+## 'cmprs' creates EFI_SECTION_COMPRESSION
+## 
+##'lzma' calls the LzmaCompress
+##
+##The following list is for GenFfs.exe
+## 'free' creates EFI_FV_FILETYPE_FREEFORM
+## 'gop' creates EFI_FV_FILETYPE_DRIVER
+## 'peim' creates EFI_FV_FILETYPE_PEIM
+###############################################################################################
+ip_options = {
+    'pse' : [['ui', ip_cnst.PSE_UI] , ['raw', 'PI_NONE'], [None], ['lzma', '-e'], \
+             ['guid', ip_cnst.PSE_SEC_GUID, 'PROCESSING_REQUIRED'], ['free', ip_cnst.PSE_FFS_GUID, '1K']],
+    'tmac' : [['ui', ip_cnst.TMAC_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.TMAC_FFS_GUID, '1k']],
+    'ptmac' : [['ui',ip_cnst.PTMAC_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.PTMAC_FFS_GUID, None]],
+    'tcc' : [['ui',ip_cnst.TCC_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.TCC_FFS_GUID, None]],
+    'oob' : [['ui',ip_cnst.OOB_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.OOB_FFS_GUID, None]],
+    'vbt' : [['ui',ip_cnst.VBT_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.VBT_FFS_GUID, None]],
+    'gop' : [['ui', ip_cnst.GOP_UI],['pe32',None], [None], ['GOP', ip_cnst.GOP_FFS_GUID, None]],
+    'pei' : [['ui',ip_cnst.PEI_UI],['pe32',None], ['depex', None], [None,'32','1','1'], ['cmprs', 'PI_NONE'], \
+             ['peim', ip_cnst.PEI_FFS_GUID,None]]
+}
 
 ###############################################################################################
 ##
-## Create Commands for the merge and replace of firmware section
+## gets the section type needed for gensec.exe
 ##
+###############################################################################################   
+gensec_section = {
+    'ui' : ['tmp.ui', '-s', 'EFI_SECTION_USER_INTERFACE', '-n'],
+    'raw' : ['tmp.raw', '-s', 'EFI_SECTION_RAW', '-c'],
+    'guid': ['tmp.guid', '-s', 'EFI_SECTION_GUID_DEFINED', '-g'],
+    'pe32' : ['tmp.pe32', '-s', 'EFI_SECTION_PE32' ],
+    'depex' : ['tmp.dpx', '-s', 'EFI_SECTION_PEI_DEPEX'],
+    'cmprs' : ['tmp.cmps', '-s','EFI_SECTION_COMPRESSION', '-c'],
+    'all' : ['tmp.all']
+}
+
 ###############################################################################################
-def create_commands(filename, ipname, fwvol):
+##
+## gets the firmware file system type needed for genFFs
+##
+###############################################################################################   
+ffs_filetype = {
+    'free' : 'EFI_FV_FILETYPE_FREEFORM',
+    'gop' : 'EFI_FV_FILETYPE_DRIVER',
+    'peim' : 'EFI_FV_FILETYPE_PEIM'
+}
+
+
+###############################################################################################
+##
+## gets the firmware file system type needed for genFFs
+##
+###############################################################################################   
+def guild_section(sec_type, guild, guid_attrib, inputfile):
+    ''' generates the GUID defined section '''
+
+    cmd = gensec_section.get(sec_type)
+    cmd += [ guild, '-r', guid_attrib, inputfile]
+    return cmd
+
+def generate_section(inputfiles,align_sizes):
+    cmd = gensec_section.get('all')
+    for index, file in enumerate(inputfiles):
+        cmd += [file]
+        if align_sizes !=  [None]:
+            cmd += ['--sectionalign',align_sizes[index +1]] # the first input is None
+    return cmd
+
+def create_gensec_cmd(cmd_options, inputfile):
+    '''Create genSec commands for the merge and replace of firmware section.'''
+
+    cmd = ['GenSec', '-o']
+
+    if cmd_options[0] == 'guid': 
+        sec_type, guid, attrib = cmd_options
+        cmd += guild_section( sec_type, guid, attrib, inputfile[0])
+        # EFI_SECTION_RAW, EFI_SECTION_PE32, EFI_SECTION_COMPRESSION or EFI_SECTION_USER_INTERFACE
+    elif cmd_options[0] is not None: 
+        sec_type, option = cmd_options
+        cmd += gensec_section.get(sec_type)
+        if option is not None:
+            cmd += [option]
+        if sec_type != 'ui':
+            cmd += [inputfile[0]]
+    else:
+        cmd += generate_section(inputfile, cmd_options)
+    return cmd
+
+def compress(compress_method, inputfile):
+    ''' compress the sections '''
+
+    cmd =['LZMAcompress',  compress_method, '-o', 'tmp.cmps', inputfile]
+    return cmd
+
+def create_ffs_cmd(filetype, guild, align, inputfile):
+    ''' generates the firmware volume according to file type'''
+
+    fv_filetype = ffs_filetype.get(filetype)
+    cmd = ['GenFfs', '-o', 'tmp.ffs', '-t', fv_filetype, '-g', guild,  '-i', inputfile]
+    if align is not None:
+        cmd += ['-a', align]
+    return cmd
+
+def replace_ip(outfile, fw_vol, ui_name, inputfile):
+    ''' replaces the give firmware value with the input file '''
+
+    cmd = ['fmmt', '-r', inputfile,  fw_vol, ui_name, 'tmp.ffs', outfile,]
+    return cmd
+
+def ip_inputfiles(filenames, ipname):
+    '''Create input files per IP'''
+
+    inputfiles = [None, 'tmp.raw', 'tmp.ui', 'tmp.all']
+
+    if ipname != 'pei':
+        num_infiles = 1
+        if ipname == 'pse' :
+            inputfiles.extend(['tmp.cmps', 'tmp.guid'])
+        elif ipname == 'gop':
+            inputfiles.remove('tmp.raw')
+            inputfiles.insert(1,'tmp.pe32')       
+    else:
+        num_infiles = 2
+        inputfiles[1:2]= ['tmp.pe32','tmp.dpx']
+        inputfiles.append('tmp.cmps')
+
+    # add user given input files 
+    infiles = filenames[1:num_infiles + 1]
+    inputfiles[1:1] = infiles
+
+    return inputfiles, num_infiles
+
+
+def create_commands(filenames, ipname, fwvol):
     '''Create Commands for the merge and replace of firmware section.'''
 
-    global PROG, REGIONS, IP_OPTIONS
-    options = ['-s', '-n', '-o', '-e', '-g', '-r', '-t', '-a', '-i', '-c']
-    tempfile = ['tempSect.sec', 'temp.raw', 'temp.cmps', 'temp.guided', 'temp.ffs']
-    section_type = ['EFI_SECTION_USER_INTERFACE', 'EFI_SECTION_RAW', 'EFI_SECTION_GUID_DEFINED', \
-                   'EFI_FV_FILETYPE_FREEFORM']
-    guid_values = REGIONS.get(ipname)
-    option_strings = IP_OPTIONS.get(ipname)
-    cmds = []
+    inputfiles, num_replace_files = ip_inputfiles(filenames, ipname)
+    build_list = ip_options.get(ipname)
 
-    #GenSec.exe -s EFI_SECTION_USER_INTERFACE -n "IntelOseFw" -o IntelOseFw.sec
-    cmd0 = [PROG[0], options[0], section_type[0], options[1], option_strings[0], \
-           options[2], tempfile[0]]
+    # get the file name to be used to replace firmware volume
+    ui_cmd = build_list[0]
+    ui_name = ui_cmd[1]
 
-    #GenSec.exe -s EFI_SECTION_RAW -c PI_STD -o IntelOseFw.raw OseFw.bin
-    cmd1 = [PROG[0], options[0], section_type[1], options[9], option_strings[3], filename[1], \
-           options[2], tempfile[1]]
+    cmd_list = []  
 
-    #GenSec.exe  IntelOseFw.raw IntelOseFw.sec -o IntelOseFw.raw
-    cmd2 = [PROG[0], tempfile[1], tempfile[0], options[2], tempfile[1]]
+    for instr in build_list:
+        if gensec_section.get(instr[0]) or instr[0] is None:
+            files = [inputfiles.pop(0)]
+            if instr[0] is None:
+                for _ in range(num_replace_files):
+                    files += [inputfiles.pop(0)]
+            cmd = create_gensec_cmd(instr, files)
 
-    # add commands to cmd list
-    cmds.extend([cmd0, cmd1, cmd2])
+        elif instr[0] == 'lzma':
+            cmd = compress(instr[1], inputfiles.pop(0))
+        elif ffs_filetype.get(instr[0]):
+            filetype, guild, align = instr
+            cmd = create_ffs_cmd(filetype, guild, align, inputfiles.pop(0))
+        else:
+            sys.exit('unexpected error from create_command function')
+        cmd_list.append(cmd)
 
-    #determine if compression will be used for firmware section
-    if option_strings[1] is not None:
-        num = 3
-       #LZMAcompress -e IntelOseFw.raw -o IntelOseFw.tmp
-        cmd3 = [PROG[1], options[3], tempfile[1], options[2], tempfile[2]]
+    cmd = replace_ip(filenames[len(filenames)-1], fwvol, ui_name, filenames[0])
+    cmd_list.append(cmd)
 
-        #GenSec -s EFI_SECTION_GUID_DEFINED -g EE4E5898-3914-4259-9D6E-DC7BD79403CF \
-        #       -r PROCESSING_REQUIRED IntelOseFw.tmp -o OseFw.guided
-        cmd4 = [PROG[0], options[0], section_type[2], options[4], guid_values[0], options[5], \
-               option_strings[1], tempfile[2], options[2], tempfile[3]]
-        #update cmds list with commands
-        cmds.extend([cmd3, cmd4])
-    else:
-        num = 1 # Skips the files used for compression
+    return cmd_list
 
-
-    #GenFfs.exe -t EFI_FV_FILETYPE_FREEFORM -g EBA4A247-42C0-4C11-A167-A4058BC9D423 -a 1K
-    #           -i OseFw.guided   -o IntelOseFw.ffs
-    cmd5 = [PROG[2], options[6], section_type[3], options[4], guid_values[1], options[7], \
-          option_strings[2], options[8], tempfile[num], options[2], tempfile[4]]
-
-    #FMMT.exe -r BIOS.bin %FIRMWARE_VOLUME% IntelOseFw IntelOseFw.ffs BIOS_OUTPUT.bin
-    cmd6 = [PROG[3], options[5], filename[0], fwvol, option_strings[0], tempfile[4], filename[2]]
-
-    cmds.extend([cmd5, cmd6])
-
-    return cmds
 
 ###############################################################################################
 ##
@@ -220,19 +327,18 @@ def create_commands(filename, ipname, fwvol):
 ##
 ###############################################################################################
 def merge_and_replace(filename, guid_values, fwvol, env_vars, workdir):
-    '''Perform merge and replace of section using different excutables.'''
+    '''Perform merge and replace of section using different executables.'''
 
     cmds = create_commands(filename, guid_values, fwvol)
 
     print("\nStarting merge and replacement of section")
 
-   #Merging and Replacing
+    #Merging and Replacing
     for command in cmds:
         try:
-            #print(' '.join(command))
             subprocess.check_call(command, env=env_vars, cwd=workdir, shell=True)
         except subprocess.CalledProcessError as status:
-            print("\nError executing {}".format(command[0]))
+            print("\nError executing {}".format(' '.join(command)))
             print("\nStatus Message: {}".format(status))
             return 1
 
@@ -256,7 +362,7 @@ def cleanup(wk_dir):
     except:
         sys.exit("\nUnexpected error:{}".format(sys.exc_info()))
 
-   # determine platform in order to use correct command for the OS
+    # determine platform in order to use correct command for the OS
     if os_sys == "Windows":
         cmd = ['rmdir', wk_dir[1], '/s', '/q']
     else: # linux
@@ -275,6 +381,7 @@ def cleanup(wk_dir):
 
 def set_environment_vars():
     '''Determine platform and set working path and Engine Development Kit path.'''
+
     os_sys = platform.system()
     progs = [ 'GenSec',
               'LzmaCompress',
@@ -284,7 +391,7 @@ def set_environment_vars():
               'StripSignature.py',
             ]
 
-   # Determine operating system that script is running
+    # Determine operating system that script is running
 
     if os_sys == "Linux" or os_sys == "linux2":
         # linux
@@ -292,22 +399,22 @@ def set_environment_vars():
         cmd = 'which'
         print("Running on Linux")
     elif os_sys == "Windows":
-      # windows
+        # windows
         os_dir = tdir.TOOLSWINDIR
         cmd = 'where'
         print(" Running on Windows")
     else:
         sys.exit("\n{},is not supported".format(os_sys))
 
-   # set up enviroment variables
+    # set up environment variables
     path = os.environ.get("PATH")
     myenv = os.environ.copy()
     my_path = os.getcwd()
 
-   # path to Base Tools
+    # path to Base Tools
     edk_tools_path = os.path.join(os.sep, my_path, tdir.TOOLSDIR)
     edk_tools_bin = os.path.join(os.sep, edk_tools_path, os_dir)
-    myenv["PATH"] = edk_tools_bin + ';'  + path
+    myenv["PATH"] = edk_tools_bin + ';' + path
 
     #redirect output
     dev_null = open(os.devnull, 'w')
@@ -344,6 +451,7 @@ def file_not_exist(file):
 ##################################################################################################
 def file_not_empty(files):
     ''' Check if file is empty.'''
+
     status = 0
     for file in files:
         if os.path.getsize(file) != 0:
@@ -352,7 +460,7 @@ def file_not_empty(files):
             print("\n{} file is empty!".format(file))
             status = 1
             break
-           
+
     return status
 
 
@@ -372,9 +480,11 @@ def parse_cmdline():
                        (Ex: IFWI.bin) to be updated with the given input IP firmware")
     parser.add_argument("IPNAME_IN", type=argparse.FileType('rb'), help="Input IP firmware \
                        Binary file (Ex: oseFw.Bin) to be replaced in the IFWI.bin")
+    parser.add_argument("IPNAME_IN2", type=argparse.FileType('rb'), nargs=  '?', help="The 2nd input IP firmware \
+                       Binary file needed to replaced the PEI Graphics", default= None)
     parser.add_argument("-ip", "--ipname", help="The name of the IP in the IFWI_IN \
-                       file to be replaced. This is required.", metavar="ipname", required=True, choices=list(REGIONS.keys()))
-    parser.add_argument("-v", "--version", help="Shows the current version of the Bio Stitching \
+                       file to be replaced. This is required.", metavar="ipname", required=True, choices=list(ip_options.keys()))
+    parser.add_argument("-v", "--version", help="Shows the current version of the BIOS Stitching \
                        Tool", action="version", version="%(PROG)s {version}".\
                        format(version=__version__))
     parser.add_argument("-o", "--outputfile", dest="OUTPUT_FILE", type=file_not_exist,\
@@ -408,8 +518,8 @@ def copy_file(files, new_dir):
 
 ####################################################################################################
 ##
-##  Setup enviroment variables
-##  Parse commandline arguments
+##  Setup environment variables
+##  Parse command line arguments
 ##  Find the Firmware Volume to replace in the BIOS file
 ##  Merge the file with new header section and then replace OSE firmware  with new OseFw
 ##
@@ -424,7 +534,14 @@ def main():
     
     #check to see if input files are empty
     filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
-    
+    if args.ipname == 'pei':
+        if args.IPNAME_IN2 is not None:
+            filenames.append(args.IPNAME_IN2.name)
+        else:
+            sys.exit('2nd Input file is required.')
+    elif args.IPNAME_IN2 is not None:
+        print('2nd Input file is not required. Not using {}'.format(args.IPNAME_IN2.name))
+        
     status = file_not_empty(filenames)
     
     if status != 0:
@@ -435,16 +552,14 @@ def main():
     
     
 
-   #Create working directory
+    #Create working directory
     try:
         os.mkdir(dirs[1])
     except (IOError, OSError) as exception:
         sys.exit("\nUnable to create directory: {}\n{}".format(dirs[1], exception))
     except:
-        sys.exit("\nUnexpected error occuring when trying to create directory")
+        sys.exit("\nUnexpected error occurred when trying to create directory")
 
-    
-  
     # move files to working directory
     status = copy_file(filenames, dirs[1])
     if status != 0:
@@ -465,8 +580,9 @@ def main():
     print("\nThe Firmware volume is {}\n".format(fw_volume))
 
 
-    # setup files of executable programs to be used to perform the merge and repalce
-    filenames = [args.IFWI_IN.name, args.IPNAME_IN.name, args.OUTPUT_FILE]
+    # setup required user input files for executable programs to be used to perform the merge and replace
+
+    filenames.append(args.OUTPUT_FILE)
     filenames = [os.path.abspath(f) for f in filenames]
 
     # create oseFW header, merge header and replace in Binary
