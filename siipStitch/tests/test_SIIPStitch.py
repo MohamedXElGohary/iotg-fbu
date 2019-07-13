@@ -289,19 +289,19 @@ class MyTestSet5(unittest.TestCase):
         cleanup()
 
     def test_replace_gopvbt(self):
-       cmd = ['python', SIIPSTITCH, 'BIOS.bin','Vbt.bin','-ip', 'vbt']
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','Vbt.bin','-ip', 'vbt', '-k', 'privkey.pem']
        subprocess.check_call(cmd, cwd='tests')
        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                    os.path.join('tests', 'rom_vbt.bin')))
 
     def test_replace_gopdriver(self):
-       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGopDriver.efi','-ip', 'gop']
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGopDriver.efi','-ip', 'gop', '-k', 'privkey.pem']
        subprocess.check_call(cmd, cwd='tests')
        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
                                    os.path.join('tests', 'rom_drvr.bin')))  
 
     def test_replace_peigraphics(self):
-       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei']
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei', '-k', 'privkey.pem']
        subprocess.check_call(cmd, cwd='tests')
        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                    os.path.join('tests', 'rom_pei.bin')))

@@ -107,7 +107,6 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
     command = ['FMMT.exe', '-v', os.path.abspath(inputfile), '>', 'temp.txt']
 
     try:
-        #print(' '.join(command))
         subprocess.check_call(command, env=myenv, cwd=workdir, shell=True, timeout=5)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe")
@@ -137,7 +136,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
                     break;
         else:
             fw_vol = None # firmware volume was not found.
-        
+
     return status, fw_vol
 
 ###############################################################################################
@@ -153,7 +152,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
 ## 'pe32' creates EFI_SECTION_PE32
 ## 'depex' creates EFI_SECTION_PEI_DEPEX
 ## 'cmprs' creates EFI_SECTION_COMPRESSION
-## 
+##
 ##'lzma' calls the LzmaCompress
 ##
 ##The following list is for GenFfs.exe
@@ -178,7 +177,7 @@ ip_options = {
 ##
 ## gets the section type needed for gensec.exe
 ##
-###############################################################################################   
+###############################################################################################
 gensec_section = {
     'ui' : ['tmp.ui', '-s', 'EFI_SECTION_USER_INTERFACE', '-n'],
     'raw' : ['tmp.raw', '-s', 'EFI_SECTION_RAW', '-c'],
@@ -193,7 +192,7 @@ gensec_section = {
 ##
 ## gets the firmware file system type needed for genFFs
 ##
-###############################################################################################   
+###############################################################################################
 ffs_filetype = {
     'free' : 'EFI_FV_FILETYPE_FREEFORM',
     'gop' : 'EFI_FV_FILETYPE_DRIVER',
@@ -205,7 +204,7 @@ ffs_filetype = {
 ##
 ## gets the firmware file system type needed for genFFs
 ##
-###############################################################################################   
+###############################################################################################
 def guild_section(sec_type, guild, guid_attrib, inputfile):
     ''' generates the GUID defined section '''
 
@@ -226,11 +225,11 @@ def create_gensec_cmd(cmd_options, inputfile):
 
     cmd = ['GenSec', '-o']
 
-    if cmd_options[0] == 'guid': 
+    if cmd_options[0] == 'guid':
         sec_type, guid, attrib = cmd_options
         cmd += guild_section( sec_type, guid, attrib, inputfile[0])
         # EFI_SECTION_RAW, EFI_SECTION_PE32, EFI_SECTION_COMPRESSION or EFI_SECTION_USER_INTERFACE
-    elif cmd_options[0] is not None: 
+    elif cmd_options[0] is not None:
         sec_type, option = cmd_options
         cmd += gensec_section.get(sec_type)
         if option is not None:
@@ -273,13 +272,13 @@ def ip_inputfiles(filenames, ipname):
             inputfiles.extend(['tmp.cmps', 'tmp.guid'])
         elif ipname == 'gop':
             inputfiles.remove('tmp.raw')
-            inputfiles.insert(1,'tmp.pe32')       
+            inputfiles.insert(1,'tmp.pe32')
     else:
         num_infiles = 2
         inputfiles[1:2]= ['tmp.pe32','tmp.dpx']
         inputfiles.append('tmp.cmps')
 
-    # add user given input files 
+    # add user given input files
     infiles = filenames[1:num_infiles + 1]
     inputfiles[1:1] = infiles
 
@@ -296,7 +295,7 @@ def create_commands(filenames, ipname, fwvol):
     ui_cmd = build_list[0]
     ui_name = ui_cmd[1]
 
-    cmd_list = []  
+    cmd_list = []
 
     for instr in build_list:
         if gensec_section.get(instr[0]) or instr[0] is None:
@@ -382,7 +381,7 @@ def set_environment_vars():
               'GenFfs',
               'FMMT.exe',
               'FmmtConf.ini',
-              'StripSignature.py',
+              'rsa_helper.py',
             ]
 
     # Determine operating system that script is running
@@ -440,7 +439,7 @@ def file_not_exist(file):
 ##################################################################################################
 ##
 ## 'Type' for argparse
-##  Check if file is not empty 
+##  Check if file is not empty
 ##
 ##################################################################################################
 def file_not_empty(files):
@@ -478,6 +477,7 @@ def parse_cmdline():
                        Binary file needed to replaced the PEI Graphics", default= None)
     parser.add_argument("-ip", "--ipname", help="The name of the IP in the IFWI_IN \
                        file to be replaced. This is required.", metavar="ipname", required=True, choices=list(ip_options.keys()))
+    parser.add_argument("-k", "--private-key", help="Private RSA key in PEM format")
     parser.add_argument("-v", "--version", help="Shows the current version of the BIOS Stitching \
                        Tool", action="version", version="%(PROG)s {version}".\
                        format(version=__version__))
@@ -525,7 +525,6 @@ def main():
     args = parse_cmdline()
     env_vars = set_environment_vars()
 
-    
     #check to see if input files are empty
     filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
     if args.ipname == 'pei':
@@ -535,16 +534,17 @@ def main():
             sys.exit('2nd Input file is required.')
     elif args.IPNAME_IN2 is not None:
         print('2nd Input file is not required. Not using {}'.format(args.IPNAME_IN2.name))
-        
+
     status = file_not_empty(filenames)
-    
     if status != 0:
         sys.exit()
-    
+
     #current directory and working director
     dirs = [os.getcwd(), 'SIIP_wrkdir']
-    
-    
+
+    if args.ipname in ['gop', 'pei', 'vbt']:
+        if not args.private_key or not os.path.exists(args.private_key):
+            sys.exit('Missing RSA key to stitch GOP/PEIM GFX/VBT from command line')
 
     #Create working directory
     try:
@@ -559,6 +559,12 @@ def main():
     if status != 0:
         cleanup(dirs)
         sys.exit()
+
+    if args.ipname in ['gop', 'pei', 'vbt']:
+        copy_file([args.private_key], dirs[1])
+        if status != 0:
+            cleanup(dirs)
+            sys.exit(1)
 
     #search for firmware volume
     status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname, env_vars, dirs[1])
