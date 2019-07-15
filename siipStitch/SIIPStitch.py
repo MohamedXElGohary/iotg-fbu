@@ -169,7 +169,7 @@ ip_options = {
     'oob' : [['ui',ip_cnst.OOB_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.OOB_FFS_GUID, None]],
     'vbt' : [['ui',ip_cnst.VBT_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.VBT_FFS_GUID, None]],
     'gop' : [['ui', ip_cnst.GOP_UI],['pe32',None], [None], ['gop', ip_cnst.GOP_FFS_GUID, None]],
-    'pei' : [['ui',ip_cnst.PEI_UI],['pe32',None], ['depex', None], [None,'32','1','1'], ['cmprs', 'PI_NONE'], \
+    'pei' : [['ui',ip_cnst.PEI_UI],['pe32',None], ['depex', None], [None,'32','1','1'], ['cmprs', 'PI_STD'], \
              ['peim', ip_cnst.PEI_FFS_GUID,None]]
 }
 
