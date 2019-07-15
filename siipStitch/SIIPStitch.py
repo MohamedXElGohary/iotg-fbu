@@ -169,7 +169,7 @@ ip_options = {
     'tcc' : [['ui',ip_cnst.TCC_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.TCC_FFS_GUID, None]],
     'oob' : [['ui',ip_cnst.OOB_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.OOB_FFS_GUID, None]],
     'vbt' : [['ui',ip_cnst.VBT_UI], ['raw', 'PI_NONE'], [None], ['free', ip_cnst.VBT_FFS_GUID, None]],
-    'gop' : [['ui', ip_cnst.GOP_UI],['pe32',None], [None], ['GOP', ip_cnst.GOP_FFS_GUID, None]],
+    'gop' : [['ui', ip_cnst.GOP_UI],['pe32',None], [None], ['gop', ip_cnst.GOP_FFS_GUID, None]],
     'pei' : [['ui',ip_cnst.PEI_UI],['pe32',None], ['depex', None], [None,'32','1','1'], ['cmprs', 'PI_NONE'], \
              ['peim', ip_cnst.PEI_FFS_GUID,None]]
 }
@@ -362,16 +362,10 @@ def cleanup(wk_dir):
     except:
         sys.exit("\nUnexpected error:{}".format(sys.exc_info()))
 
-    # determine platform in order to use correct command for the OS
-    if os_sys == "Windows":
-        cmd = ['rmdir', wk_dir[1], '/s', '/q']
-    else: # linux
-        cmd = ["rm", "-fr", wk_dir[1]]
-
     try:
-        subprocess.check_call(cmd, shell=True)
-    except subprocess.CalledProcessError as status:
-        sys.exit("\nError: excuting {},\n{}".format(cmd, status))
+        shutil.rmtree(wk_dir[1], ignore_errors=True)
+    except IOError as error:
+        sys_exit("\nUnable to delete file: {}{}".format(wk_dir[1], error))
 
 ##################################################################################################
 ##
@@ -580,12 +574,13 @@ def main():
     print("\nThe Firmware volume is {}\n".format(fw_volume))
 
 
-    # setup required user input files for executable programs to be used to perform the merge and replace
+    # stripping path name from input files for executable programs to be used to perform the merge and replace
+    filenames = [os.path.basename(f) for f in filenames]
 
-    filenames.append(args.OUTPUT_FILE)
-    filenames = [os.path.abspath(f) for f in filenames]
+    # adding the path name to the output file that will be the updated IFWI File.
+    filenames.append(os.path.abspath(args.OUTPUT_FILE))
 
-    # create oseFW header, merge header and replace in Binary
+    # create oseFw header, merge header and replace in Binary
     status = merge_and_replace(filenames, args.ipname, fw_volume, env_vars, dirs[1])
 
     cleanup(dirs)
