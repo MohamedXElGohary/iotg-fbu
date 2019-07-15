@@ -77,9 +77,21 @@ Directory of c:\siip_tools
 
 ```
 
-### STEP 2: Cd into `siipStitch` directory.
+### STEP 2: Install python3 and required python module `cryptography` using pip
 
-### STEP 3: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `OseFw.bin`)
+```
+    pip install cryptography
+```
+
+If the host is behind proxy server, add `--proxy=<proxy_server>:<proxy_port>`
+
+
+### STEP 3: Prepare RSA private key and rename to `privkey.pem` into the same working directory
+
+Note: RSA key is only required to stitch signed components (e.g., GOP, PEIM GFX or VBT)
+
+
+### STEP 4: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `OseFw.bin`)
 
 At this point, the working directory should contain the following files and directories:
 
@@ -97,7 +109,7 @@ Directory of c:\siip_tools\siipStitch
 ```
 
 
-### STEP 4: Run SIIP Stitch Tool to create new BIOS image (e.g., `BIOS2.bin`)
+### STEP 5: Run SIIP Stitch Tool to create new BIOS image (e.g., `BIOS2.bin`)
 
 For example:
 
