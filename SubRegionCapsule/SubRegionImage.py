@@ -22,8 +22,11 @@ import sys
 import os
 import shutil
 import subprocess
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import SubRegionDescriptor as Srd
 
+# TODO
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from siip_support import ToolsLoc as TDir  # noqa: E402
 

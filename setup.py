@@ -1,7 +1,22 @@
 import setuptools
+from distutils.core import setup, Command
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+class PyTest(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import subprocess
+        import sys
+        errno = subprocess.call([sys.executable, '-m', 'pytest', '-v'])
+        raise SystemExit(errno)
 
 setuptools.setup(
     name="elkhart-lake-platmform-firmware-and-bios-utilities",
@@ -21,6 +36,7 @@ setuptools.setup(
             'GenerateSubRegionCapsule=SubRegionCapsule.GenerateSubRegionCapsule:main',
         ],
     },
+    cmdclass = {'test': PyTest},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",

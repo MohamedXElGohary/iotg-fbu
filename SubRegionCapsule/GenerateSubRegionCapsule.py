@@ -25,9 +25,10 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 
+import sys
+import os
 import argparse
 import subprocess
-import sys
 
 import SubRegionDescriptor as Srd
 import SubRegionImage as Sri
@@ -101,7 +102,10 @@ if __name__ == "__main__":
     SubRegionDesc.parse_json_data(args.InputFile)
     Sri.generate_sub_region_fv(SubRegionImageFile, SubRegionDesc, SubRegionFvFile)
 
-    GenCapCmd = ["python", "GenerateCapsule.py"]
+    # TODO: until we refactor this code, both Generate*.py should be located together
+    dir_name = os.path.dirname(os.path.abspath(__file__))
+
+    GenCapCmd = ["python", os.path.join(dir_name, "GenerateCapsule.py")]
     GenCapCmd += ["--encode"]
     GenCapCmd += ["--guid", SubRegionDesc.sFmpGuid]
     GenCapCmd += ["--fw-version", str(SubRegionDesc.Version)]

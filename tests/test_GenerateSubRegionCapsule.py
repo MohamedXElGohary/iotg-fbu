@@ -18,8 +18,9 @@ import unittest
 import uuid
 from math import log
 
-import SubRegionDescriptor as Srd
-import SubRegionImage as Sri
+
+import SubRegionCapsule.SubRegionDescriptor as Srd
+import SubRegionCapsule.SubRegionImage as Sri
 
 
 class JsonPayloadParserTestCase(unittest.TestCase):
@@ -140,7 +141,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         OutputFile = "capsule.out.bin"
 
         FullCmdLine = [
-            "GenerateSubRegionCapsule.py",
+            os.path.join('SubRegionCapsule', 'GenerateSubRegionCapsule.py'),
             "-o",
             OutputFile,
             "--signer-private-cert=%s" % PrivateCert,

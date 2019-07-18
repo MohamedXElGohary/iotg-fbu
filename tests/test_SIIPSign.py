@@ -7,7 +7,7 @@ import subprocess
 import shutil
 import glob
 
-SIIPSIGN = 'SIIPSign.py'
+SIIPSIGN = os.path.join('siipSign', 'SIIPSign.py')
 
 class TestSIIPSign(unittest.TestCase):
 	'''A set of integration test cases (for now)'''
@@ -20,8 +20,7 @@ class TestSIIPSign(unittest.TestCase):
 		'''Clean up generated files'''
 
 		shutil.rmtree('extract', ignore_errors=True)
-		files_to_clean = glob.glob(os.path.join('*.pem'))
-		files_to_clean += glob.glob(os.path.join('tests', '*.bin'))
+		files_to_clean = glob.glob(os.path.join('tests', 'signed.bin'))
 
 		for f in files_to_clean:
 			os.remove(f)
@@ -77,15 +76,15 @@ class TestSIIPSign(unittest.TestCase):
 		subprocess.check_call(cmd)
 
 		for hash_alg in hash_options:
-			cmd = ['python', 'SIIPSign.py', 'sign', '-i', PLDFILE, '-o', OUTFILE,
+			cmd = ['python', SIIPSIGN, 'sign', '-i', PLDFILE, '-o', OUTFILE,
 			          '-k', 'test_key.pem', '-s', hash_alg]
 			subprocess.check_call(cmd)
 
-			cmd = ['python', 'SIIPSign.py', 'verify', '-i', OUTFILE,
+			cmd = ['python', SIIPSIGN, 'verify', '-i', OUTFILE,
 			         '-p', 'public_key.pem', '-s', hash_alg]
 			subprocess.check_call(cmd)
 
-			cmd = ['python', 'SIIPSign.py', 'decompose', '-i', OUTFILE]
+			cmd = ['python', SIIPSIGN, 'decompose', '-i', OUTFILE]
 			subprocess.check_call(cmd)
 
 	def test_key_size_too_small(self):
@@ -101,7 +100,7 @@ class TestSIIPSign(unittest.TestCase):
 		cmd = ['openssl', 'genrsa', '-out', 'test_key.pem', '1024']
 		subprocess.check_call(cmd)
 
-		cmd = ['python', 'SIIPSign.py', 'sign', '-i', PLDFILE, '-o', OUTFILE,
+		cmd = ['python', SIIPSIGN, 'sign', '-i', PLDFILE, '-o', OUTFILE,
 		          '-k', 'test_key.pem', '-s', 'sha384']
 		with self.assertRaises(subprocess.CalledProcessError) as cm:
 			subprocess.check_call(cmd)
@@ -128,18 +127,18 @@ class TestSIIPSign(unittest.TestCase):
 			subprocess.check_call(cmd)
 
 		for hash_alg in hash_options:
-			cmd = ['python', 'SIIPSign.py', 'sign', '-i', PLDFILE + ',' + PLD_KEY[0],
+			cmd = ['python', SIIPSIGN, 'sign', '-i', PLDFILE + ',' + PLD_KEY[0],
 			                                        '-o', OUTFILE,
 			                                        '-k', FKM_KEY[0],
 			                                        '-s', hash_alg]
 			subprocess.check_call(cmd)
 
-			cmd = ['python', 'SIIPSign.py', 'verify', '-i', OUTFILE + ',' + PLD_KEY[1],
+			cmd = ['python', SIIPSIGN, 'verify', '-i', OUTFILE + ',' + PLD_KEY[1],
 			                                          '-p', FKM_KEY[1],
 			                                          '-s', hash_alg]
 			subprocess.check_call(cmd)
 
-			cmd = ['python', 'SIIPSign.py', 'decompose', '-i', OUTFILE]
+			cmd = ['python', SIIPSIGN, 'decompose', '-i', OUTFILE]
 			subprocess.check_call(cmd)
 
 

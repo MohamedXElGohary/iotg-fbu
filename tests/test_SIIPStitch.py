@@ -13,9 +13,9 @@
 ## Name SIIPStitchUnitTest.py
 ## Author: Kimberly Barnes
 ##
-## 
+##
 ##  File Description:
-##   Test functionality and error testing of the tool. 
+##   Test functionality and error testing of the tool.
 ##   MyTestSet1 - test the general functionality of the tool
 ##   MyTestSet2 - test when the input files are in different directory than the workign directory
 ##   MyTestSet3 - test the error cases. Formating issues of the guids and not having correct name
@@ -35,8 +35,7 @@ import shutil
 import platform
 
 
-
-SIIPSTITCH=os.path.join('..', 'siip_stitch.py')
+SIIPSTITCH=os.path.abspath(os.path.join('siipStitch', 'siip_stitch.py'))
 
 ###############################################################################################################################
 ##MyTestSet1:
@@ -55,18 +54,18 @@ class MyTestSet1(unittest.TestCase):
         cmd = ['python', SIIPSTITCH, '-h']
         subprocess.check_call(cmd, cwd='tests')
 
-    def test_version(self): 
+    def test_version(self):
         cmd = ['python', SIIPSTITCH, '-v']
         subprocess.check_call(cmd, cwd='tests')
 
     def test_replace_pseFw_using_default(self):  #no output file given
         cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin','-ip', 'pse']
         subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.BIN'), 
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.BIN'),
                                     os.path.join('tests', 'BIOS2.bin')))
 
     def test_replace_oseFw_give_outputfile(self):  #output file given
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin','-ip', 'pse', 
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin','-ip', 'pse',
                '-o', 'IFWI.bin']
         subprocess.check_call(cmd, cwd='tests')
         self.assertTrue(os.path.exists(os.path.join('tests', 'IFWI.bin')))
@@ -74,7 +73,7 @@ class MyTestSet1(unittest.TestCase):
 
 ###############################################################################################################################
 ##MyTestSet2:
-## Test finding input files outside of the working directory        
+## Test finding input files outside of the working directory
 ##
 ###############################################################################################################################
 class MyTestSet2(unittest.TestCase):
@@ -83,7 +82,7 @@ class MyTestSet2(unittest.TestCase):
          os.mkdir(os.path.join('tests', 'TMPDIR'))
 
     @classmethod
-    def tearDownClass(cls):  
+    def tearDownClass(cls):
         shutil.rmtree(os.path.join('tests', 'TMPDIR'))
 
     def setUp(self):
@@ -115,7 +114,7 @@ class MyTestSet2(unittest.TestCase):
 
         cmd = ['python', SIIPSTITCH, INPUT, 'OseFw.bin', '-ip', 'pse']
         subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                     os.path.join('tests', 'BIOS2.bin')))
 
     def test_pseFw_in_different_dir(self):  #Ose Firmeware not in current working directory
@@ -124,7 +123,7 @@ class MyTestSet2(unittest.TestCase):
 
         cmd = ['python', SIIPSTITCH, 'BIOS.bin', REPLACE, '-ip', 'pse']
         subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                     os.path.join('tests', 'BIOS2.bin')))
 
 ###############################################################################################################################
@@ -251,10 +250,10 @@ class MyTestSet4(unittest.TestCase):
         cleanup()
 
     def test_replace_TsnMacAdr_using_default(self):  # tmac
-        cmd = ['python', SIIPSTITCH, 'EHL_FSPWRAPPER_1172_00.rom', 
+        cmd = ['python', SIIPSTITCH, 'EHL_FSPWRAPPER_1172_00.rom',
                'TsnMacAddr_test.bin', '-ip', 'tmac']
         subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                     os.path.join('tests', 'EHL_FSPWRAPPER_1172_00_tmac.bin')))
 
     def test_replace_ptmac_using_default(self):  # ptmac
@@ -297,8 +296,8 @@ class MyTestSet5(unittest.TestCase):
     def test_replace_gopdriver(self):
        cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGopDriver.efi','-ip', 'gop', '-k', 'privkey.pem']
        subprocess.check_call(cmd, cwd='tests')
-       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'), 
-                                   os.path.join('tests', 'rom_drvr.bin')))  
+       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
+                                   os.path.join('tests', 'rom_drvr.bin')))
 
     def test_replace_peigraphics(self):
        cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei', '-k', 'privkey.pem']
@@ -309,6 +308,6 @@ class MyTestSet5(unittest.TestCase):
 def cleanup():
     try:
         os.remove(os.path.join('tests', 'BIOS_OUT.BIN'))
-    except: 
+    except:
         pass
 
