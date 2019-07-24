@@ -36,11 +36,11 @@ import platform
 
 
 
-SIIPSTITCH=os.path.join('..', 'SIIPStitch.py')
+SIIPSTITCH=os.path.join('..', 'siip_stitch.py')
 
 ###############################################################################################################################
 ##MyTestSet1:
-## Test general functionality of SIIPStitch Tool
+## Test general functionality of SIIP Stitch Tool
 ##
 ###############################################################################################################################
 class MyTestSet1(unittest.TestCase):

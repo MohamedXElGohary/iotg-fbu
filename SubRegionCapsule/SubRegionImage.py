@@ -25,7 +25,7 @@ import subprocess
 import SubRegionDescriptor as Srd
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from SIIPSupport import ToolsLoc as TDir  # noqa: E402
+from siip_support import ToolsLoc as TDir  # noqa: E402
 
 DefaultWorkspace = "./temp/"
 
