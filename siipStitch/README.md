@@ -35,23 +35,25 @@ usage: siip_stitch [-h] -ip ipname [-k PRIVATE_KEY] [-v] [-o FileName]
                    IFWI_IN IPNAME_IN [IPNAME_IN2]
 
 positional arguments:
-  IFWI_IN               Input BIOS Binary file(Ex: IFWI.bin) to beupdated with
+  IFWI_IN               Input BIOS Binary file(Ex: IFWI.bin) to be updated with
                         the given input IP firmware
   IPNAME_IN             Input IP firmware Binary file(Ex: OseFw.bin to be
                         replaced in the IFWI.bin
   IPNAME_IN2            The 2nd input IP firmware Binary file needed
-                        toreplaced the PEI Graphics
+                        to replaced the PEI Graphics
 
 optional arguments:
   -h, --help            show this help message and exit
   -ip ipname, --ipname ipname
-                        The name of the IP in theIFWI_IN file to be replaced.
+                        The name of the IP in the IFWI_IN file to be replaced.
                         This is required.
   -k PRIVATE_KEY, --private-key PRIVATE_KEY
-                        Private RSA key in PEMformat
-  -v, --version         Shows the current versionif the BIOS Stitching Tool
+                        Private RSA key in PEM format to sign IFWI.Bin.
+                        PRIVATE_KEY is required for stitching GOP, PEI, and VBT. The
+                        tool requires the key filename to be 'privkey.pem'
+  -v, --version         Shows the current version if the BIOS Stitching Tool
   -o FileName, --outputfile FileName
-                        IFWI binary file with theIP replaced with the
+                        IFWI binary file with the IP replaced with the
                         IPNAME_IN
 ```
 

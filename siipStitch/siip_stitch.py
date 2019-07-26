@@ -493,7 +493,7 @@ def parse_cmdline():
     parser.add_argument(
         "-k",
         "--private-key",
-        help="Private RSA key in PEM" "format"
+        help="Private RSA key in PEM format. Note: Key is required for stitching GOP features"
     )
     parser.add_argument(
         "-v",
