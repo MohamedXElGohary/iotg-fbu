@@ -41,7 +41,7 @@
 # File Description:
 #
 # License: {license}
-# Version: 0.6.0
+# Version: 0.6.1
 # Status: Intial Development
 ##############################################################################
 import os
@@ -56,7 +56,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from siip_support import ToolsLoc as tdir
 from siip_constants import IP_constants as ip_cnst
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 # executables used to perform merging and replacing of PSE Firmware
 PROG = ["GenSec", "LzmaCompress", "GenFfs", "FMMT.exe"]
@@ -470,7 +470,7 @@ def parse_cmdline():
     parser.add_argument(
         "IPNAME_IN",
         type=argparse.FileType("rb"),
-        help="Input IP firmware Binary file(Ex: oseFw.Bin"
+        help="Input IP firmware Binary file(Ex: OseFw.Bin"
         "to be replaced in the IFWI.bin",
     )
     parser.add_argument(
@@ -611,7 +611,7 @@ def main():
     # adding the path name to the output file
     filenames.append(os.path.abspath(args.OUTPUT_FILE))
 
-    # create oseFw header, merge header and replace in Binary
+    # create OseFw header, merge header and replace in Binary
     status = merge_and_replace(filenames, args.ipname, fw_volume, env_vars,
                                dirs[1])
 

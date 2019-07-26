@@ -63,14 +63,14 @@ Before you are running scripts, please prepare the input files including images 
 ### Signing (output: `OseFw.signed.bin`)
 
 ```
-  SIIPSign.py sign -i OseFw.bin -o OswFw.signed.bin -k privkey.pem
+  SIIPSign.py sign -i OseFw.bin -o OseFw.signed.bin -k privkey.pem
 ```
 ### Stitching (output: `IFWI.new.bin`)
 
 **IMPORTANT**: copy `BIOS.bin` and `OseFw.signed.bin` into the directory `siipStitch`
 
 ```
-  SIIPStitch.py -ip pse -o IFWI.new.bin BIOS.BIN OswFw.signed.bin
+  SIIPStitch.py -ip pse -o IFWI.new.bin BIOS.BIN OseFw.signed.bin
 ```
 
 ### Creating Capsule Image (output: `capsule.new.bin`)

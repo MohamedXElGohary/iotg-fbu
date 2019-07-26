@@ -31,32 +31,28 @@ SIIP Stitch Tool runs on Windows 10 OS. Linux support will be added in the futur
 ## Usage
 
 ```
-usage: siip_stitch.py  [-h]  -ip ipname [-v] [-o FileName] [-k privkey.pem]
-                  IFWI_IN IPNAME_IN
+usage: siip_stitch [-h] -ip ipname [-k PRIVATE_KEY] [-v] [-o FileName]
+                   IFWI_IN IPNAME_IN [IPNAME_IN2]
 
 positional arguments:
-  IFWI_IN               Input BIOS Binary file (Ex: IFWI.bin) to be updated
-                        with the given input IP firmware
-  IPNAME_IN             Input IP firmware Binary file (Ex: oseFw.Bin) to be
+  IFWI_IN               Input BIOS Binary file(Ex: IFWI.bin) to beupdated with
+                        the given input IP firmware
+  IPNAME_IN             Input IP firmware Binary file(Ex: OseFw.bin to be
                         replaced in the IFWI.bin
+  IPNAME_IN2            The 2nd input IP firmware Binary file needed
+                        toreplaced the PEI Graphics
 
 optional arguments:
-  -h, --help            Shows this help message and exit.
+  -h, --help            show this help message and exit
   -ip ipname, --ipname ipname
-                        ipname is the name of the firmware region to replace in
-                        the IFWI_IN (Ex: -ip pse).  This is required.
-                        Supported regions that can be replaced
-                        [pse, tmac, ptmac, tcc, oob, gop, pei, vbt]
-
-  -v, --version         Shows the current version of the BIOS Stitching Tool.
+                        The name of the IP in theIFWI_IN file to be replaced.
+                        This is required.
+  -k PRIVATE_KEY, --private-key PRIVATE_KEY
+                        Private RSA key in PEMformat
+  -v, --version         Shows the current versionif the BIOS Stitching Tool
   -o FileName, --outputfile FileName
-                        IFWI binary file with the IP replaced with the IPNAME_IN.
-
-  -k priv_key.pem, --priv_key priv_key.pem
-                        Private RSA 2048 key in PEM format to sign IFWI_IN.
-                        This is required for stitching GOP, PEI, and VBT. The
-                        tool requires the key file to be 'priv_key.pem'
-
+                        IFWI binary file with theIP replaced with the
+                        IPNAME_IN
 ```
 
 ## Step-by-Step Instructions

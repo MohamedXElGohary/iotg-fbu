@@ -50,7 +50,6 @@ optional arguments:
                         Path to signtool or OpenSSL tool. Optional if path to
                         tools are already in PATH.
 
-  -o, --output
 ```
 
 ## JSON Input Format

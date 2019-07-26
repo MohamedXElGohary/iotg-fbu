@@ -30,21 +30,21 @@ SIIP Sign Tool supports python 3.7.x. Additionally, it requires the following py
 ## Usage
 
 ```
-	usage: SIIPSign.py [-h] [-V] {sign,decompose,verify} ...
+usage: SIIPSign.py [-h] [-V] {sign,decompose,verify} ...
 
-	A mini-MEU-like signing tool to create manifest data compliant to SIIP
-	firmware loader specification
+A SIIP signing tool to create manifest data supporting SIIP firmware loading
+specification
 
-	positional arguments:
-	  {sign,decompose,verify}
-	                        command
-	    sign                Sign an image
-	    decompose           Decompose a signed image
-	    verify              Verify a signed image
+positional arguments:
+  {sign,decompose,verify}
+                        command
+    sign                Sign an image
+    decompose           Decompose a signed image
+    verify              Verify a signed image
 
-	optional arguments:
-	  -h, --help            show this help message and exit
-	  -V, --version         show program's version number and exit
+optional arguments:
+  -h, --help            show this help message and exit
+  -V, --version         show program's version number and exit
 ```
 
 ## Step-by-Step Instructions
@@ -164,4 +164,4 @@ Writing... Okay
 The following output files are generated:
 
 * `fkm.bin` : Firmware Key Manifest data
-* `out.bin` : Signed `OswFw.bin` with manifest data (Firmware Blob Manifest and Metadata)
+* `out.bin` : Signed `OseFw.bin` with manifest data (Firmware Blob Manifest and Metadata)

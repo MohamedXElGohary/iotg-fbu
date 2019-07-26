@@ -40,7 +40,7 @@ if sys.version_info[0] < 3:
 # Globals for help information
 #
 __prog__ = "GenerateSubRegionCapsule"
-__version__ = "0.2.0"
+__version__ = "0.6.1"
 __copyright__ = "Copyright (c) 2019, Intel Corporation. All rights reserved."
 __description__ = "Generate a sub region capsule.\n"
 
