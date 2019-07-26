@@ -35,7 +35,8 @@ import shutil
 import platform
 
 
-SIIPSTITCH=os.path.abspath(os.path.join('siipStitch', 'siip_stitch.py'))
+
+SIIPSTITCH=os.path.join('..', 'siipStitch', 'siip_stitch.py')
 
 ###############################################################################################################################
 ##MyTestSet1:
@@ -54,18 +55,18 @@ class MyTestSet1(unittest.TestCase):
         cmd = ['python', SIIPSTITCH, '-h']
         subprocess.check_call(cmd, cwd='tests')
 
-    def test_version(self):
+    def test_version(self): 
         cmd = ['python', SIIPSTITCH, '-v']
         subprocess.check_call(cmd, cwd='tests')
 
     def test_replace_pseFw_using_default(self):  #no output file given
         cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin','-ip', 'pse']
         subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.BIN'),
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.BIN'), 
                                     os.path.join('tests', 'BIOS2.bin')))
 
     def test_replace_oseFw_give_outputfile(self):  #output file given
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin','-ip', 'pse',
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin','-ip', 'pse', 
                '-o', 'IFWI.bin']
         subprocess.check_call(cmd, cwd='tests')
         self.assertTrue(os.path.exists(os.path.join('tests', 'IFWI.bin')))
@@ -82,7 +83,7 @@ class MyTestSet2(unittest.TestCase):
          os.mkdir(os.path.join('tests', 'TMPDIR'))
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls):  
         shutil.rmtree(os.path.join('tests', 'TMPDIR'))
 
     def setUp(self):
@@ -226,8 +227,34 @@ class MyTestSet3(unittest.TestCase):
         except:
            self.fail('\nSIIPStitch should have handled error')
 
-    def test_missing_inputfile(self):  #Replacement requires 2 input files
-       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', '-ip', 'pei']
+    def test_missing_key(self):
+        """Missing priviate key"""
+
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin','Vbt.bin','-ip', 'vbt']
+        try:
+            subprocess.check_call(cmd, cwd='tests')
+            self.fail('a call process eror should have occured')
+        except subprocess.CalledProcessError as error:
+            pass
+
+
+    def test_key_name_wrong(self):
+        """Incorrect name for priviate key"""
+
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei', '-k', 'priv_key.pem']
+
+        try:
+            subprocess.check_call(cmd, cwd='tests')
+            self.fail('a call process eror should have occured')
+        except subprocess.CalledProcessError as error:
+            pass
+
+
+    def test_missing_inputfile(self):
+       """Replacement requires 2 input files"""
+
+
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', '-k', 'privkey.pem', '-ip', 'pei']
 
        try:
            results=subprocess.check_call(cmd, cwd='tests')
@@ -274,12 +301,9 @@ class MyTestSet4(unittest.TestCase):
         subprocess.check_call(cmd, cwd='tests')
         self.assertTrue(os.path.exists(os.path.join('tests', 'BIOS_OUT.bin')))
 
-###############################################################################################################################
-##MyTestSet5:
-## Test replacement of the GOP
-##
-###############################################################################################################################
+
 class MyTestSet5(unittest.TestCase):
+    """ Test replacement of the GOP"""
 
     def setUp(self):
         pass
@@ -304,6 +328,73 @@ class MyTestSet5(unittest.TestCase):
        subprocess.check_call(cmd, cwd='tests')
        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                    os.path.join('tests', 'rom_pei.bin')))
+
+
+#ToolPath = os.path.join('..', 'siipSupport','Bin', 'Win32')
+
+class MyTestSet6(unittest.TestCase):
+    """Force Exception code to execute"""
+
+    tool_path = os.path.join('siipSupport','Bin', 'Win32')
+
+    @classmethod
+    def setUpClass(cls):
+         # back up the siipSupport directory
+         shutil.copytree(os.path.join('siipSupport'),os.path.join('siipSupport2'))
+
+    @classmethod
+    def tearDownClass(cls):  
+
+        shutil.rmtree(os.path.join('siipSupport'),ignore_errors=True)
+
+        #return to orignal folder
+        shutil.move(os.path.join('siipSupport2','Bin','Win32'),
+                    os.path.join(MyTestSet6.tool_path)
+                   )
+        shutil.rmtree(os.path.join('siipSupport2'),ignore_errors=True)
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        wrkdir = os.path.join('tests', 'SIIP_wrkdir')
+
+        if os.path.exists(wrkdir):
+             shutil.rmtree(wrkdir)
+        pass
+
+    def test_exception_missing_genFfs(self):  #missing 3rd party files
+        """ Missing third party tool GenFfs"""
+
+        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFfs.exe'), \
+                  os.path.join(MyTestSet6.tool_path, 'GenFfs2.exe'))
+
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin', '-ip', 'pse']
+        try:
+            results=subprocess.check_call(cmd, cwd='tests')
+            self.fail('a call process eror should have occured')
+        except subprocess.CalledProcessError as error:
+            pass
+
+        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFfs2.exe'), \
+                      os.path.join(MyTestSet6.tool_path, 'GenFfs.exe'))
+
+
+    def test_exception_missing_GenFv(self):  
+        """ Missing third party tool GenFv"""
+
+        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFv.exe'), \
+                  os.path.join(MyTestSet6.tool_path, 'GenFv2.exe'))
+
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin', '-ip', 'pse']
+        try:
+            results=subprocess.check_call(cmd, cwd='tests')
+            self.fail('a call process eror should have occured')
+        except subprocess.CalledProcessError as error:
+            pass
+
+        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFv2.exe'), \
+                      os.path.join(MyTestSet6.tool_path, 'GenFv.exe'))
 
 def cleanup():
     try:

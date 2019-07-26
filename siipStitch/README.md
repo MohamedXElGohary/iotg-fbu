@@ -31,7 +31,7 @@ SIIP Stitch Tool runs on Windows 10 OS. Linux is not yet supported.
 ## Usage
 
 ```
-usage: SIIPStitch [-h]  -ip ipname [-v] [-o FileName]
+usage: siip_stitch.py  [-h]  -ip ipname [-v] [-o FileName] [-k privkey.pem]
                   IFWI_IN IPNAME_IN
 
 positional arguments:
@@ -52,6 +52,11 @@ optional arguments:
   -o FileName, --outputfile FileName
                         IFWI binary file with the IP replaced with the IPNAME_IN.
 
+  -k priv_key.pem, --priv_key priv_key.pem
+                        Private RSA 2048 key in PEM format to sign IFWI_IN.
+                        This is required for stitching GOP, PEI, and VBT. The
+                        tool requires the key file to be 'priv_key.pem'
+
 ```
 
 ## Step-by-Step Instructions
@@ -63,17 +68,18 @@ At this point the directory should contain the following files and directory:
 ```
 Directory of c:\siip_tools
 
-06/10/2019  10:42 AM    <DIR>          .
-06/10/2019  10:42 AM    <DIR>          ..
+07/25/2019  04:53 PM    <DIR>          .
+07/25/2019  04:53 PM    <DIR>          ..
 05/02/2019  03:00 PM             1,365 LICENSE
-06/04/2019  10:16 AM             3,652 README.md.html
-05/03/2019  01:30 PM            54,663 Releasenotes.docx
-06/07/2019  11:30 AM    <DIR>          siipSign
-06/07/2019  11:22 AM    <DIR>          siipStitch
-06/04/2019  10:16 AM    <DIR>          siipSupport
-06/04/2019  10:16 AM             2,354 SIIPSupport.py
-06/06/2019  11:36 AM             1,013 SIIPSupport.pyc
-06/07/2019  11:32 AM    <DIR>          SubRegionCapsule
+07/18/2019  09:28 AM             2,960 README.md.html
+07/18/2019  09:28 AM            74,828 Releasenotes.docx
+07/24/2019  10:26 PM    <DIR>          siipSign
+07/24/2019  10:26 PM    <DIR>          siipStitch
+07/25/2019  04:20 PM    <DIR>          siipSupport
+07/24/2019  10:26 PM             2,498 siip_constants.py
+07/25/2019  11:43 AM             2,315 siip_support.py
+07/25/2019  10:35 AM    <DIR>          SubRegionCapsule
+
 
 ```
 
@@ -114,7 +120,7 @@ Directory of c:\siip_tools\siipStitch
 For example:
 
 ```
-C:\siip_tools\siipStitch>SIIPStitch.py -ip pse -o BIOS2.bin BIOS.BIN OseFw.bin
+C:\siip_tools\siipStitch>siip_stitck.py -ip pse -o BIOS2.bin BIOS.BIN OseFw.bin
 #########################################################################################
 Purpose of this utility is to replace the section in System BIOS ROM file with new section
 #########################################################################################

@@ -44,8 +44,8 @@ class ToolsLoc:
     TOOLSWINDIR = os.path.join(TOOLSDIR, "bin", "win32")
 
 
-class EdkTools:
-    """ Executables that are needed for the SIIP tools"""
+class ThirdPartyTools:
+    """ Third party tools that are needed for the SIIP tools"""
 
     GENSEC = os.path.join(ToolsLoc.TOOLSWINDIR, "GenSec.exe")
     GENFFS = os.path.join(ToolsLoc.TOOLSWINDIR, "GenFfs.exe")

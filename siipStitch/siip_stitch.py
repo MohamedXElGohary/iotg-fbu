@@ -87,7 +87,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
 
     try:
         subprocess.check_call(command, env=myenv, cwd=workdir, shell=True,
-                              timeout=5)
+                              timeout=10)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe: {}".format(status))
         return 1, fw_vol
@@ -386,6 +386,7 @@ def set_environment_vars():
         "GenSec",
         "LzmaCompress",
         "GenFfs",
+        "GenFv",
         "FMMT.exe",
         "FmmtConf.ini",
         "rsa_helper.py",
@@ -411,22 +412,22 @@ def set_environment_vars():
     myenv = os.environ.copy()
     my_path = os.getcwd()
 
-    # path to Base Tools
-    edk_tools_path = os.path.join(os.sep, my_path, tdir.TOOLSDIR)
-    edk_tools_bin = os.path.join(os.sep, edk_tools_path, os_dir)
-    myenv["PATH"] = edk_tools_bin + ";" + path
+    # path to thrid party tools
+    siip_tools_path = os.path.join(os.sep, my_path, tdir.TOOLSDIR)
+    siip_tools_bin = os.path.join(os.sep, siip_tools_path, os_dir)
+    myenv["PATH"] = siip_tools_bin + ";" + path
 
     # redirect output
     dev_null = open(os.devnull, "w")
 
-    for base_tool in progs:
-        command = [cmd, base_tool]
+    for siip_tool in progs:
+        command = [cmd, siip_tool]
 
         try:
             # check to see if the required tools are installed
             subprocess.check_call(command, stdout=dev_null, env=myenv)
         except subprocess.CalledProcessError:
-            sys.exit("\nError base_tool is not located: {}".format(base_tool))
+            sys.exit("\nError third party tool {} is not located in the siipSupport directory.".format(siip_tool))
 
     return myenv
 
@@ -458,7 +459,7 @@ def parse_cmdline():
     """ Parsing and validating input arguments."""
 
     # initiate the parser
-    parser = argparse.ArgumentParser(prog="SIIPStitch")
+    parser = argparse.ArgumentParser(prog="siip_stitch")
 
     parser.add_argument(
         "IFWI_IN",
@@ -543,11 +544,12 @@ def main():
     args = parse_cmdline()
     env_vars = set_environment_vars()
 
-    # check to see if input files are empty
     filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
     if args.ipname in ["gop", "pei", "vbt"]:
         if not args.private_key or not os.path.exists(args.private_key):
             sys.exit("Missing RSA key to stitch GOP/PEIM GFX/VBT from command line")
+        elif args.private_key != 'privkey.pem':
+            sys.exit("Wrong filename. Key filename should be "'privkey.pem'"")
         else:
             filenames.append(args.private_key)
         if args.ipname == "pei":
@@ -561,6 +563,7 @@ def main():
             .format(args.IPNAME_IN2.name)
         )
 
+    # check to see if input files are empty
     status = file_not_empty(filenames)
     if status != 0:
         sys.exit()
