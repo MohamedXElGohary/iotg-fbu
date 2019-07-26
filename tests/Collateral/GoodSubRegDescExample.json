@@ -12,7 +12,14 @@
         "Data" :
         [
           ["field_one", "DECIMAL", 1, 0],
-          ["field_two", "HEXADECIMAL", 2, "20C"]
+          ["field_two", "HEXADECIMAL", 2, "20C"],
+          ["field_three", "DECIMAL", 3, 333],
+          ["field_four",  "DECIMAL", 15, "-98230498723950780"],
+          ["field_five",  "DECIMAL", 20, 98230984023984],
+          ["field_six",   "HEXADECIMAL", 1, "FF"],
+          ["field_seven", "HEXADECIMAL", 3, 333],
+          ["field_eight",  "HEXADECIMAL", 20, "20CA098BC0090983298472DEF"],
+          ["field_nine",   "HEXADECIMAL", 21, 123235542347898983724990873240981203989871297390823098798729307834]
         ]
       }
     ]

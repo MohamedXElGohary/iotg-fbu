@@ -75,11 +75,13 @@ class SubRegionDataField(object):
         self.ByteSize = data_field[2]
         self.Value = data_field[3]
         if self.Type == DataTypes.DECIMAL:
-            self.dValue = data_field[3]
-            self.sValue = str(data_field[3])
+            if data_field[3] is not None:
+                self.dValue = int(data_field[3])
+                self.sValue = str(data_field[3])
         elif self.Type == DataTypes.HEXADECIMAL:
-            self.dValue = int(data_field[3], 16)
-            self.sValue = str(data_field[3])
+            if data_field[3] is not None:
+                self.sValue = str(data_field[3])
+                self.dValue = int(self.sValue, 16)
         else:
             self.dValue = None
             self.sValue = str(data_field[3])

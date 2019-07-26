@@ -41,6 +41,42 @@ class JsonPayloadParserTestCase(unittest.TestCase):
         self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
         self.assertEqual(2, DataField.ByteSize)
         self.assertEqual(524, DataField.dValue)
+        DataField = SampleFfsFile.Data[2]
+        self.assertEqual("field_three", DataField.Name)
+        self.assertEqual(Srd.DataTypes.DECIMAL, DataField.Type)
+        self.assertEqual(3, DataField.ByteSize)
+        self.assertEqual(333, DataField.dValue)
+        DataField = SampleFfsFile.Data[3]
+        self.assertEqual("field_four", DataField.Name)
+        self.assertEqual(Srd.DataTypes.DECIMAL, DataField.Type)
+        self.assertEqual(15, DataField.ByteSize)
+        self.assertEqual(-98230498723950780, DataField.dValue)
+        DataField = SampleFfsFile.Data[4]
+        self.assertEqual("field_five", DataField.Name)
+        self.assertEqual(Srd.DataTypes.DECIMAL, DataField.Type)
+        self.assertEqual(20, DataField.ByteSize)
+        self.assertEqual(98230984023984, DataField.dValue)
+        DataField = SampleFfsFile.Data[5]
+        self.assertEqual("field_six", DataField.Name)
+        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
+        self.assertEqual(1, DataField.ByteSize)
+        self.assertEqual(255, DataField.dValue)
+        DataField = SampleFfsFile.Data[6]
+        self.assertEqual("field_seven", DataField.Name)
+        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
+        self.assertEqual(3, DataField.ByteSize)
+        self.assertEqual(819, DataField.dValue)
+        DataField = SampleFfsFile.Data[7]
+        self.assertEqual("field_eight", DataField.Name)
+        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
+        self.assertEqual(20, DataField.ByteSize)
+        self.assertEqual(162364294545257138462923369967, DataField.dValue)
+        DataField = SampleFfsFile.Data[8]
+        self.assertEqual("field_nine", DataField.Name)
+        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
+        self.assertEqual(21, DataField.ByteSize)
+        self.assertEqual(2106967472293113107385212910597918500865023886834641740578657241782190877997108, DataField.dValue)
+
 
         # Json with missing fields
         with self.assertRaises(Srd.SubRegionDescSyntaxError):

@@ -53,17 +53,8 @@ def create_buffer_from_data_field(data_field):
             buffer = struct.pack(fmt, bytes(data_field.sValue, "utf-8"))
 
     if data_field.Type in [Srd.DataTypes.DECIMAL, Srd.DataTypes.HEXADECIMAL]:
-        if data_field.ByteSize == 1:
-            buffer = struct.pack("<B", data_field.dValue)
-        elif data_field.ByteSize == 2:
-            buffer = struct.pack("<H", data_field.dValue)
-        elif data_field.ByteSize == 4:
-            buffer = struct.pack("<I", data_field.dValue)
-        elif data_field.ByteSize == 8:
-            buffer = struct.pack("<Q", data_field.dValue)
-        else:
-            fmt = "<{0}B".format(data_field.ByteSize)
-            buffer = struct.pack(fmt, bytearray.fromhex(format(data_field.dValue, "x")))
+        buffer = data_field.dValue.to_bytes(data_field.ByteSize, "little")
+
     return buffer
 
 
