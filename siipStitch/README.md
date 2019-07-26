@@ -24,9 +24,9 @@ SIIP Stitch Tool supports python 3.7.2. Additionally, it utilizes the following 
 * Firmware Module Management Tool ([FMMT](https://firmware.intel.com/develop))
 * [EDK II Base Tools](https://github.com/tianocore/tianocore.github.io/wiki/EDK-II-Tools-List)
 
+These tools are included in the release.
 
-
-SIIP Stitch Tool runs on Windows 10 OS. Linux is not yet supported.
+SIIP Stitch Tool runs on Windows 10 OS. Linux support will be added in the future releases.
 
 ## Usage
 
@@ -94,7 +94,7 @@ If the host is behind proxy server, add `--proxy=<proxy_server>:<proxy_port>`
 
 ### STEP 3: Prepare RSA private key and rename to `privkey.pem` into the same working directory
 
-Note: RSA key is only required to stitch signed components (e.g., GOP, PEIM GFX or VBT)
+** NOTE: **: An RSA signing key is required to stitch GOP, PEIM GFX and VBT images with the BIOS image. This signing key must be the same key used by BIOS. If they are different, the output image may not be bootable when security is enabled on the platform.
 
 
 ### STEP 4: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `OseFw.bin`)

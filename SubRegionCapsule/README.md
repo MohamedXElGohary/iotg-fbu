@@ -11,6 +11,14 @@ Sub Region Capsule script supports python 3.x.
 Sub Region Capsule script runs on Windows 10 OS
 
 
+## Installation
+
+Sub Region Capsule script depends on EDKII capsule tool (included) and OpenSSL to generate the output. You will
+need to install OpenSSL manually to the host and add it to the system environment viarable PATH.
+
+Pre-compiled OpenSSL for Windows can be downloaded from https://wiki.openssl.org/index.php/Binaries
+
+
 ## Usage
 
 ```
