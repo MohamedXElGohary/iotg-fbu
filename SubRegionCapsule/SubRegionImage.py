@@ -1,20 +1,8 @@
 # @file
 # Sub Region Image functions
 #
-# Functions used to generate images from Sub Region descriptors and wrap them
-# in Firmware Volumes
-#
-# This tool is intended to be used to generate UEFI Capsules to update the
-# system firmware or device firmware for integrated devices.
-#
-# Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD
-# License which accompanies this distribution.  The full text of the license
-# may be found at http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+# Copyright (c) 2019, Intel Corporation. All rights reserved.
+# SPDX-License-Identifier: BSD-2-Clause
 #
 
 import struct
