@@ -464,28 +464,24 @@ def parse_cmdline():
     parser.add_argument(
         "IFWI_IN",
         type=argparse.FileType("rb+"),
-        help="Input BIOS Binary file(Ex: IFWI.bin) to be"
-        "updated with the given input IP firmware",
+        help="Input BIOS Binary file(Ex: IFWI.bin) to be updated with the given input IP firmware"
     )
     parser.add_argument(
         "IPNAME_IN",
         type=argparse.FileType("rb"),
-        help="Input IP firmware Binary file(Ex: OseFw.Bin"
-        "to be replaced in the IFWI.bin",
+        help="Input IP firmware Binary file(Ex: OseFw.Bin to be replaced in the IFWI.bin"
     )
     parser.add_argument(
         "IPNAME_IN2",
         type=argparse.FileType("rb"),
         nargs="?",
-        help="The 2nd input IP firmware Binary file needed to"
-        "replaced the PEI Graphics",
+        help="The 2nd input IP firmware Binary file needed to replaced the PEI Graphics",
         default=None,
     )
     parser.add_argument(
         "-ip",
         "--ipname",
-        help="The name of the IP in the"
-        "IFWI_IN file to be replaced. This is required.",
+        help="The name of the IP in the IFWI_IN file to be replaced. This is required.",
         metavar="ipname",
         required=True,
         choices=list(IP_OPTIONS.keys()),
@@ -498,7 +494,7 @@ def parse_cmdline():
     parser.add_argument(
         "-v",
         "--version",
-        help="Shows the current version" "if the BIOS Stitching Tool",
+        help="Shows the current version of the BIOS Stitching Tool",
         action="version",
         version="%(PROG)s {version}".format(version=__version__),
     )
@@ -507,15 +503,12 @@ def parse_cmdline():
         "--outputfile",
         dest="OUTPUT_FILE",
         type=file_not_exist,
-        help="IFWI binary file with the" "IP replaced with the IPNAME_IN",
+        help="IFWI binary file with the IP replaced with the IPNAME_IN",
         metavar="FileName",
         default="BIOS_OUT.bin",
     )
 
-    # storing received arguments
-    args = parser.parse_args()
-
-    return args
+    return parser
 
 
 def copy_file(files, new_dir):
@@ -541,25 +534,32 @@ def copy_file(files, new_dir):
 def main():
     """Entry to script."""
 
-    args = parse_cmdline()
+    parser = parse_cmdline()
+    args = parser.parse_args()
     env_vars = set_environment_vars()
 
     filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
     if args.ipname in ["gop", "pei", "vbt"]:
         if not args.private_key or not os.path.exists(args.private_key):
-            sys.exit("Missing RSA key to stitch GOP/PEIM GFX/VBT from command line")
+            print("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
+            parser.print_help()
+            sys.exit(2)
         elif args.private_key != 'privkey.pem':
-            sys.exit("Wrong filename. Key filename should be "'privkey.pem'"")
+            print("\nWrong filename {}! Key filename should be "'privkey.pem'"\n".format(args.private_key))
+            parser.print_help()
+            sys.exit(2)
         else:
             filenames.append(args.private_key)
         if args.ipname == "pei":
             if args.IPNAME_IN2 is not None:
                 filenames.append(args.IPNAME_IN2.name)
             else:
-                sys.exit("2nd Input file is required.")
+                print("\nIPNAME_IN2 input file is required.\n")
+                parser.print_help()
+                sys.exit(2)
     elif args.IPNAME_IN2 is not None:
         print(
-            "2nd Input file is not required. Not using {}"
+            "IPNAME_IN2 input file is not required. Not using {}"
             .format(args.IPNAME_IN2.name)
         )
 

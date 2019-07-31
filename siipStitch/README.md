@@ -48,9 +48,8 @@ optional arguments:
                         The name of the IP in the IFWI_IN file to be replaced.
                         This is required.
   -k PRIVATE_KEY, --private-key PRIVATE_KEY
-                        Private RSA key in PEM format to sign IFWI.Bin.
-                        PRIVATE_KEY is required for stitching GOP, PEI, and VBT. The
-                        tool requires the key filename to be 'privkey.pem'
+                        Private RSA key in PEM format. Note: Key is required
+                        for stitching GOP features
   -v, --version         Shows the current version if the BIOS Stitching Tool
   -o FileName, --outputfile FileName
                         IFWI binary file with the IP replaced with the
@@ -118,7 +117,7 @@ Directory of c:\siip_tools\siipStitch
 For example:
 
 ```
-C:\siip_tools\siipStitch>siip_stitck.py -ip pse -o BIOS2.bin BIOS.BIN OseFw.bin
+C:\siip_tools\siipStitch>siip_stitch.py -ip pse -o BIOS2.bin BIOS.BIN OseFw.bin
 #########################################################################################
 Purpose of this utility is to replace the section in System BIOS ROM file with new section
 #########################################################################################

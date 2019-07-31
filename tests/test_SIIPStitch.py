@@ -38,12 +38,10 @@ import platform
 
 SIIPSTITCH=os.path.join('..', 'siipStitch', 'siip_stitch.py')
 
-###############################################################################################################################
-##MyTestSet1:
-## Test general functionality of SIIP Stitch Tool
-##
-###############################################################################################################################
-class MyTestSet1(unittest.TestCase):
+
+class TestFunctionality(unittest.TestCase):
+    """Test general functionality of SIIP Stitch Tool"""
+
     def setUp(self):
         pass
 
@@ -72,12 +70,7 @@ class MyTestSet1(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join('tests', 'IFWI.bin')))
         os.remove(os.path.join('tests', 'IFWI.BIN'))
 
-###############################################################################################################################
-##MyTestSet2:
-## Test finding input files outside of the working directory
-##
-###############################################################################################################################
-class MyTestSet2(unittest.TestCase):
+    """Test finding input files outside of the working directory"""
     @classmethod
     def setUpClass(cls):
          os.mkdir(os.path.join('tests', 'TMPDIR'))
@@ -127,12 +120,9 @@ class MyTestSet2(unittest.TestCase):
         self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                     os.path.join('tests', 'BIOS2.bin')))
 
-###############################################################################################################################
-##MyTestSet3:
-## Test error cases of SIIPSTITCH Tool
-##
-###############################################################################################################################
-class MyTestSet3(unittest.TestCase):
+
+class TestErrorCases(unittest.TestCase):
+    """Test error cases of siip_stitch script"""
 
     def setUp(self):
         pass
@@ -220,7 +210,7 @@ class MyTestSet3(unittest.TestCase):
 
         try:
            results=subprocess.check_output(cmd, cwd='tests')
-           if b'2nd Input file is not required' in results:
+           if b'IPNAME_IN2 input file is not required' in results:
               pass
            else:
               self.fail('\nNot correct error')
@@ -263,13 +253,8 @@ class MyTestSet3(unittest.TestCase):
            pass
 
 
-###############################################################################################################################
-##MyTestSet4:
-## Test replacement of the subregions
-##
-###############################################################################################################################
-class MyTestSet4(unittest.TestCase):
-
+class TestReplaceSubRegions(unittest.TestCase):
+    """ Test replacement of subregions"""
     def setUp(self):
         pass
 
@@ -302,7 +287,7 @@ class MyTestSet4(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join('tests', 'BIOS_OUT.bin')))
 
 
-class MyTestSet5(unittest.TestCase):
+class TestReplaceGOP(unittest.TestCase):
     """ Test replacement of the GOP"""
 
     def setUp(self):
@@ -330,9 +315,7 @@ class MyTestSet5(unittest.TestCase):
                                    os.path.join('tests', 'rom_pei.bin')))
 
 
-#ToolPath = os.path.join('..', 'siipSupport','Bin', 'Win32')
-
-class MyTestSet6(unittest.TestCase):
+class TestExceptions(unittest.TestCase):
     """Force Exception code to execute"""
 
     tool_path = os.path.join('siipSupport','Bin', 'Win32')
@@ -349,7 +332,7 @@ class MyTestSet6(unittest.TestCase):
 
         #return to orignal folder
         shutil.move(os.path.join('siipSupport2','Bin','Win32'),
-                    os.path.join(MyTestSet6.tool_path)
+                    os.path.join(TestExceptions.tool_path)
                    )
         shutil.rmtree(os.path.join('siipSupport2'),ignore_errors=True)
 
@@ -366,35 +349,34 @@ class MyTestSet6(unittest.TestCase):
     def test_exception_missing_genFfs(self):  #missing 3rd party files
         """ Missing third party tool GenFfs"""
 
-        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFfs.exe'), \
-                  os.path.join(MyTestSet6.tool_path, 'GenFfs2.exe'))
+        os.rename(os.path.join(TestExceptions.tool_path, 'GenFfs.exe'), \
+                  os.path.join(TestExceptions.tool_path, 'GenFfs2.exe'))
 
         cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin', '-ip', 'pse']
         try:
-            results=subprocess.check_call(cmd, cwd='tests')
+            subprocess.check_call(cmd, cwd='tests')
             self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError as error:
+        except subprocess.CalledProcessError:
             pass
 
-        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFfs2.exe'), \
-                      os.path.join(MyTestSet6.tool_path, 'GenFfs.exe'))
-
+        os.rename(os.path.join(TestExceptions.tool_path, 'GenFfs2.exe'), \
+                      os.path.join(TestExceptions.tool_path, 'GenFfs.exe'))
 
     def test_exception_missing_GenFv(self):  
         """ Missing third party tool GenFv"""
 
-        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFv.exe'), \
-                  os.path.join(MyTestSet6.tool_path, 'GenFv2.exe'))
+        os.rename(os.path.join(TestExceptions.tool_path, 'GenFv.exe'), \
+                  os.path.join(TestExceptions.tool_path, 'GenFv2.exe'))
 
         cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'OseFw.bin', '-ip', 'pse']
         try:
-            results=subprocess.check_call(cmd, cwd='tests')
+            subprocess.check_call(cmd, cwd='tests')
             self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError as error:
+        except subprocess.CalledProcessError:
             pass
 
-        os.rename(os.path.join(MyTestSet6.tool_path, 'GenFv2.exe'), \
-                      os.path.join(MyTestSet6.tool_path, 'GenFv.exe'))
+        os.rename(os.path.join(TestExceptions.tool_path, 'GenFv2.exe'), \
+                      os.path.join(TestExceptions.tool_path, 'GenFv.exe'))
 
 def cleanup():
     try:
