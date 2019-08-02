@@ -30,8 +30,10 @@ SectionNameLookupTable = {
 def create_buffer_from_data_field(data_field):
     buffer = None
     if data_field.Type == Srd.DataTypes.FILE:
+        buffer = bytearray(data_field.ByteSize)  # Allocate the buffer
         with open(data_field.Value, "rb") as DataFile:
-            buffer = DataFile.read()
+            tmp = DataFile.read(data_field.ByteSize)
+        buffer[:len(tmp)] = tmp  # copy data to the beginning of the buffer
 
     if data_field.Type == Srd.DataTypes.STRING:
         fmt = "{}s".format(data_field.ByteSize)

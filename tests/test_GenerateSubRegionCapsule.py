@@ -31,53 +31,33 @@ class JsonPayloadParserTestCase(unittest.TestCase):
         self.assertEqual(1, SubRegionDesc.Version)
         SampleFfsFile = SubRegionDesc.FfsFiles[0]
         self.assertNotEqual(None, SampleFfsFile.Data)
-        DataField = SampleFfsFile.Data[0]
-        self.assertEqual("field_one", DataField.Name)
-        self.assertEqual(Srd.DataTypes.DECIMAL, DataField.Type)
-        self.assertEqual(1, DataField.ByteSize)
-        self.assertEqual(0, DataField.dValue)
-        DataField = SampleFfsFile.Data[1]
-        self.assertEqual("field_two", DataField.Name)
-        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
-        self.assertEqual(2, DataField.ByteSize)
-        self.assertEqual(524, DataField.dValue)
-        DataField = SampleFfsFile.Data[2]
-        self.assertEqual("field_three", DataField.Name)
-        self.assertEqual(Srd.DataTypes.DECIMAL, DataField.Type)
-        self.assertEqual(3, DataField.ByteSize)
-        self.assertEqual(333, DataField.dValue)
-        DataField = SampleFfsFile.Data[3]
-        self.assertEqual("field_four", DataField.Name)
-        self.assertEqual(Srd.DataTypes.DECIMAL, DataField.Type)
-        self.assertEqual(15, DataField.ByteSize)
-        self.assertEqual(-98230498723950780, DataField.dValue)
-        DataField = SampleFfsFile.Data[4]
-        self.assertEqual("field_five", DataField.Name)
-        self.assertEqual(Srd.DataTypes.DECIMAL, DataField.Type)
-        self.assertEqual(20, DataField.ByteSize)
-        self.assertEqual(98230984023984, DataField.dValue)
-        DataField = SampleFfsFile.Data[5]
-        self.assertEqual("field_six", DataField.Name)
-        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
-        self.assertEqual(1, DataField.ByteSize)
-        self.assertEqual(255, DataField.dValue)
-        DataField = SampleFfsFile.Data[6]
-        self.assertEqual("field_seven", DataField.Name)
-        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
-        self.assertEqual(3, DataField.ByteSize)
-        self.assertEqual(819, DataField.dValue)
-        DataField = SampleFfsFile.Data[7]
-        self.assertEqual("field_eight", DataField.Name)
-        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
-        self.assertEqual(20, DataField.ByteSize)
-        self.assertEqual(162364294545257138462923369967, DataField.dValue)
-        DataField = SampleFfsFile.Data[8]
-        self.assertEqual("field_nine", DataField.Name)
-        self.assertEqual(Srd.DataTypes.HEXADECIMAL, DataField.Type)
-        self.assertEqual(21, DataField.ByteSize)
-        self.assertEqual(2106967472293113107385212910597918500865023886834641740578657241782190877997108, DataField.dValue)
 
-
+        field_names = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+        field_values = [0,
+                        524,
+                        333,
+                        -98230498723950780,
+                        98230984023984,
+                        255,
+                        819,
+                        162364294545257138462923369967,
+                        2106967472293113107385212910597918500865023886834641740578657241782190877997108]
+        field_sizes = [1, 2, 3, 15, 20, 1, 3, 20, 21]
+        field_types = [Srd.DataTypes.DECIMAL,
+                       Srd.DataTypes.HEXADECIMAL,
+                       Srd.DataTypes.DECIMAL,
+                       Srd.DataTypes.DECIMAL,
+                       Srd.DataTypes.DECIMAL,
+                       Srd.DataTypes.HEXADECIMAL,
+                       Srd.DataTypes.HEXADECIMAL,
+                       Srd.DataTypes.HEXADECIMAL,
+                       Srd.DataTypes.HEXADECIMAL]
+        for i in range(9):
+            DataField = SampleFfsFile.Data[i]
+            self.assertEqual("field_" + field_names[i], DataField.Name)
+            self.assertEqual(field_types[i], DataField.Type)
+            self.assertEqual(field_sizes[i], DataField.ByteSize)
+            self.assertEqual(field_values[i], DataField.dValue)
         # Json with missing fields
         with self.assertRaises(Srd.SubRegionDescSyntaxError):
             SubRegionDesc.parse_json_data(
@@ -240,14 +220,31 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         DUMMY_FILE = "./Tests/Collateral/DummyFile.txt"
         DUMMY_BIN = "./Tests/Collateral/DummyBin.Bin"
 
-        DataFieldFile = Srd.SubRegionDataField(
-            ["field_1", Srd.DataTypes.FILE, 8, DUMMY_FILE]
+        DataFieldFileExactSize = Srd.SubRegionDataField(
+            ["field_1", Srd.DataTypes.FILE, 11, DUMMY_FILE]
+        )
+        DataFieldFileBig = Srd.SubRegionDataField(
+            ["field_1", Srd.DataTypes.FILE, 20, DUMMY_FILE]
+        )
+        DataFieldFileSmall = Srd.SubRegionDataField(
+            ["field_1", Srd.DataTypes.FILE, 5, DUMMY_FILE]
         )
 
         # File Data
-        DataBuffer = Sri.create_buffer_from_data_field(DataFieldFile)
+        DataBuffer = Sri.create_buffer_from_data_field(DataFieldFileExactSize)
         with open(DUMMY_FILE, "rb") as df:
             self.assertEqual(df.read(), DataBuffer)
+        self.assertEqual(len(DataBuffer), DataFieldFileExactSize.ByteSize)
+        DataBuffer = Sri.create_buffer_from_data_field(DataFieldFileBig)
+        with open(DUMMY_FILE, "rb") as df:
+            tmp = df.read()
+        self.assertTrue(DataBuffer.decode().startswith(tmp.decode()))
+        self.assertEqual(len(DataBuffer), DataFieldFileBig.ByteSize)
+        DataBuffer = Sri.create_buffer_from_data_field(DataFieldFileSmall)
+        with open(DUMMY_FILE, "rb") as df:
+            tmp = df.read()
+        self.assertTrue(tmp.decode().startswith(DataBuffer.decode()))
+        self.assertEqual(len(DataBuffer), DataFieldFileSmall.ByteSize)
 
     def test_HandleStdinDataFields(self):
         STDIN = "_STDIN_"
