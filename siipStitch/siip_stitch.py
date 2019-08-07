@@ -1,49 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-##############################################################################
-# SIIP Stitching Tool
-# {The SIIP Stitching Tool replaces specified firmware sections in the
-# current BIOS.bin file with the new version.}
-##############################################################################
 #
-# Copyright 2019 Intel Corporation
+# Copyright (c) 2019, Intel Corporation. All rights reserved.
+# SPDX-License-Identifier: BSD-2-Clause
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-#  1. Redistributions of source code must retain the above copyright notice,
-#     this list of conditions and the following disclaimer.
-#
-#  2. Redistributions in binary form must reproduce the above copyright notice,
-#     this list of conditions and the following disclaimer in the documentation
-#     and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-# BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY,OR TORT (INCLUDING NEGLIGENCE OR
-# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OFTHIS SOFTWARE, EVEN IF
-# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-##############################################################################
 
 
-##############################################################################
-# Name siip_stitch.py
-# Author: Kimberly Barnes
-#
-#
-# File Description:
-#
-# License: {license}
-# Version: 0.6.1
-# Status: Intial Development
-##############################################################################
 import os
 import platform
 import subprocess
@@ -86,8 +48,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
     command = ["FMMT.exe", "-v", os.path.abspath(inputfile), ">", "temp.txt"]
 
     try:
-        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True,
-                              timeout=10)
+        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True, timeout=10)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe: {}".format(status))
         return 1, fw_vol
@@ -270,8 +231,8 @@ def create_ffs_cmd(filetype, guild, align, inputfile):
     """ generates the firmware volume according to file type"""
 
     fv_filetype = FFS_FILETYPE.get(filetype)
-    cmd = ["GenFfs", "-o", "tmp.ffs", "-t", fv_filetype, "-g", guild, "-i",
-           inputfile]
+    cmd = ["GenFfs", "-o", "tmp.ffs", "-t", fv_filetype, "-g",
+           guild, "-i", inputfile]
     if align is not None:
         cmd += ["-a", align]
     return cmd
@@ -302,7 +263,7 @@ def ip_inputfiles(filenames, ipname):
         inputfiles.append("tmp.cmps")
 
     # add user given input files
-    infiles = filenames[1: num_infiles + 1]
+    infiles = filenames[1:num_infiles + 1]
     inputfiles[1:1] = infiles
 
     return inputfiles, num_infiles
@@ -353,8 +314,7 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars, workdir):
     # Merging and Replacing
     for command in cmds:
         try:
-            subprocess.check_call(command, env=env_vars, cwd=workdir,
-                                  shell=True)
+            subprocess.check_call(command, env=env_vars, cwd=workdir, shell=True)
         except subprocess.CalledProcessError as status:
             print("\nError executing {}".format(" ".join(command)))
             print("\nStatus Message: {}".format(status))
@@ -370,8 +330,7 @@ def cleanup(wk_dir):
     try:
         os.chdir(wk_dir[0])
     except OSError as error:
-        sys.exit("\nUnable to Change Directory : {}\n{}"
-                 .format(wk_dir[0], error))
+        sys.exit("\nUnable to Change Directory : {}\n{}".format(wk_dir[0], error))
     except Exception as error:
         sys.exit("\nUnexpected error:{}, {}".format(sys.exc_info(), error))
 
@@ -427,7 +386,9 @@ def set_environment_vars():
             # check to see if the required tools are installed
             subprocess.check_call(command, stdout=dev_null, env=myenv)
         except subprocess.CalledProcessError:
-            sys.exit("\nError third party tool {} is not located in the siipSupport directory.".format(siip_tool))
+            sys.exit(
+                "\nError third party tool {} is not located in the siipSupport directory.".format(siip_tool)
+            )
 
     return myenv
 
@@ -464,12 +425,12 @@ def parse_cmdline():
     parser.add_argument(
         "IFWI_IN",
         type=argparse.FileType("rb+"),
-        help="Input BIOS Binary file(Ex: IFWI.bin) to be updated with the given input IP firmware"
+        help="Input BIOS Binary file(Ex: IFWI.bin) to be updated with the given input IP firmware",
     )
     parser.add_argument(
         "IPNAME_IN",
         type=argparse.FileType("rb"),
-        help="Input IP firmware Binary file(Ex: OseFw.Bin to be replaced in the IFWI.bin"
+        help="Input IP firmware Binary file(Ex: OseFw.Bin to be replaced in the IFWI.bin",
     )
     parser.add_argument(
         "IPNAME_IN2",
@@ -489,7 +450,7 @@ def parse_cmdline():
     parser.add_argument(
         "-k",
         "--private-key",
-        help="Private RSA key in PEM format. Note: Key is required for stitching GOP features"
+        help="Private RSA key in PEM format. Note: Key is required for stitching GOP features",
     )
     parser.add_argument(
         "-v",
@@ -544,10 +505,6 @@ def main():
             print("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
             parser.print_help()
             sys.exit(2)
-        elif args.private_key != 'privkey.pem':
-            print("\nWrong filename {}! Key filename should be "'privkey.pem'"\n".format(args.private_key))
-            parser.print_help()
-            sys.exit(2)
         else:
             filenames.append(args.private_key)
         if args.ipname == "pei":
@@ -559,8 +516,9 @@ def main():
                 sys.exit(2)
     elif args.IPNAME_IN2 is not None:
         print(
-            "IPNAME_IN2 input file is not required. Not using {}"
-            .format(args.IPNAME_IN2.name)
+            "IPNAME_IN2 input file is not required. Not using {}".format(
+                args.IPNAME_IN2.name
+            )
         )
 
     # check to see if input files are empty
@@ -574,11 +532,19 @@ def main():
     # Create working directory
     try:
         os.mkdir(dirs[1])
-    except (IOError, OSError) as exception:
-        sys.exit("\nUnable to create directory: {}\n{}"
-                 .format(dirs[1], exception))
+    except OSError as exception:
+        sys.exit("\nUnable to create directory: {}\n{}".format(dirs[1], exception))
     except Exception as error:
-        sys.exit("\nUnexpected error occurred when trying to create directory: {}".format(error))
+        sys.exit(
+            "\nUnexpected error occurred when trying to create directory: {}".format(
+                error
+            )
+        )
+
+    # Copy key file to the required name needed for the rsa_helper.py
+    if args.private_key in filenames:
+        shutil.copyfile(args.private_key, os.path.join(dirs[0], dirs[1], "privkey.pem"))
+        filenames.remove(args.private_key)
 
     # move files to working directory
     status = copy_file(filenames, dirs[1])
@@ -586,13 +552,8 @@ def main():
         cleanup(dirs)
         sys.exit()
 
-    # key is not need as an actual input to merge and replace
-    if args.private_key in filenames:
-        filenames.remove(args.private_key)
-
     # search for firmware volume
-    status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname, env_vars,
-                                      dirs[1])
+    status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname, env_vars, dirs[1])
 
     # Check for error in using FMMT.exe or if firmware volume was not found.
     if status == 1 or fw_volume is None:
@@ -612,8 +573,7 @@ def main():
     filenames.append(os.path.abspath(args.OUTPUT_FILE))
 
     # create OseFw header, merge header and replace in Binary
-    status = merge_and_replace(filenames, args.ipname, fw_volume, env_vars,
-                               dirs[1])
+    status = merge_and_replace(filenames, args.ipname, fw_volume, env_vars, dirs[1])
 
     cleanup(dirs)
 

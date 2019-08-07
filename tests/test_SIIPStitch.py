@@ -16,11 +16,13 @@
 ##
 ##  File Description:
 ##   Test functionality and error testing of the tool.
-##   MyTestSet1 - test the general functionality of the tool
-##   MyTestSet2 - test when the input files are in different directory than the workign directory
-##   MyTestSet3 - test the error cases. Formating issues of the guids and not having correct name
-##                of key file.
-##   MyTestSet4 - test for replacing other subregions
+##
+##   TestFunctionality - test the general functionality of the tool
+##   TestFilesOutsideDir - test finding input files outside of the working directory
+##   TestErrorCases - test the error cases. 
+##   TestReplaceSubRegions - test for replacing subregions
+##   TestReplaceGop - test replacing of the Graphic output Protocal regions
+##   TestExceptions - force exception code to execute
 ##
 ## License: {license}
 ## Version: 0.6.0
@@ -70,6 +72,7 @@ class TestFunctionality(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join('tests', 'IFWI.bin')))
         os.remove(os.path.join('tests', 'IFWI.BIN'))
 
+class TestFilesOutsideDir(unittest.TestCase):
     """Test finding input files outside of the working directory"""
     @classmethod
     def setUpClass(cls):
@@ -119,6 +122,16 @@ class TestFunctionality(unittest.TestCase):
         subprocess.check_call(cmd, cwd='tests')
         self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                     os.path.join('tests', 'BIOS2.bin')))
+
+    def test_key_in_different_dir(self):  #private key not in current working directory
+        shutil.copy(os.path.join('tests', 'priv_key.pem'), os.path.join('tests', 'TMPDIR'))
+        REPLACE =os.path.join('TMPDIR', 'priv_key.pem')
+
+
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'IntelGopDriver.efi', '-k', REPLACE, '-ip', 'gop']
+        subprocess.check_call(cmd, cwd='tests')
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
+                                    os.path.join('tests','rom_drvr.bin')))
 
 
 class TestErrorCases(unittest.TestCase):
@@ -224,32 +237,18 @@ class TestErrorCases(unittest.TestCase):
         try:
             subprocess.check_call(cmd, cwd='tests')
             self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError as error:
+        except subprocess.CalledProcessError:
             pass
-
-
-    def test_key_name_wrong(self):
-        """Incorrect name for priviate key"""
-
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei', '-k', 'priv_key.pem']
-
-        try:
-            subprocess.check_call(cmd, cwd='tests')
-            self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError as error:
-            pass
-
 
     def test_missing_inputfile(self):
        """Replacement requires 2 input files"""
-
 
        cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', '-k', 'privkey.pem', '-ip', 'pei']
 
        try:
            results=subprocess.check_call(cmd, cwd='tests')
            self.fail('a call process eror should have occured')
-       except subprocess.CalledProcessError as error:
+       except subprocess.CalledProcessError:
            pass
 
 
@@ -309,10 +308,20 @@ class TestReplaceGOP(unittest.TestCase):
                                    os.path.join('tests', 'rom_drvr.bin')))
 
     def test_replace_peigraphics(self):
-       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei', '-k', 'privkey.pem']
+       cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 
+              'pei', '-k', 'privkey.pem']
        subprocess.check_call(cmd, cwd='tests')
        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
                                    os.path.join('tests', 'rom_pei.bin')))
+    
+    def test_key_with_different_name(self):
+        """Different name for priviate key"""
+
+        cmd = ['python', SIIPSTITCH, 'BIOS.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei', '-k', 'priv_key.pem']
+
+        subprocess.check_call(cmd, cwd='tests')
+        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
+                                    os.path.join('tests', 'rom_pei.bin')))
 
 
 class TestExceptions(unittest.TestCase):
