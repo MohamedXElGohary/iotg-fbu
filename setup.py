@@ -31,9 +31,9 @@ setuptools.setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'SIIPSign=siipSign.SIIPSign:main',
-            'SIIPStitch=siipStitch.SIIPStitch:main',
-            'GenerateSubRegionCapsule=SubRegionCapsule.GenerateSubRegionCapsule:main',
+            'SIIPSign=siipsign.SIIPSign:main',
+            'SIIPStitch=siipstitch.SIIPStitch:main',
+            'GenerateSubRegionCapsule=subregioncapsule.GenerateSubRegionCapsule:main',
         ],
     },
     cmdclass = {'test': PyTest},

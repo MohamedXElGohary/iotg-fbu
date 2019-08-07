@@ -40,7 +40,7 @@ __version__ = "0.2.0"
 class ToolsLoc:
     """directorys needed for the SIIP tools"""
 
-    TOOLSDIR = os.path.join(os.path.dirname(__file__), "SiipSupport")
+    TOOLSDIR = os.path.join(os.path.dirname(__file__), "siipsupport")
     TOOLSWINDIR = os.path.join(TOOLSDIR, "bin", "win32")
 
 

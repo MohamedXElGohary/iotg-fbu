@@ -3,8 +3,8 @@
 This project contains tools and scripts for signing, stitching and creating capsule output files for SIIP images (e.g. PSE) embedded in the BIOS region of IFWI images.
 
 This package consists of three scripts:
-* SIIP Sign Tool (`SIIPSign.py`): Sign a payload image according to SIIP specification
-* SIIP Stitch Tool (`SIIPStitch.py`): Stitch a signed image into a full IFWI image
+* SIIP Sign Tool (`siip_sign.py`): Sign a payload image according to SIIP specification
+* SIIP Stitch Tool (`siip_stitch.py`): Stitch a signed image into a full IFWI image
 * Subregion Capsule Tool (`GenerateSubRegionCapsule.py`): Create a UEFI capsule image containing the signed image
 
 The signing flow with associated input and output files are illustrated in the following diagram:
@@ -63,14 +63,14 @@ Before you are running scripts, please prepare the input files including images 
 ### Signing (output: `OseFw.signed.bin`)
 
 ```
-  SIIPSign.py sign -i OseFw.bin -o OseFw.signed.bin -k privkey.pem
+  siip_sign.py sign -i OseFw.bin -o OseFw.signed.bin -k privkey.pem
 ```
 ### Stitching (output: `IFWI.new.bin`)
 
 **IMPORTANT**: copy `BIOS.bin` and `OseFw.signed.bin` into the directory `siipStitch`
 
 ```
-  SIIPStitch.py -ip pse -o IFWI.new.bin BIOS.BIN OseFw.signed.bin
+  siip_stitch.py -ip pse -o IFWI.new.bin BIOS.BIN OseFw.signed.bin
 ```
 
 ### Creating Capsule Image (output: `capsule.new.bin`)
