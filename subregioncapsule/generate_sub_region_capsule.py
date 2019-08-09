@@ -76,37 +76,37 @@ if __name__ == "__main__":
     parser = create_arg_parser()
     args = parser.parse_args()
 
-    SubRegionFvFile = "./SubRegionFv.fv"
-    SubRegionImageFile = "./SubRegionImage.bin"
-    SubRegionDesc = Srd.SubRegionDescriptor()
-    SubRegionDesc.parse_json_data(args.InputFile)
-    Sri.generate_sub_region_fv(SubRegionImageFile, SubRegionDesc, SubRegionFvFile)
+    sub_region_fv_file = "./SubRegionFv.fv"
+    sub_region_image_file = "./SubRegionImage.bin"
+    sub_region_desc = Srd.SubRegionDescriptor()
+    sub_region_desc.parse_json_data(args.InputFile)
+    Sri.generate_sub_region_fv(sub_region_image_file, sub_region_desc, sub_region_fv_file)
 
     # TODO: until we refactor this code, both Generate*.py should be located together
     dir_name = os.path.dirname(os.path.abspath(__file__))
 
-    GenCapCmd = ["python", os.path.join(dir_name, "GenerateCapsule.py")]
-    GenCapCmd += ["--encode"]
-    GenCapCmd += ["--guid", SubRegionDesc.sFmpGuid]
-    GenCapCmd += ["--fw-version", str(SubRegionDesc.Version)]
-    GenCapCmd += ["--lsv", "0"]
-    GenCapCmd += ["--capflag", "PersistAcrossReset"]
-    GenCapCmd += ["--capflag", "InitiateReset"]
-    GenCapCmd += ["-o", args.OutputCapsuleFile]
-    GenCapCmd += ["--signer-private-cert", args.OpenSslSignerPrivateCertFile]
-    GenCapCmd += ["--other-public-cert", args.OpenSslOtherPublicCertFile]
-    GenCapCmd += ["--trusted-public-cert", args.OpenSslTrustedPublicCertFile]
-    GenCapCmd += ["-v"]
+    gen_cap_cmd = ["python", os.path.join(dir_name, "GenerateCapsule.py")]
+    gen_cap_cmd += ["--encode"]
+    gen_cap_cmd += ["--guid", sub_region_desc.s_fmp_guid]
+    gen_cap_cmd += ["--fw-version", str(sub_region_desc.version)]
+    gen_cap_cmd += ["--lsv", "0"]
+    gen_cap_cmd += ["--capflag", "PersistAcrossReset"]
+    gen_cap_cmd += ["--capflag", "InitiateReset"]
+    gen_cap_cmd += ["-o", args.OutputCapsuleFile]
+    gen_cap_cmd += ["--signer-private-cert", args.OpenSslSignerPrivateCertFile]
+    gen_cap_cmd += ["--other-public-cert", args.OpenSslOtherPublicCertFile]
+    gen_cap_cmd += ["--trusted-public-cert", args.OpenSslTrustedPublicCertFile]
+    gen_cap_cmd += ["-v"]
     if args.SigningToolPath is not None:
-        GenCapCmd += ["--signing-tool-path", args.SigningToolPath]
-    GenCapCmd += [SubRegionFvFile]
+        gen_cap_cmd += ["--signing-tool-path", args.SigningToolPath]
+    gen_cap_cmd += [sub_region_fv_file]
 
-    PopenObject = subprocess.Popen(
-        " ".join(GenCapCmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    popen_object = subprocess.Popen(
+        " ".join(gen_cap_cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
-    while PopenObject.returncode is None:
-        out, err = PopenObject.communicate()
+    while popen_object.returncode is None:
+        out, err = popen_object.communicate()
         print("Error messages  :\n%s" % err.decode("utf-8"))
         print("Output messages :\n%s" % out.decode("utf-8"))
 
-    sys.exit(PopenObject.returncode)
+    sys.exit(popen_object.returncode)

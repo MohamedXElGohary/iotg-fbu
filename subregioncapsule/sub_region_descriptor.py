@@ -8,11 +8,11 @@
 import json
 import uuid
 
-gFmpCapsuleTsnMacAddressFileGuid = uuid.UUID("6fee88ff-49ed-48f1-b77b-ead15771abe7")
-gFmpCapsuleOseTsnMacConfigFileGuid = uuid.UUID("90c9751d-fa74-4ea6-8c4b-f44d2be8cd4b")
-gFmpCapsuleOseFwFileGuid = uuid.UUID("aad1e926-23b8-4c3a-8b44-0c9a031664f2")
-gFmpCapsuleTccArbFileGuid = uuid.UUID("a7ee90b1-fb4a-4478-b868-367ee9ec97e2")
-gFmpCapsuleOobManageabilityFileGuid = uuid.UUID("bf2ae378-01e0-4605-9e3b-2ee2fc7339de")
+FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID = uuid.UUID("6fee88ff-49ed-48f1-b77b-ead15771abe7")
+FMP_CAPSULE_OSE_TSN_MAC_CONFIG_FILE_GUID = uuid.UUID("90c9751d-fa74-4ea6-8c4b-f44d2be8cd4b")
+FMP_CAPSULE_OSE_FW_FILE_GUID = uuid.UUID("aad1e926-23b8-4c3a-8b44-0c9a031664f2")
+FMP_CAPSULE_TCC_ARB_FILE_GUID = uuid.UUID("a7ee90b1-fb4a-4478-b868-367ee9ec97e2")
+FMP_CAPSULE_OOB_MANAGEABILITY_FILE_GUID = uuid.UUID("bf2ae378-01e0-4605-9e3b-2ee2fc7339de")
 
 
 class EnumDataTypes(set):
@@ -22,7 +22,7 @@ class EnumDataTypes(set):
         raise AttributeError
 
 
-DataTypes = EnumDataTypes(["DECIMAL", "HEXADECIMAL", "STRING", "FILE"])
+data_types = EnumDataTypes(["DECIMAL", "HEXADECIMAL", "STRING", "FILE"])
 
 
 class UnknownSubRegionError(Exception):
@@ -47,29 +47,29 @@ class SubRegionDescSyntaxError(Exception):
 
 class SubRegionFfsFile(object):
     def __init__(self, ffs_guid, compression, data):
-        self.sFfsGuid = ffs_guid
+        self.s_ffs_guid = ffs_guid
         try:
-            self.FfsGuid = uuid.UUID(self.sFfsGuid)
+            self.ffs_guid = uuid.UUID(self.s_ffs_guid)
         except ValueError:
             raise SubRegionDescSyntaxError("ffs_guid")
-        self.FfsGuid = ffs_guid
-        self.Compression = compression
-        self.Data = []
-        for DataField in data:
-            self.Data.append(SubRegionDataField(DataField))
+        self.ffs_guid = ffs_guid
+        self.compression = compression
+        self.data = []
+        for data_field in data:
+            self.data.append(SubRegionDataField(data_field))
 
 
 class SubRegionDataField(object):
     def __init__(self, data_field):
-        self.Name = data_field[0]
+        self.name = data_field[0]
         self.Type = data_field[1]
         self.ByteSize = data_field[2]
         self.Value = data_field[3]
-        if self.Type == DataTypes.DECIMAL:
+        if self.Type == data_types.DECIMAL:
             if data_field[3] is not None:
                 self.dValue = int(data_field[3])
                 self.sValue = str(data_field[3])
-        elif self.Type == DataTypes.HEXADECIMAL:
+        elif self.Type == data_types.HEXADECIMAL:
             if data_field[3] is not None:
                 self.sValue = str(data_field[3])
                 self.dValue = int(self.sValue, 16)
@@ -80,53 +80,53 @@ class SubRegionDataField(object):
 
 class SubRegionDescriptor(object):
     ValidGuidList = [
-        gFmpCapsuleTsnMacAddressFileGuid,
-        gFmpCapsuleOseTsnMacConfigFileGuid,
-        gFmpCapsuleOseFwFileGuid,
-        gFmpCapsuleTccArbFileGuid,
-        gFmpCapsuleOobManageabilityFileGuid,
+        FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID,
+        FMP_CAPSULE_OSE_TSN_MAC_CONFIG_FILE_GUID,
+        FMP_CAPSULE_OSE_FW_FILE_GUID,
+        FMP_CAPSULE_TCC_ARB_FILE_GUID,
+        FMP_CAPSULE_OOB_MANAGEABILITY_FILE_GUID,
     ]
 
     def __init__(self):
-        self.sFmpGuid = None
-        self.FmpGuid = None
-        self.Version = None
-        self.Fv = None
-        self.sFvGuid = None
-        self.FvGuid = None
-        self.FfsFiles = []
+        self.s_fmp_guid = None
+        self.fmp_guid = None
+        self.version = None
+        self.fv = None
+        self.s_fv_guid = None
+        self.fv_guid = None
+        self.ffs_files = []
 
     def parse_json_data(self, json_file):
         with open(json_file, "r") as file_handle:
             desc_buffer = json.loads(file_handle.read())
             try:
-                self.sFmpGuid = desc_buffer["FmpGuid"]
+                self.s_fmp_guid = desc_buffer["FmpGuid"]
                 try:
-                    self.FmpGuid = uuid.UUID(self.sFmpGuid)
-                    if not self.is_known_guid(self.FmpGuid):
+                    self.fmp_guid = uuid.UUID(self.s_fmp_guid)
+                    if not self.is_known_guid(self.fmp_guid):
                         raise UnknownSubRegionError
                 except ValueError:
                     raise SubRegionDescSyntaxError("FmpGuid")
-                self.Version = desc_buffer["Version"]
+                self.version = desc_buffer["Version"]
 
-                self.Fv = desc_buffer["FV"]
-                self.sFvGuid = self.Fv["FvGuid"]
+                self.fv = desc_buffer["FV"]
+                self.s_fv_guid = self.fv["FvGuid"]
                 try:
-                    self.FvGuid = uuid.UUID(self.sFvGuid)
+                    self.fv_guid = uuid.UUID(self.s_fv_guid)
                 except ValueError:
                     raise SubRegionDescSyntaxError("FvGuid")
                 except TypeError:
                     raise SubRegionDescSyntaxError("FvGuid")
 
-                ffs_file_list = self.Fv["FfsFiles"]
-                for FfsFile in ffs_file_list:
-                    ffs_guid = FfsFile["FileGuid"]
-                    compression = FfsFile["Compression"]
-                    data = FfsFile["Data"]
-                    self.FfsFiles.append(SubRegionFfsFile(ffs_guid, compression, data))
+                ffs_file_list = self.fv["FfsFiles"]
+                for ffs_file in ffs_file_list:
+                    ffs_guid = ffs_file["FileGuid"]
+                    compression = ffs_file["Compression"]
+                    data = ffs_file["Data"]
+                    self.ffs_files.append(SubRegionFfsFile(ffs_guid, compression, data))
 
-                for FfsFile in self.FfsFiles:
-                    if not self.check_file_good(FfsFile):
+                for ffs_file in self.ffs_files:
+                    if not self.check_file_good(ffs_file):
                         raise SubRegionDescSyntaxError("FfsFile")
             except (KeyError, IndexError) as e:
                 raise SubRegionDescSyntaxError(str(e))
@@ -134,17 +134,17 @@ class SubRegionDescriptor(object):
     def check_file_good(self, ffs_file):
         valid_file = True
 
-        if ffs_file.Compression not in [False, True]:
+        if ffs_file.compression not in [False, True]:
             valid_file = False
 
-        for DataField in ffs_file.Data:
-            if type(DataField.Name) not in [str]:
+        for data_field in ffs_file.data:
+            if type(data_field.name) not in [str]:
                 valid_file = False
-            if DataField.Type not in DataTypes:
+            if data_field.Type not in data_types:
                 valid_file = False
-            if DataField.ByteSize <= 0:
+            if data_field.ByteSize <= 0:
                 valid_file = False
-            if type(DataField.Value) not in [str, int]:
+            if type(data_field.Value) not in [str, int]:
                 valid_file = False
 
         return valid_file

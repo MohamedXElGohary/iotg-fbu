@@ -46,14 +46,14 @@ RSA_KEYEXP_SIZE = 4
 KB = 1024
 MB = 1024 * KB
 
-HASH_CHOICES = {
+g_hash_choices = {
     "sha256": (hashes.SHA256(), 2),
     "sha384": (hashes.SHA384(), 3),
     "sha512": (hashes.SHA512(), 4),
 }
 
-HASH_OPTION = None
-HASH_SIZE = 0
+g_hash_option = None
+g_hash_size = 0
 
 
 def hex_dump(data, n=16, indent=0, msg="Hex Dump"):
@@ -80,9 +80,9 @@ def pack_num(val, minlen=0):
 def compute_hash(data):
     """Compute hash from data"""
 
-    global HASH_OPTION
+    global g_hash_option
 
-    digest = hashes.Hash(HASH_OPTION, backend=default_backend())
+    digest = hashes.Hash(g_hash_option, backend=default_backend())
     digest.update(data)
     result = digest.finalize()
 
@@ -131,7 +131,7 @@ def get_pubkey_hash_from_privkey(privkey_pem):
 def compute_signature(data, privkey_pem):
     """Compute signature from data"""
 
-    global HASH_OPTION
+    global g_hash_option
 
     with open(privkey_pem, "rb") as privkey_file:
         key = serialization.load_pem_private_key(
@@ -142,7 +142,7 @@ def compute_signature(data, privkey_pem):
         raise Exception("Key size {} bits is too small.".format(key.key_size))
 
     # Calculate signature using private key
-    signature = key.sign(bytes(data), crypto_padding.PKCS1v15(), HASH_OPTION)
+    signature = key.sign(bytes(data), crypto_padding.PKCS1v15(), g_hash_option)
 
     return (signature, key)
 
@@ -150,7 +150,7 @@ def compute_signature(data, privkey_pem):
 def verify_signature(signature, data, pubkey_pem):
     """Verify signature with public key"""
 
-    global HASH_OPTION
+    global g_hash_option
 
     with open(pubkey_pem, "rb") as pubkey_file:
         puk = serialization.load_pem_public_key(
@@ -158,7 +158,7 @@ def verify_signature(signature, data, pubkey_pem):
         )
 
     # Raises InvalidSignature error if not match
-    puk.verify(signature, data, crypto_padding.PKCS1v15(), HASH_OPTION)
+    puk.verify(signature, data, crypto_padding.PKCS1v15(), g_hash_option)
 
 
 def compute_pubkey_hash(pubkey_pem_file):
@@ -181,8 +181,8 @@ def compute_pubkey_hash(pubkey_pem_file):
 def create_fkm(privkey, payload_privkey, hash_option):
     """Create FKM data from a list of keys"""
 
-    global HASH_CHOICES
-    global HASH_SIZE
+    global g_hash_choices
+    global g_hash_size
 
     fkm_data = bytearray(sizeof(FIRMWARE_KEY_MANIFEST))
 
@@ -207,13 +207,13 @@ def create_fkm(privkey, payload_privkey, hash_option):
     fkm.key_manifest_svn = 0
     fkm.oem_id = 0
     fkm.key_manifest_id = 0  # Not used
-    fkm.num_of_keys = FIRMWARE_KEY_MANIFEST.NUM_OF_KEYS
+    fkm.num_of_keys = FIRMWARE_KEY_MANIFEST.number_of_keys
     fkm.extension_length = 36 + 68 * fkm.num_of_keys  # Hardcoded from now
     fkm.key_usage_array[0].key_usage[7] = 0x08  # 1 << 59 in arr[16]
     fkm.key_usage_array[0].key_reserved[:] = [0] * 16
     fkm.key_usage_array[0].key_policy = 1  # may signed only by Intel
-    fkm.key_usage_array[0].key_hash_algorithm = HASH_CHOICES[hash_option][1]
-    fkm.key_usage_array[0].key_hash_size = HASH_SIZE
+    fkm.key_usage_array[0].key_hash_algorithm = g_hash_choices[hash_option][1]
+    fkm.key_usage_array[0].key_hash_size = g_hash_size
 
     # Calculate public key hash used by payload and store it in FKM
 
@@ -221,7 +221,7 @@ def create_fkm(privkey, payload_privkey, hash_option):
     fkm.key_usage_array[0].key_hash[:] = [0xFF] * 64
 
     hash_result = get_pubkey_hash_from_privkey(payload_privkey)
-    fkm.key_usage_array[0].key_hash[:] = hash_result + bytes(64 - HASH_SIZE)
+    fkm.key_usage_array[0].key_hash[:] = hash_result + bytes(64 - g_hash_size)
 
     # Calculate FKM signature (except signature and public key)
     # and store it in FKM header
@@ -388,7 +388,7 @@ class KEY_USAGE_STRUCTURE(Structure):
 
 
 class FIRMWARE_KEY_MANIFEST(Structure):
-    NUM_OF_KEYS = 1
+    number_of_keys = 1
     _pack_ = 1
     _fields_ = [
         ("manifest_header", FIRMWARE_MANIFEST_HEADER),
@@ -401,7 +401,7 @@ class FIRMWARE_KEY_MANIFEST(Structure):
         ("reserved", c_uint8),
         ("reserved2", ARRAY(c_uint8, 12)),
         ("num_of_keys", c_uint32),
-        ("key_usage_array", ARRAY(KEY_USAGE_STRUCTURE, NUM_OF_KEYS)),
+        ("key_usage_array", ARRAY(KEY_USAGE_STRUCTURE, number_of_keys)),
     ]
 
 
@@ -439,13 +439,13 @@ class FIRMWARE_BLOB_MANIFEST(Structure):
 def create_image(payload_file, outfile, privkey, hash_option):
     """Create a new image with manifest data in front it"""
 
-    global HASH_OPTION
-    global HASH_SIZE
+    global g_hash_option
+    global g_hash_size
 
-    HASH_OPTION = HASH_CHOICES[hash_option][0]
-    HASH_SIZE = HASH_OPTION.digest_size
+    g_hash_option = g_hash_choices[hash_option][0]
+    g_hash_size = g_hash_option.digest_size
 
-    print("Hashing Algorithm : %s" % HASH_OPTION.name)
+    print("Hashing Algorithm : %s" % g_hash_option.name)
 
     payload_cfg = payload_file.split(",")  # <file>,<signing_key>
     if len(payload_cfg) == 2:
@@ -520,8 +520,8 @@ def create_image(payload_file, outfile, privkey, hash_option):
     fbm.metadata_entries[0].id = 0xDEADBEEF
     # 0: process; 1: shared lib; 2: data (for SIIP)
     fbm.metadata_entries[0].type = 2
-    fbm.metadata_entries[0].hash_algorithm = HASH_CHOICES[hash_option][1]
-    fbm.metadata_entries[0].hash_size = HASH_SIZE
+    fbm.metadata_entries[0].hash_algorithm = g_hash_choices[hash_option][1]
+    fbm.metadata_entries[0].hash_size = g_hash_size
     fbm.metadata_entries[0].size = sizeof(METADATA_FILE_STRUCT)
     fbm.metadata_entries[0].hash[:] = [0] * 64
 
@@ -537,15 +537,15 @@ def create_image(payload_file, outfile, privkey, hash_option):
     metadata.module_id = 0xFF  # TBD
     metadata.module_size = len(in_data)
     metadata.module_version = 0
-    metadata.module_hash_size = HASH_SIZE
+    metadata.module_hash_size = g_hash_size
     metadata.module_entry_point = 0
-    metadata.module_hash_algorithm = HASH_CHOICES[hash_option][1]
+    metadata.module_hash_algorithm = g_hash_choices[hash_option][1]
 
     # STEP 1: Calculate payload hash and store it in Metadata file
     hash_result = compute_hash(bytes(in_data))
     hex_dump(hash_result, msg="Payload Hash")
 
-    metadata.module_hash_value[:HASH_SIZE] = hash_result
+    metadata.module_hash_value[:g_hash_size] = hash_result
     metadata.num_of_keys = 1
     metadata.key_usage_id[7] = 0x08  # Bit 59: OSE firmware
     metadata.non_std_section_size = 0  # Empty non-standard section for now
@@ -554,7 +554,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
     metadata_limit = metadata_offset + metadata_length
 
     hash_result = compute_hash(bytes(data[metadata_offset:metadata_limit]))
-    fbm.metadata_entries[0].hash[:HASH_SIZE] = hash_result
+    fbm.metadata_entries[0].hash[:g_hash_size] = hash_result
 
     # STEP 3: Calculate signature of FBM (except signature and public keys)
     #         and store it in FBM header
@@ -619,11 +619,11 @@ def decompose_image(infile_signed):
 def verify_image(infile_signed, pubkey_pem_file, hash_option):
     """Verify a signed image with public key end-to-end"""
 
-    global HASH_OPTION
-    global HASH_SIZE
+    global g_hash_option
+    global g_hash_size
 
-    HASH_OPTION = HASH_CHOICES[hash_option][0]
-    HASH_SIZE = HASH_OPTION.digest_size
+    g_hash_option = g_hash_choices[hash_option][0]
+    g_hash_size = g_hash_option.digest_size
 
     puk_cfg = infile_signed.split(",")  # <infile>,<puk.pem>
     if len(puk_cfg) == 2:
@@ -796,7 +796,7 @@ def main():
         "-s",
         "--hash-option",
         default="sha256",
-        choices=list(HASH_CHOICES.keys()),
+        choices=list(g_hash_choices.keys()),
         help="Hashing algorithm",
     )
 
@@ -831,7 +831,7 @@ def main():
         "-s",
         "--hash-option",
         default="sha256",
-        choices=list(HASH_CHOICES.keys()),
+        choices=list(g_hash_choices.keys()),
         help="Hashing algorithm",
     )
     verifyp.set_defaults(func=cmd_verify)
