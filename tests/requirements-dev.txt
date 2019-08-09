@@ -1,0 +1,6 @@
+# Required for generating coverage report
+ansi2html==1.5.2
+pytest-cov==2.7.1
+
+# Required for generating pytest html report
+pytest-html==1.22.0

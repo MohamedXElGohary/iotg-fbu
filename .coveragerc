@@ -1,0 +1,12 @@
+[run]
+branch = true
+# omit list of directory from runtime and terminal reporting
+omit =
+    */tests/*
+    */venv/*
+
+[report]
+# omit list of directory from reporting
+omit =
+    */tests/*
+    */venv/*
