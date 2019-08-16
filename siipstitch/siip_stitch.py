@@ -386,7 +386,6 @@ def set_environment_vars():
             # check to see if the required tools are installed
             subprocess.check_call(command, stdout=dev_null, env=myenv)
         except subprocess.CalledProcessError:
-            sys.exit("\nError third party tool {} is not located in the siipsupport directory.".format(siip_tool))
             sys.exit(
                 "\nError third party tool {} is not located in the siipSupport directory.".format(siip_tool)
             )
@@ -399,6 +398,22 @@ def file_not_exist(file):
 
     if os.path.isfile(file):
         raise argparse.ArgumentTypeError("{} exist!".format(file))
+    return file
+
+
+def check_key(file):
+    """ Check if file is empty or over max size"""
+
+    FIRSTLINE = "-----BEGIN RSA PRIVATE KEY-----"
+    LASTLINE = "-----END RSA PRIVATE KEY-----"
+
+    if os.path.getsize(file) > 2000:
+        raise argparse.ArgumentTypeError("{} is larger than 2KB!".format(file))
+    else:
+        with open(file, "r") as key:
+            key_lines = key.readlines()
+        if not ((FIRSTLINE in key_lines[0]) and (LASTLINE in key_lines[-1])):
+            raise argparse.ArgumentTypeError("{} is not an RSA priviate key".format(file))
     return file
 
 
@@ -421,7 +436,7 @@ def parse_cmdline():
     """ Parsing and validating input arguments."""
 
     # initiate the parser
-    parser = argparse.ArgumentParser(prog="siipstitch")
+    parser = argparse.ArgumentParser(prog="siip_stitch")
 
     parser.add_argument(
         "IFWI_IN",
@@ -451,6 +466,7 @@ def parse_cmdline():
     parser.add_argument(
         "-k",
         "--private-key",
+        type=check_key,
         help="Private RSA key in PEM format. Note: Key is required for stitching GOP features",
     )
     parser.add_argument(
@@ -522,7 +538,7 @@ def main():
             )
         )
 
-    # check to see if input files are empty
+    # verify file is not empty
     status = file_not_empty(filenames)
     if status != 0:
         sys.exit()
