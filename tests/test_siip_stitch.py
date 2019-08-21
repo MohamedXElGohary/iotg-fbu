@@ -352,12 +352,12 @@ class TestExceptions(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
          # back up the siipsupport directory
-         shutil.copytree(os.path.join('siipsupport'),os.path.join('siipSupport2'))
+         shutil.copytree(os.path.join('siipsupport', 'Bin'),os.path.join('siipSupport2', 'Bin'))
 
     @classmethod
     def tearDownClass(cls):  
 
-        shutil.rmtree(os.path.join('siipsupport'),ignore_errors=True)
+        shutil.rmtree(os.path.join('siipsupport','Bin'),ignore_errors=True)
 
         #return to orignal folder
         shutil.move(os.path.join('siipSupport2','Bin','Win32'),

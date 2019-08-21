@@ -12,22 +12,23 @@
 #
 
 import os
+import sys
 import struct
 import subprocess
 import unittest
 import uuid
 from math import log
 
-
-import subregioncapsule.sub_region_descriptor as Srd
-import subregioncapsule.sub_region_image as Sri
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import siipsupport.sub_region_descriptor as srd
+import siipsupport.sub_region_image as sri
 
 
 class JsonPayloadParserTestCase(unittest.TestCase):
     def test_ParseJsonSubRegDescriptorFiles(self):
-        sub_region_desc = Srd.SubRegionDescriptor()
+        sub_region_desc = srd.SubRegionDescriptor()
         sub_region_desc.parse_json_data("./Tests/Collateral/GoodSubRegDescExample.json")
-        self.assertEqual(Srd.FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID, sub_region_desc.fmp_guid)
+        self.assertEqual(srd.FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID, sub_region_desc.fmp_guid)
         self.assertEqual(1, sub_region_desc.version)
         sample_ffs_file = sub_region_desc.ffs_files[0]
         self.assertNotEqual(None, sample_ffs_file.data)
@@ -43,15 +44,15 @@ class JsonPayloadParserTestCase(unittest.TestCase):
                         162364294545257138462923369967,
                         2106967472293113107385212910597918500865023886834641740578657241782190877997108]
         field_sizes = [1, 2, 3, 15, 20, 1, 3, 20, 21]
-        field_types = [Srd.data_types.DECIMAL,
-                       Srd.data_types.HEXADECIMAL,
-                       Srd.data_types.DECIMAL,
-                       Srd.data_types.DECIMAL,
-                       Srd.data_types.DECIMAL,
-                       Srd.data_types.HEXADECIMAL,
-                       Srd.data_types.HEXADECIMAL,
-                       Srd.data_types.HEXADECIMAL,
-                       Srd.data_types.HEXADECIMAL]
+        field_types = [srd.data_types.DECIMAL,
+                       srd.data_types.HEXADECIMAL,
+                       srd.data_types.DECIMAL,
+                       srd.data_types.DECIMAL,
+                       srd.data_types.DECIMAL,
+                       srd.data_types.HEXADECIMAL,
+                       srd.data_types.HEXADECIMAL,
+                       srd.data_types.HEXADECIMAL,
+                       srd.data_types.HEXADECIMAL]
         for i in range(9):
             data_field = sample_ffs_file.data[i]
             self.assertEqual("field_" + field_names[i], data_field.name)
@@ -59,88 +60,88 @@ class JsonPayloadParserTestCase(unittest.TestCase):
             self.assertEqual(field_sizes[i], data_field.ByteSize)
             self.assertEqual(field_values[i], data_field.dValue)
         # Json with missing fields
-        with self.assertRaises(Srd.SubRegionDescSyntaxError):
+        with self.assertRaises(srd.SubRegionDescSyntaxError):
             sub_region_desc.parse_json_data(
                 "./Tests/Collateral/MissingFieldSubRegDescExample.json"
             )
 
         # Json with bad guid
-        with self.assertRaises(Srd.SubRegionDescSyntaxError):
+        with self.assertRaises(srd.SubRegionDescSyntaxError):
             sub_region_desc.parse_json_data(
                 "./Tests/Collateral/BadGuidSubRegDescExample.json"
             )
 
         # Json with unknown guid
-        with self.assertRaises(Srd.UnknownSubRegionError):
+        with self.assertRaises(srd.UnknownSubRegionError):
             sub_region_desc.parse_json_data(
                 "./Tests/Collateral/UnknownGuidSubRegDescExample.json"
             )
 
         # Json with bad data field
-        with self.assertRaises(Srd.SubRegionDescSyntaxError):
+        with self.assertRaises(srd.SubRegionDescSyntaxError):
             sub_region_desc.parse_json_data(
                 "./Tests/Collateral/BadDataFieldSubRegDescExample.json"
             )
 
     def test_CheckIfDataFieldValid(self):
-        sub_region_desc = Srd.SubRegionDescriptor()
+        sub_region_desc = srd.SubRegionDescriptor()
         good_guid = "1A803C55-F034-4E60-AD9E-9D3F32CE273C"
         bad_guid = "xxxxxxxx-F034-4E60-AD9E-9D3F32CE273C"
-        data_field_good1 = ["field_1", Srd.data_types.DECIMAL, 1, 0]
-        data_field_good2 = ["field_1", Srd.data_types.STRING, 1, "_STDIN_"]
-        data_field_bad_field_name = [1, Srd.data_types.DECIMAL, 1, 0]
-        data_field_bad_byte_size1 = ["field_1", Srd.data_types.DECIMAL, 0, 0]
-        data_field_bad_byte_size2 = ["field_1", Srd.data_types.DECIMAL, -1, 0]
-        data_field_bad_none_data = ["field_1", Srd.data_types.DECIMAL, 1, None]
+        data_field_good1 = ["field_1", srd.data_types.DECIMAL, 1, 0]
+        data_field_good2 = ["field_1", srd.data_types.STRING, 1, "_STDIN_"]
+        data_field_bad_field_name = [1, srd.data_types.DECIMAL, 1, 0]
+        data_field_bad_byte_size1 = ["field_1", srd.data_types.DECIMAL, 0, 0]
+        data_field_bad_byte_size2 = ["field_1", srd.data_types.DECIMAL, -1, 0]
+        data_field_bad_none_data = ["field_1", srd.data_types.DECIMAL, 1, None]
         data_field_bad_type = ["field_1", "SOMETHING", 1, 0]
 
         data = [data_field_good1, data_field_good2]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, False, data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, False, data)
         self.assertTrue(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, True, data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, True, data)
         self.assertTrue(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2, data_field_bad_field_name]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, False, data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, False, data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2, data_field_bad_byte_size1]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, False, data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, False, data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2, data_field_bad_byte_size2]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, False, data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, False, data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2, data_field_bad_none_data]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, False, data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, False, data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2, data_field_bad_type]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, False, data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, False, data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2]
-        ffs_file = Srd.SubRegionFfsFile(good_guid, "somethingelse", data)
+        ffs_file = srd.SubRegionFfsFile(good_guid, "somethingelse", data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
         data = [data_field_good1, data_field_good2]
-        with self.assertRaises(Srd.SubRegionDescSyntaxError):
-            ffs_file = Srd.SubRegionFfsFile(bad_guid, False, data)
+        with self.assertRaises(srd.SubRegionDescSyntaxError):
+            ffs_file = srd.SubRegionFfsFile(bad_guid, False, data)
             sub_region_desc.check_file_good(ffs_file)
 
     def test_HandlePayloadGuids(self):
-        sub_reg_desc = Srd.SubRegionDescriptor()
+        sub_reg_desc = srd.SubRegionDescriptor()
         self.assertTrue(
-            sub_reg_desc.is_known_guid(Srd.FMP_CAPSULE_OOB_MANAGEABILITY_FILE_GUID)
+            sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_OOB_MANAGEABILITY_FILE_GUID)
         )
-        self.assertTrue(sub_reg_desc.is_known_guid(Srd.FMP_CAPSULE_OSE_FW_FILE_GUID))
-        self.assertTrue(sub_reg_desc.is_known_guid(Srd.FMP_CAPSULE_TCC_ARB_FILE_GUID))
-        self.assertTrue(sub_reg_desc.is_known_guid(Srd.FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID))
+        self.assertTrue(sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_OSE_FW_FILE_GUID))
+        self.assertTrue(sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_TCC_ARB_FILE_GUID))
+        self.assertTrue(sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID))
         self.assertTrue(
-            sub_reg_desc.is_known_guid(Srd.FMP_CAPSULE_OSE_TSN_MAC_CONFIG_FILE_GUID)
+            sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_OSE_TSN_MAC_CONFIG_FILE_GUID)
         )
         self.assertFalse(
             sub_reg_desc.is_known_guid(uuid.UUID("e526c123-d3e9-41dd-af3c-59adc77cd3a5"))
@@ -179,35 +180,35 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
                 return 1
             return int(log(num, 256)) + 1
 
-        one_byte_data = Srd.SubRegionDataField(
-            ["field", Srd.data_types.DECIMAL, get_num_bytes(one_byte_val), one_byte_val]
+        one_byte_data = srd.SubRegionDataField(
+            ["field", srd.data_types.DECIMAL, get_num_bytes(one_byte_val), one_byte_val]
         )
-        two_byte_data = Srd.SubRegionDataField(
-            ["field", Srd.data_types.DECIMAL, get_num_bytes(two_byte_val), two_byte_val]
+        two_byte_data = srd.SubRegionDataField(
+            ["field", srd.data_types.DECIMAL, get_num_bytes(two_byte_val), two_byte_val]
         )
-        multi_byte_data = Srd.SubRegionDataField(
+        multi_byte_data = srd.SubRegionDataField(
             [
                 "field",
-                Srd.data_types.DECIMAL,
+                srd.data_types.DECIMAL,
                 get_num_bytes(multi_byte_val),
                 multi_byte_val,
             ]
         )
-        underflow_data = Srd.SubRegionDataField(
-            ["field", Srd.data_types.DECIMAL, 1, two_byte_val]
+        underflow_data = srd.SubRegionDataField(
+            ["field", srd.data_types.DECIMAL, 1, two_byte_val]
         )
-        overflow_data = Srd.SubRegionDataField(
-            ["field", Srd.data_types.DECIMAL, 2, one_byte_val]
+        overflow_data = srd.SubRegionDataField(
+            ["field", srd.data_types.DECIMAL, 2, one_byte_val]
         )
 
         # Number data
-        data_buffer = Sri.create_buffer_from_data_field(one_byte_data)
+        data_buffer = sri.create_buffer_from_data_field(one_byte_data)
         self.assertEqual(struct.pack("<B", one_byte_val), data_buffer)
 
-        data_buffer = Sri.create_buffer_from_data_field(two_byte_data)
+        data_buffer = sri.create_buffer_from_data_field(two_byte_data)
         self.assertEqual(struct.pack("<H", two_byte_val), data_buffer)
 
-        data_buffer = Sri.create_buffer_from_data_field(multi_byte_data)
+        data_buffer = sri.create_buffer_from_data_field(multi_byte_data)
         self.assertEqual(struct.pack("<Q", multi_byte_val), data_buffer)
 
         # data_buffer = sri.create_buffer_from_data_field(underflow_data)
@@ -220,27 +221,27 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         dummy_file = "./Tests/Collateral/DummyFile.txt"
         dummy_bin = "./Tests/Collateral/DummyBin.Bin"
 
-        data_field_file_exact_size = Srd.SubRegionDataField(
-            ["field_1", Srd.data_types.FILE, 11, dummy_file]
+        data_field_file_exact_size = srd.SubRegionDataField(
+            ["field_1", srd.data_types.FILE, 11, dummy_file]
         )
-        data_field_file_big = Srd.SubRegionDataField(
-            ["field_1", Srd.data_types.FILE, 20, dummy_file]
+        data_field_file_big = srd.SubRegionDataField(
+            ["field_1", srd.data_types.FILE, 20, dummy_file]
         )
-        data_field_file_small = Srd.SubRegionDataField(
-            ["field_1", Srd.data_types.FILE, 5, dummy_file]
+        data_field_file_small = srd.SubRegionDataField(
+            ["field_1", srd.data_types.FILE, 5, dummy_file]
         )
 
         # File Data
-        data_buffer = Sri.create_buffer_from_data_field(data_field_file_exact_size)
+        data_buffer = sri.create_buffer_from_data_field(data_field_file_exact_size)
         with open(dummy_file, "rb") as df:
             self.assertEqual(df.read(), data_buffer)
         self.assertEqual(len(data_buffer), data_field_file_exact_size.ByteSize)
-        data_buffer = Sri.create_buffer_from_data_field(data_field_file_big)
+        data_buffer = sri.create_buffer_from_data_field(data_field_file_big)
         with open(dummy_file, "rb") as df:
             tmp = df.read()
         self.assertTrue(data_buffer.decode().startswith(tmp.decode()))
         self.assertEqual(len(data_buffer), data_field_file_big.ByteSize)
-        data_buffer = Sri.create_buffer_from_data_field(data_field_file_small)
+        data_buffer = sri.create_buffer_from_data_field(data_field_file_small)
         with open(dummy_file, "rb") as df:
             tmp = df.read()
         self.assertTrue(tmp.decode().startswith(data_buffer.decode()))
@@ -250,35 +251,35 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         stdin = "_STDIN_"
         dummy_txt = "Can't touch this"
 
-        data_field_stdin = Srd.SubRegionDataField(
-            ["field_1", Srd.data_types.STRING, len(dummy_txt), stdin]
+        data_field_stdin = srd.SubRegionDataField(
+            ["field_1", srd.data_types.STRING, len(dummy_txt), stdin]
         )
-        data_field_string = Srd.SubRegionDataField(
-            ["field_1", Srd.data_types.STRING, len(dummy_txt), dummy_txt]
+        data_field_string = srd.SubRegionDataField(
+            ["field_1", srd.data_types.STRING, len(dummy_txt), dummy_txt]
         )
-        data_field_string_trunc = Srd.SubRegionDataField(
-            ["field_1", Srd.data_types.STRING, len(dummy_txt) - 1, dummy_txt]
+        data_field_string_trunc = srd.SubRegionDataField(
+            ["field_1", srd.data_types.STRING, len(dummy_txt) - 1, dummy_txt]
         )
-        data_field_string_pad = Srd.SubRegionDataField(
-            ["field_1", Srd.data_types.STRING, len(dummy_txt) + 1, dummy_txt]
+        data_field_string_pad = srd.SubRegionDataField(
+            ["field_1", srd.data_types.STRING, len(dummy_txt) + 1, dummy_txt]
         )
 
         # Stdin (need to write test)
-        Sri.sys.stdin.readline = lambda: dummy_txt
-        data_buffer = Sri.create_buffer_from_data_field(data_field_stdin)
+        sri.sys.stdin.readline = lambda: dummy_txt
+        data_buffer = sri.create_buffer_from_data_field(data_field_stdin)
         self.assertEqual(bytes(dummy_txt, "utf-8"), data_buffer)
 
-        data_buffer = Sri.create_buffer_from_data_field(data_field_string)
+        data_buffer = sri.create_buffer_from_data_field(data_field_string)
         self.assertEqual(bytes(dummy_txt, "utf-8"), data_buffer)
 
-        data_buffer = Sri.create_buffer_from_data_field(data_field_string_trunc)
+        data_buffer = sri.create_buffer_from_data_field(data_field_string_trunc)
         self.assertEqual(bytes(dummy_txt[: len(dummy_txt) - 1], "utf-8"), data_buffer)
 
-        data_buffer = Sri.create_buffer_from_data_field(data_field_string_pad)
+        data_buffer = sri.create_buffer_from_data_field(data_field_string_pad)
         self.assertEqual(bytes(dummy_txt + "\0", "utf-8"), data_buffer)
 
     def test_CreateGenCommands(self):
-        sub_region_desc = Srd.SubRegionDescriptor()
+        sub_region_desc = srd.SubRegionDescriptor()
         sub_region_desc.parse_json_data("./Tests/Collateral/GoodSubRegDescExample.json")
         fmp_guid = "8C8CE578-8A3D-4F1C-9935-896185C32DD3"
         dummy_file = "somefile.bin"
@@ -292,7 +293,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
                 + " -s EFI_SECTION_RAW -c PI_NONE "
                 + dummy_file
             )
-            gen_sec_cmd = Sri.create_gen_sec_command(
+            gen_sec_cmd = sri.create_gen_sec_command(
                 ffs_file,
                 image_file=dummy_file,
                 output_file=ws + "SubRegionSec" + str(index) + ".sec",
@@ -305,7 +306,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
                 + " -s EFI_SECTION_USER_INTERFACE -n "
                 + dummy_ui_name
             )
-            gen_sec_cmd = Sri.create_gen_sec_command(
+            gen_sec_cmd = sri.create_gen_sec_command(
                 ffs_file, output_file=out_sec_name, name=dummy_ui_name
             )
             self.assertEqual(gen_sec_cmd_exp, " ".join(gen_sec_cmd))
@@ -319,7 +320,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
                 + " -i "
                 + dummy_file
             )
-            gen_ffs_cmd = Sri.create_gen_ffs_command(
+            gen_ffs_cmd = sri.create_gen_ffs_command(
                 ffs_file, dummy_file, output_file=out_ffs_name
             )
             self.assertEqual(gen_ffs_cmd_exp, " ".join(gen_ffs_cmd))
@@ -333,7 +334,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             + " --FvNameGuid "
             + sub_region_desc.s_fv_guid
         )
-        gen_fv_cmd = Sri.create_gen_fv_command(
+        gen_fv_cmd = sri.create_gen_fv_command(
             sub_region_desc, "OutputFile.Fv", dummy_ffs_files
         )
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))
@@ -346,7 +347,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             + " --FvNameGuid "
             + sub_region_desc.s_fv_guid
         )
-        gen_fv_cmd = Sri.create_gen_fv_command(
+        gen_fv_cmd = sri.create_gen_fv_command(
             sub_region_desc, "OutputFile.Fv", dummy_ffs_file
         )
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))

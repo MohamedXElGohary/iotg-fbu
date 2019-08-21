@@ -9,9 +9,12 @@ import sys
 import os
 import argparse
 import subprocess
+import shutil
 
-import sub_region_descriptor as Srd
-import sub_region_image as Sri
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from siipsupport import sub_region_descriptor as srd
+from siipsupport import sub_region_image as sri
+from siip_support import ToolsLoc as TDir  # noqa: E402
 
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
@@ -23,6 +26,121 @@ __prog__ = "GenerateSubRegionCapsule"
 __version__ = "0.6.1"
 __copyright__ = "Copyright (c) 2019, Intel Corporation. All rights reserved."
 __description__ = "Generate a sub region capsule.\n"
+
+default_workspace = "./temp/"
+
+section_name_lookup_table = {
+    "EBA4A247-42C0-4C11-A167-A4058BC9D423": "IntelOseFw",
+    "12E29FB4-AA56-4172-B34E-DD5F4B440AA9": "IntelTsnMacAddr",
+    "4FB7994D-D878-4BD1-8FE0-777B732D0A31": "IntelOseTsnMacConfig",
+}
+
+
+def lookup_section_name(ffs_guid):
+    try:
+        return section_name_lookup_table[ffs_guid]
+    except KeyError:
+        return None
+
+
+def create_clean_workspace(path):
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    os.mkdir(path)
+
+
+def generate_sub_region_fv(
+        image_file, sub_region_descriptor, output_fv_file="./SubRegion.FV"
+):
+    sub_region_image = "SubRegionImage.bin"
+    workspace_path = default_workspace
+    create_clean_workspace(workspace_path)
+
+    if os.name == "nt":
+        bin_path = TDir.TOOLSWINDIR
+    else:
+        print("Only support Windows OS")
+        exit(-1)
+    os.environ["PATH"] += os.pathsep + bin_path
+
+    fv_ffs_file_list = []
+    for file_index, ffs_file in enumerate(sub_region_descriptor.ffs_files):
+        sri.generate_sub_region_image(ffs_file, sub_region_image)
+        sec_file_path = "{0}SubRegionSec{1}.sec".format(workspace_path,
+                                                        file_index)
+        gen_sec_cmd = sri.create_gen_sec_command(
+            ffs_file,
+            image_file=sub_region_image,
+            index=file_index,
+            output_file=sec_file_path,
+        )
+        p_open_object = subprocess.Popen(
+            " ".join(gen_sec_cmd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+        )
+        while p_open_object.returncode is None:
+            p_open_object.wait()
+        if p_open_object.returncode != 0:
+            print("Error generating Section")
+            exit(-1)
+
+        sec_ui_name = lookup_section_name(ffs_file.ffs_guid)
+        if sec_ui_name is not None:
+            sec_ui_file = "{0}SubRegionSecUi{1}.sec".format(workspace_path,
+                                                            file_index)
+            gen_sec_ui_cmd = sri.create_gen_sec_command(
+                ffs_file, name=sec_ui_name, output_file=sec_ui_file
+            )
+            p_open_object = subprocess.Popen(
+                " ".join(gen_sec_ui_cmd),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True,
+            )
+            while p_open_object.returncode is None:
+                p_open_object.wait()
+            if p_open_object.returncode != 0:
+                print("Error generating UI Section")
+                exit(-1)
+
+            # Cat Image Section with UI Section
+            with open(sec_file_path, "ab") as sec_file_handle, open(
+                    sec_ui_file, "rb"
+            ) as sec_ui_file_handle:
+                sec_file_handle.write(sec_ui_file_handle.read())
+
+        ffs_file_path = "{0}SubRegionFfs{1}.ffs".format(workspace_path,
+                                                        file_index)
+        gen_ffs_cmd = sri.create_gen_ffs_command(
+            ffs_file, sec_file_path, output_file=ffs_file_path
+        )
+        p_open_object = subprocess.Popen(
+            " ".join(gen_ffs_cmd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+        )
+        while p_open_object.returncode is None:
+            p_open_object.wait()
+        if p_open_object.returncode != 0:
+            print("Error generating FFS File")
+            exit(-1)
+        fv_ffs_file_list.append(ffs_file_path)
+
+    gen_fv_cmd = sri.create_gen_fv_command(sub_region_descriptor,
+                                           output_fv_file, fv_ffs_file_list)
+    p_open_object = subprocess.Popen(
+        " ".join(gen_fv_cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        shell=True
+    )
+    print(" ".join(gen_fv_cmd))
+    while p_open_object.returncode is None:
+        p_open_object.wait()
+    if p_open_object.returncode != 0:
+        print("Error generating FV File")
+        exit(-1)
 
 
 def create_arg_parser():
@@ -43,7 +161,8 @@ def create_arg_parser():
         "InputFile", help="Input JSON sub region descriptor filename."
     )
     my_parser.add_argument(
-        "-o", "--output", dest="OutputCapsuleFile", help="Output capsule filename."
+        "-o", "--output", dest="OutputCapsuleFile",
+        help="Output capsule filename."
     )
     my_parser.add_argument(
         "-s",
@@ -67,7 +186,7 @@ def create_arg_parser():
         "--signing-tool-path",
         dest="SigningToolPath",
         help="Path to signtool or OpenSSL tool. "
-        " Optional if path to tools are already in PATH.",
+             " Optional if path to tools are already in PATH.",
     )
     return my_parser
 
@@ -78,11 +197,13 @@ if __name__ == "__main__":
 
     sub_region_fv_file = "./SubRegionFv.fv"
     sub_region_image_file = "./SubRegionImage.bin"
-    sub_region_desc = Srd.SubRegionDescriptor()
+    sub_region_desc = srd.SubRegionDescriptor()
     sub_region_desc.parse_json_data(args.InputFile)
-    Sri.generate_sub_region_fv(sub_region_image_file, sub_region_desc, sub_region_fv_file)
+    generate_sub_region_fv(sub_region_image_file, sub_region_desc,
+                           sub_region_fv_file)
 
-    # TODO: until we refactor this code, both Generate*.py should be located together
+    # TODO: until we refactor this code, both Generate*.py should be located
+    #  together
     dir_name = os.path.dirname(os.path.abspath(__file__))
 
     gen_cap_cmd = ["python", os.path.join(dir_name, "GenerateCapsule.py")]
@@ -102,7 +223,8 @@ if __name__ == "__main__":
     gen_cap_cmd += [sub_region_fv_file]
 
     popen_object = subprocess.Popen(
-        " ".join(gen_cap_cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        " ".join(gen_cap_cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        shell=True
     )
     while popen_object.returncode is None:
         out, err = popen_object.communicate()
