@@ -23,12 +23,12 @@ Pre-compiled OpenSSL for Windows can be downloaded from https://wiki.openssl.org
 
 ```
 The usage for JSON input for one or more payload capsules is
-usage: GenerateSubRegionCapsule [-h] [-o OUTPUTCAPSULEFILE]
-                                [--signer-private-cert OPENSSLSIGNERPRIVATECERTFILE]
-                                [--other-public-cert OPENSSLOTHERPUBLICCERTFILE]
-                                [--trusted-public-cert OPENSSLTRUSTEDPUBLICCERTFILE]
-                                [--signing-tool-path SIGNINGTOOLPATH]
-                                InputFile
+usage: generate_sub_region_capsule [-h] [-o OUTPUTCAPSULEFILE]
+                                   [--signer-private-cert OPENSSLSIGNERPRIVATECERTFILE]
+                                   [--other-public-cert OPENSSLOTHERPUBLICCERTFILE]
+                                   [--trusted-public-cert OPENSSLTRUSTEDPUBLICCERTFILE]
+                                   [--signing-tool-path SIGNINGTOOLPATH]
+                                   InputFile
 
 Generate a sub region capsule. Copyright (c) 2019, Intel Corporation. All
 rights reserved.
@@ -90,5 +90,5 @@ member_value - An integer or string. If a the string is "\_STDIN\_" then value w
 
 ## Example
 ```
-python GenerateSubRegionCapsule.py  -o .\CapsuleSigned.cap --signer-private-cert=.\TestCert.pem --other-public-cert=.\TestSub.pub.pem --trusted-public-cert=.\TestRoot.pub.pem .\Tests\Collateral\TsnMacConfigDescExample.json
+python generate_sub_region_capsule.py  -o .\signed_capsule.cap --signer-private-cert=.\test_cert.pem --other-public-cert=.\test_cert.pub.pem --trusted-public-cert=.\test_cert.pub.pem .\Examples\tsn_mac_address.json
 ```
