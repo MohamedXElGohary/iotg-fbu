@@ -1,0 +1,22 @@
+{
+  "FmpGuid": "6FEE88FF-49ED-48F1-B77B-EAD15771ABE7",
+  "Version": 1,
+  "FV" :
+  {
+    "FvGuid": "1A803C55-F034-4E60-AD9E-9D3F32CE273C",
+    "FfsFiles":
+    [
+      {
+        "FileGuid": "12E29FB4-AA56-4172-B34E-DD5F4B440AA9",
+        "Compression": false,
+        "Data" :
+        [
+          ["BDF",            "HEXADECIMAL", 4, "000F4000"],
+          ["PortLength",     "DECIMAL",     4, 1],
+          ["MacAddressLow",  "HEXADECIMAL", 4, "AAAAAAAA"],
+          ["MacAddressHigh", "HEXADECIMAL", 4, "00001111"]
+        ]
+      }
+    ]
+  }
+}

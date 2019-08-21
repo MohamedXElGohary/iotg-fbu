@@ -49,7 +49,7 @@ def create_gen_ffs_command(ffs_file, section_file,
 def create_gen_fv_command(sub_region_desc, output_fv_file, ffs_files):
     gen_fv_cmd = ["GenFv"]
     gen_fv_cmd += ["-o", output_fv_file]
-    gen_fv_cmd += ["-b", "0x10000"]
+    gen_fv_cmd += ["-b", "0x1000"]
     gen_fv_cmd += ["-f", " -f ".join(ffs_files)]
     gen_fv_cmd += [
         "-g",

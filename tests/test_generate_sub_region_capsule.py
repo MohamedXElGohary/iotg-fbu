@@ -137,11 +137,11 @@ class JsonPayloadParserTestCase(unittest.TestCase):
         self.assertTrue(
             sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_OOB_MANAGEABILITY_FILE_GUID)
         )
-        self.assertTrue(sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_OSE_FW_FILE_GUID))
+        self.assertTrue(sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_PSE_FW_FILE_GUID))
         self.assertTrue(sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_TCC_ARB_FILE_GUID))
         self.assertTrue(sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID))
         self.assertTrue(
-            sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_OSE_TSN_MAC_CONFIG_FILE_GUID)
+            sub_reg_desc.is_known_guid(srd.FMP_CAPSULE_PSE_TSN_MAC_CONFIG_FILE_GUID)
         )
         self.assertFalse(
             sub_reg_desc.is_known_guid(uuid.UUID("e526c123-d3e9-41dd-af3c-59adc77cd3a5"))
@@ -327,7 +327,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
 
         dummy_ffs_files = [ws + "SubRegionFfs1.ffs", ws + "SubRegionFfs2.ffs"]
         gen_fv_cmd_exp = (
-            "GenFv -o OutputFile.Fv -b 0x10000 -f "
+            "GenFv -o OutputFile.Fv -b 0x1000 -f "
             + " -f ".join(dummy_ffs_files)
             + " -g "
             + fmp_guid
@@ -340,7 +340,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))
         dummy_ffs_file = [ws + "SubRegionFfs1.ffs"]
         gen_fv_cmd_exp = (
-            "GenFv -o OutputFile.Fv -b 0x10000 -f "
+            "GenFv -o OutputFile.Fv -b 0x1000 -f "
             + dummy_ffs_file[0]
             + " -g "
             + fmp_guid
