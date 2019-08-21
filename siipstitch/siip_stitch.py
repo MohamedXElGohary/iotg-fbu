@@ -77,6 +77,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
                     break
         else:
             fw_vol = None  # firmware volume was not found.
+            print("\nCould not find file {} in {}".format(ui_name, inputfile))
 
     return 0, fw_vol
 
@@ -120,11 +121,17 @@ IP_OPTIONS = {
         [None],
         ["free", ip_cnst.TMAC_FFS_GUID, "1k"],
     ],
-    "ptmac": [
-        ["ui", ip_cnst.PTMAC_UI],
+    "tsnip": [
+        ["ui", ip_cnst.TSNIP_UI],
         ["raw", "PI_NONE"],
         [None],
-        ["free", ip_cnst.PTMAC_FFS_GUID, None],
+        ["free", ip_cnst.TSNIP_FFS_GUID, None],
+    ],
+    "tsn": [
+        ["ui", ip_cnst.TSN_UI],
+        ["raw", "PI_NONE"],
+        [None],
+        ["free", ip_cnst.TSN_FFS_GUID, None],
     ],
     "tcc": [
         ["ui", ip_cnst.TCC_UI],

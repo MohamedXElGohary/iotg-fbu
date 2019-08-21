@@ -9,7 +9,8 @@ The SIIP Stitch Tool is used to swap a SIIP firmware without rebuilding BIOS ima
 The SIIP Stitch Tool supports replacing the following regions:
   * programmable software engine (pse) firmware
   * tmac address
-  * pse tmac (ptmac) address
+  * tsn configuration
+  * tsn IP (tsnip) configuration
   * tcc configuration
   * out of band (oob) configuration
   * Graphical Output Protocol (gop) Driver
@@ -37,9 +38,9 @@ usage: siip_stitch [-h] -ip ipname [-k PRIVATE_KEY] [-v] [-o FileName]
 positional arguments:
   IFWI_IN               Input BIOS Binary file(Ex: IFWI.bin) to be updated with
                         the given input IP firmware
-  IPNAME_IN             Input IP firmware Binary file(Ex: OseFw.bin to be
+  IPNAME_IN             Input IP firmware Binary file(Ex: PseFw.bin) to be
                         replaced in the IFWI.bin
-  IPNAME_IN2            The 2nd input IP firmware Binary file needed
+  IPNAME_IN2            The 2nd input IP firmware Binary file (ex:IntelGraphicsPeim.depex ) needed
                         to replaced the PEI Graphics
 
 optional arguments:
@@ -68,10 +69,10 @@ Directory of c:\siip_tools
 07/25/2019  04:53 PM    <DIR>          .
 07/25/2019  04:53 PM    <DIR>          ..
 05/02/2019  03:00 PM             1,365 LICENSE
-07/18/2019  09:28 AM             2,960 README.md.html
+07/18/2019  09:28 AM             2,960 README.md
 07/18/2019  09:28 AM            74,828 Releasenotes.docx
-07/24/2019  10:26 PM    <DIR>          siipSign
-07/24/2019  10:26 PM    <DIR>          siipStitch
+07/24/2019  10:26 PM    <DIR>          siipsign
+07/24/2019  10:26 PM    <DIR>          siipstitch
 07/25/2019  04:20 PM    <DIR>          siipsupport
 07/24/2019  10:26 PM             2,498 siip_constants.py
 07/25/2019  11:43 AM             2,315 siip_support.py
@@ -105,7 +106,7 @@ Directory of c:\siip_tools\siipStitch
 06/10/2019  02:50 PM    <DIR>          .
 06/10/2019  02:50 PM    <DIR>          ..
 06/04/2019  01:16 PM        33,554,432 BIOS.BIN
-06/04/2019  01:16 PM            56,076 OseFw.bin
+06/04/2019  01:16 PM            56,076 PseFw.bin
 05/03/2019  01:23 PM            44,882 README.md.html
 06/07/2019  11:22 AM            17,187 siip_stitch.py
 
@@ -117,7 +118,7 @@ Directory of c:\siip_tools\siipStitch
 For example:
 
 ```
-C:\siip_tools\siipStitch>siip_stitch.py -ip pse -o BIOS2.bin BIOS.BIN OseFw.bin
+C:\siip_tools\siipStitch>siip_stitch.py -ip pse -o BIOS2.bin BIOS.BIN PseFw.bin
 #########################################################################################
 Purpose of this utility is to replace the section in System BIOS ROM file with new section
 #########################################################################################
