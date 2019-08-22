@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
+import os
 import sys
 import argparse
 import uuid
@@ -99,7 +100,7 @@ def main():
     parser.add_argument(
         "--private-key",
         dest="privkey_file",
-        default="privkey.pem",
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "privkey.pem"),
         help="specify the private key filename. If not specified,"
              "a test signing key is used."
     )

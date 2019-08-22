@@ -1,33 +1,12 @@
-###########################################################
-##
-##
-##
-## SIIPStitchUnitTest
-## Testing the SIIP Stitching Tool.
-#################################################################################################
-##Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
-#
-# This program and the accompanying materials are licensed and made available under
-# the terms and conditions of the
-##################################################
-## Name SIIPStitchUnitTest.py
-## Author: Kimberly Barnes
-##
-##
-##  File Description:
-##   Test functionality and error testing of the tool.
-##
-##   TestFunctionality - test the general functionality of the tool
-##   TestFilesOutsideDir - test finding input files outside of the working directory
-##   TestErrorCases - test the error cases. 
-##   TestReplaceSubRegions - test for replacing subregions
-##   TestReplaceGop - test replacing of the Graphic output Protocal regions
-##   TestExceptions - force exception code to execute
-##
-## License: {license}
-## Version: 0.6.0
-## Status: Intial Development
-#################################################################################################
+"""Test core functionality and error handling
+
+   TestFunctionality - test the general functionality of the tool
+   TestErrorCases - test the error cases.
+   TestReplaceSubRegions - test for replacing subregions
+   TestReplaceGop - test replacing of the Graphic output Protocal regions
+   TestExceptions - force exception code to execute
+"""
+
 import os
 import sys
 import argparse
@@ -37,10 +16,12 @@ import subprocess
 import filecmp
 import shutil
 import platform
+import glob
 
+from siipsupport import tools_path
 
-
-SIIPSTITCH=os.path.join('..', 'siipstitch', 'siip_stitch.py')
+SIIPSTITCH = os.path.join("siipstitch", "siip_stitch.py")
+IMAGES_PATH = os.path.join("tests", "images")
 
 
 class TestFunctionality(unittest.TestCase):
@@ -51,89 +32,27 @@ class TestFunctionality(unittest.TestCase):
 
     def tearDown(self):
         cleanup()
-        pass
 
     def test_help(self):
         cmd = ['python', SIIPSTITCH, '-h']
-        subprocess.check_call(cmd, cwd='tests')
+        subprocess.check_call(cmd)
 
-    def test_version(self): 
+    def test_version(self):
         cmd = ['python', SIIPSTITCH, '-v']
-        subprocess.check_call(cmd, cwd='tests')
+        subprocess.check_call(cmd)
 
-    def test_replace_pseFw_using_default(self):  #no output file given
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'PseFw.bin','-ip', 'pse']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.BIN'), 
-                                    os.path.join('tests', 'BIOS2.bin')))
+    def test_replace_pse_using_default(self):  #no output file given
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     '-ip', 'pse']
+        subprocess.check_call(cmd)
+        self.assertTrue(filecmp.cmp(os.path.join(IMAGES_PATH, 'BIOS2.BIN'), 'BIOS_OUT.bin'))
 
-    def test_replace_pseFw_give_outputfile(self):  #output file given
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'PseFw.bin','-ip', 'pse', 
-               '-o', 'IFWI.bin']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(os.path.exists(os.path.join('tests', 'IFWI.bin')))
-        os.remove(os.path.join('tests', 'IFWI.BIN'))
-
-class TestFilesOutsideDir(unittest.TestCase):
-    """Test finding input files outside of the working directory"""
-    @classmethod
-    def setUpClass(cls):
-         os.mkdir(os.path.join('tests', 'TMPDIR'))
-
-    @classmethod
-    def tearDownClass(cls):  
-        shutil.rmtree(os.path.join('tests', 'TMPDIR'))
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        cleanup()
-
-    def test_bios_ip_in_different_dirs(self):  #Bios image not in current working directory
-        shutil.copy(os.path.join('tests', 'BIOS.bin'), os.path.join('tests', 'TMPDIR'))
-        INPUT = os.path.join('TMPDIR', 'BIOS.bin')
-
-
-        os.mkdir(os.path.join('tests', 'TMPDIR', 'TMPDIR2'))
-
-        shutil.copy(os.path.join('tests', 'PseFw.bin'), os.path.join('tests','TMPDIR', 'TMPDIR2'))
-        INPUT2 = os.path.join('TMPDIR', 'TMPDIR2', 'PseFw.bin' )
-
-        cmd = ['python', SIIPSTITCH, INPUT, INPUT2, '-ip', 'pse']
-
-        subprocess.check_call(cmd, cwd='tests')
-
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'BIOS2.bin')))
-
-    def test_bios_in_different_dir(self):  #Bios image not in current working directory
-        shutil.copy(os.path.join('tests', 'BIOS.bin'), os.path.join('tests', 'TMPDIR'))
-        INPUT = os.path.join('TMPDIR', 'BIOS.bin')
-
-        cmd = ['python', SIIPSTITCH, INPUT, 'PseFw.bin', '-ip', 'pse']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'BIOS2.bin')))
-
-    def test_pseFw_in_different_dir(self):  #Ose Firmeware not in current working directory
-        shutil.copy(os.path.join('tests', 'PseFw.bin'), os.path.join('tests', 'TMPDIR'))
-        REPLACE =os.path.join('TMPDIR', 'PseFw.bin')
-
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin', REPLACE, '-ip', 'pse']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'BIOS2.bin')))
-
-    def test_key_in_different_dir(self):  #private key not in current working directory
-        shutil.copy(os.path.join('tests', 'priv_key.pem'), os.path.join('tests', 'TMPDIR'))
-        REPLACE =os.path.join('TMPDIR', 'priv_key.pem')
-
-
-        cmd = ['python', SIIPSTITCH, 'BIOS_old.bin', 'IntelGopDriver.efi', '-k', REPLACE, '-ip', 'gop']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests','rom_drvr.bin')))
+    def test_replace_pse_give_outputfile(self):  #output file given
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     '-ip', 'pse', '-o', 'IFWI.bin']
+        subprocess.check_call(cmd)
 
 
 class TestErrorCases(unittest.TestCase):
@@ -144,12 +63,12 @@ class TestErrorCases(unittest.TestCase):
 
     def tearDown(self) :
         cleanup()
-        pass
 
     def test_invalid_ip(self):  #invalid ipname
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin','PseFw.bin', '-ip', 'ose']
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+                                     os.path.join(IMAGES_PATH,'PseFw.bin'), '-ip', 'ose']
         try:
-            results=subprocess.check_call(cmd, cwd='tests')
+            results=subprocess.check_call(cmd)
             self.fail('a call process eror should have occured')
         except subprocess.CalledProcessError:
             pass
@@ -158,55 +77,77 @@ class TestErrorCases(unittest.TestCase):
         no_file = b"No such file or directory"
         file_empty = b"file is empty"
         file_large = b"file exceeds the size of the BIOS/IFWI"
-        #Bios input file does not exists
-        cmd = ['python', SIIPSTITCH, 'SIIP.bin', 'PseFw.bin', '-ip', 'pse']
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
-        assert no_file in results.stderr
-        
-        #ip input file does not exists
-        cmd = ['python', SIIPSTITCH, 'BIOS.BIN', 'ose.bin', '-ip', 'pse']
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+
+        # Bios input file does not exists
+        cmd = ['python', SIIPSTITCH, 'non_exist_file.bin',
+                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     '-ip', 'pse']
+        results = subprocess.run(cmd, capture_output=True)
         assert no_file in results.stderr
 
-        #BIOS input file is blank
-        cmd = ['python', SIIPSTITCH, 'BIOS_NUL.BIN', 'PseFw.bin', '-ip', 'pse']
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        # ip input file does not exists
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.BIN'),
+                                     os.path.join(IMAGES_PATH, 'ose.bin'),
+                                     '-ip', 'pse']
+        results = subprocess.run(cmd, capture_output=True)
+        assert no_file in results.stderr
+
+        # BIOS input file is blank
+        open('empty.bin', 'a').close()
+        cmd = ['python', SIIPSTITCH, 'empty.bin',
+                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     '-ip', 'pse']
+        results = subprocess.run(cmd, capture_output=True)
         assert file_empty in results.stdout
 
-        #IP input file is blank
-        cmd = ['python', SIIPSTITCH, 'BIOS.BIN', 'OseFw_NUL.bin', '-ip', 'pse']
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        # IP input file is blank
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.BIN'),
+                                     'empty.bin',
+                                     '-ip', 'pse']
+        results = subprocess.run(cmd, capture_output=True)
         assert file_empty in results.stdout
 
-        #IP input file is too large
-        cmd = ['python', SIIPSTITCH, 'PseFw.bin', 'BIOS.bin', '-ip', 'pse']
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        # IP input file is too large
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     os.path.join(IMAGES_PATH, 'BIOS.bin'),
+                                     '-ip', 'pse']
+        results = subprocess.run(cmd, capture_output=True)
         assert file_large in results.stdout
 
-        #IP 2 input file is too large
-        cmd = ['python', SIIPSTITCH, 'IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', 'BIOS_old.bin', '-ip', 
-              'pei', '-k', 'privkey.pem']
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        # IP 2 input file is too large
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
+                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
+                                     os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                     '-ip', 'pei',
+                                     '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
+        results = subprocess.run(cmd, capture_output=True)
         assert file_large in results.stdout
 
 
     def test_inputfile_w_incorrect_format(self):  #BIOS input file is not in correct format
-        cmd = ['python', SIIPSTITCH, 'BIOS_BadFormat.bin', 'PseFw.bin', '-ip', 'pse']
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_BadFormat.bin'),
+                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     '-ip', 'pse']
 
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        results=subprocess.run(cmd, capture_output=True)
         assert b"FMMT.exe timed out" in results.stdout
 
     def test_no_fv_found(self):  #Firmware volume not found in the file
-        cmd = ['python', SIIPSTITCH,'BIOS_old.bin', 'dummy_2.bin', '-ip', 'oob']
-        
-        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                     os.path.join(IMAGES_PATH, 'dummy_2.bin'),
+                                     '-ip', 'oob']
+
+        results=subprocess.run(cmd, capture_output=True)
         assert b"Could not find file" in results.stdout
 
     def test_extra_inputfile(self):  #Replacement does not require 2 input files
-        cmd = ['python', SIIPSTITCH, 'BIOS_old.bin', 'PseFw.bin', 'IntelGraphicsPeim.depex', '-ip', 'pse']
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
+                                     '-ip', 'pse']
 
         try:
-           results=subprocess.check_output(cmd, cwd='tests')
+           results=subprocess.check_output(cmd)
            if b'IPNAME_IN2 input file is not required' in results:
               pass
            else:
@@ -217,9 +158,11 @@ class TestErrorCases(unittest.TestCase):
     def test_missing_key(self):
         """Missing priviate key"""
 
-        cmd = ['python', SIIPSTITCH, 'BIOS_old.bin','Vbt.bin','-ip', 'vbt']
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                     os.path.join(IMAGES_PATH, 'Vbt.bin'),
+                                     '-ip', 'vbt']
         try:
-            subprocess.check_call(cmd, cwd='tests')
+            subprocess.check_call(cmd)
             self.fail('a call process eror should have occured')
         except subprocess.CalledProcessError:
             pass
@@ -227,10 +170,13 @@ class TestErrorCases(unittest.TestCase):
     def test_missing_inputfile(self):
        """Replacement requires 2 input files"""
 
-       cmd = ['python', SIIPSTITCH, 'BIOS_old.bin','IntelGraphicsPeim.efi', '-k', 'privkey.pem', '-ip', 'pei']
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
+                                    '-k', os.path.join(IMAGES_PATH, 'privkey.pem'),
+                                    '-ip', 'pei']
 
        try:
-           results=subprocess.check_call(cmd, cwd='tests')
+           results=subprocess.check_call(cmd)
            self.fail('a call process eror should have occured')
        except subprocess.CalledProcessError:
            pass
@@ -238,21 +184,31 @@ class TestErrorCases(unittest.TestCase):
     def test_large_privkey(self):
        """Verifies that large key file will genarate an error"""
 
-       cmd = ['python', SIIPSTITCH, 'BIOS_old.bin', 'Vbt.bin', '-ip', 'vbt', '-k', 'privkey2.pem']
+       with open('large_key.pem', 'wb') as f:
+           f.write(bytearray(2048+1))
 
-       results=subprocess.run(cmd, cwd='tests', capture_output=True)
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'Vbt.bin'),
+                                    '-ip', 'vbt',
+                                    '-k', 'large_key.pem']
+
+       results=subprocess.run(cmd, capture_output=True)
        assert b"is larger than 2KB!" in results.stderr
-    
+
     def test_non_privkey(self):
        """Verifies that non rsa key file will genarate an error"""
 
-       cmd = ['python', SIIPSTITCH, 'BIOS_old.bin', 'Vbt.bin', '-ip', 'vbt', '-k', 'nonprivkey.pem']
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'Vbt.bin'),
+                                    '-ip', 'vbt',
+                                    '-k', os.path.join(IMAGES_PATH, 'nonprivkey.pem')]
 
-       results=subprocess.run(cmd, cwd='tests', capture_output=True)
+       results=subprocess.run(cmd, capture_output=True)
        assert b"is not an RSA priviate key" in results.stderr
 
 class TestReplaceSubRegions(unittest.TestCase):
     """ Test replacement of subregions"""
+
     def setUp(self):
         pass
 
@@ -260,38 +216,38 @@ class TestReplaceSubRegions(unittest.TestCase):
         cleanup()
 
     def test_replace_TsnMacAdr_using_default(self):  # tmac
-        cmd = ['python', SIIPSTITCH, 'EHL_v1322.bin',
-               'tsn_mac_sub_region.bin', '-ip', 'tmac']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'EHL_v1322.tmac_updated.bin')))
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
+                                     os.path.join(IMAGES_PATH, 'tsn_mac_sub_region.bin'),
+                                     '-ip', 'tmac']
+        subprocess.check_call(cmd)
+        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'EHL_v1322.tmac_updated.bin')))
 
     def test_replace_ptmac_using_default(self):  # ptmac
-        cmd = ['python', SIIPSTITCH, 'EHL_v1322.bin',
-                         'tsn_config_sub_region.bin', '-ip', 'tsn']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'EHL_v1322.tsn_updated.bin')))
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
+                                     os.path.join(IMAGES_PATH, 'tsn_config_sub_region.bin'),
+                                     '-ip', 'tsn']
+        subprocess.check_call(cmd)
+        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'EHL_v1322.tsn_updated.bin')))
 
     def test_replace_oob_using_default(self):  # oob
-        cmd = ['python', SIIPSTITCH, 'EHL_v1322.bin',
-                                     'oob_sub_region.bin','-ip', 'oob']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'EHL_v1322.oob_updated.bin')))
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
+                                     os.path.join(IMAGES_PATH, 'oob_sub_region.bin'),
+                                     '-ip', 'oob']
+        subprocess.check_call(cmd)
+        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'EHL_v1322.oob_updated.bin')))
 
     def test_replace_tsnip_using_default(self):  # tsn_ip
-        cmd = ['python', SIIPSTITCH, 'EHL_v1322.bin',
-                                     'tsn_ip_sub_region.bin', '-ip', 'tsnip']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'EHL_v1322.tsnip_updated.bin')))
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
+                                     os.path.join(IMAGES_PATH, 'tsn_ip_sub_region.bin'), '-ip', 'tsnip']
+        subprocess.check_call(cmd)
+        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'EHL_v1322.tsnip_updated.bin')))
 
     def test_replace_tcc_using_default(self):  # tcc
-        cmd = ['python', SIIPSTITCH, 'EHL_v1322.bin',
-                                     'dummy_2.bin', '-ip', 'tcc']
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(os.path.exists(os.path.join('tests', 'BIOS_OUT.bin')))
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
+                                     os.path.join(IMAGES_PATH, 'dummy_2.bin'),
+                                     '-ip', 'tcc']
+        subprocess.check_call(cmd)
+        self.assertTrue(os.path.exists('BIOS_OUT.bin'))
 
 
 class TestReplaceGOP(unittest.TestCase):
@@ -304,100 +260,58 @@ class TestReplaceGOP(unittest.TestCase):
         cleanup()
 
     def test_replace_gopvbt(self):
-       cmd = ['python', SIIPSTITCH, 'BIOS_old.bin','Vbt.bin','-ip', 'vbt', '-k', 'privkey.pem']
-       subprocess.check_call(cmd, cwd='tests')
-       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                   os.path.join('tests', 'rom_vbt.bin')))
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'Vbt.bin'),
+                                    '-ip', 'vbt',
+                                    '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
+       subprocess.check_call(cmd)
+       self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_vbt.bin')))
 
     def test_replace_gopdriver(self):
-       cmd = ['python', SIIPSTITCH, 'BIOS_old.bin','IntelGopDriver.efi','-ip', 'gop', '-k', 'privkey.pem']
-       subprocess.check_call(cmd, cwd='tests')
-       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                   os.path.join('tests', 'rom_drvr.bin')))
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'IntelGopDriver.efi'),
+                                    '-ip', 'gop',
+                                    '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
+       subprocess.check_call(cmd)
+       self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_drvr.bin')))
 
     def test_replace_peigraphics(self):
-       cmd = ['python', SIIPSTITCH, 'BIOS_old.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 
-              'pei', '-k', 'privkey.pem']
-       subprocess.check_call(cmd, cwd='tests')
-       self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                   os.path.join('tests', 'rom_pei.bin')))
-    
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
+                                    os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
+                                    '-ip', 'pei',
+                                    '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
+       subprocess.check_call(cmd)
+       self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_pei.bin')))
+
     def test_key_with_different_name(self):
         """Different name for priviate key"""
 
-        cmd = ['python', SIIPSTITCH, 'BIOS_old.bin','IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', '-ip', 'pei', '-k', 'priv_key.pem']
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
+                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
+                                     '-ip', 'pei',
+                                     '-k', os.path.join(IMAGES_PATH, 'priv_key.pem')]
 
-        subprocess.check_call(cmd, cwd='tests')
-        self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.bin'),
-                                    os.path.join('tests', 'rom_pei.bin')))
+        subprocess.check_call(cmd)
+        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_pei.bin')))
 
-
-class TestExceptions(unittest.TestCase):
-    """Force Exception code to execute"""
-
-    tool_path = os.path.join('siipsupport','Bin', 'Win32')
-
-    @classmethod
-    def setUpClass(cls):
-         # back up the siipsupport directory
-         shutil.copytree(os.path.join('siipsupport', 'Bin'),os.path.join('siipSupport2', 'Bin'))
-
-    @classmethod
-    def tearDownClass(cls):  
-
-        shutil.rmtree(os.path.join('siipsupport','Bin'),ignore_errors=True)
-
-        #return to orignal folder
-        shutil.move(os.path.join('siipSupport2','Bin','Win32'),
-                    os.path.join(TestExceptions.tool_path)
-                   )
-        shutil.rmtree(os.path.join('siipSupport2'),ignore_errors=True)
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        wrkdir = os.path.join('tests', 'SIIP_wrkdir')
-
-        if os.path.exists(wrkdir):
-             shutil.rmtree(wrkdir)
-        pass
-
-    def test_exception_missing_genFfs(self):  #missing 3rd party files
-        """ Missing third party tool GenFfs"""
-
-        os.rename(os.path.join(TestExceptions.tool_path, 'GenFfs.exe'), \
-                  os.path.join(TestExceptions.tool_path, 'GenFfs2.exe'))
-
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'PseFw.bin', '-ip', 'pse']
-        try:
-            subprocess.check_call(cmd, cwd='tests')
-            self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError:
-            pass
-
-        os.rename(os.path.join(TestExceptions.tool_path, 'GenFfs2.exe'), \
-                      os.path.join(TestExceptions.tool_path, 'GenFfs.exe'))
-
-    def test_exception_missing_GenFv(self):  
-        """ Missing third party tool GenFv"""
-
-        os.rename(os.path.join(TestExceptions.tool_path, 'GenFv.exe'), \
-                  os.path.join(TestExceptions.tool_path, 'GenFv2.exe'))
-
-        cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'PseFw.bin', '-ip', 'pse']
-        try:
-            subprocess.check_call(cmd, cwd='tests')
-            self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError:
-            pass
-
-        os.rename(os.path.join(TestExceptions.tool_path, 'GenFv2.exe'), \
-                      os.path.join(TestExceptions.tool_path, 'GenFv.exe'))
 
 def cleanup():
-    try:
-        os.remove(os.path.join('tests', 'BIOS_OUT.BIN'))
-    except:
-        pass
+    print("Cleaning up generated files ...")
+    to_remove = [
+        'IFWI.bin',
+        'BIOS_OUT.bin',
+        'empty.bin',
+        'large_key.pem',
+        'temp.txt',
+        os.path.join(tools_path.TOOLS_DIR, 'privkey.pem'),
+    ]
+    to_remove.extend(glob.glob('tmp.*', recursive=True))
+
+    for f in to_remove:
+        try:
+            os.remove(f)
+        except FileNotFoundError:
+            pass
 

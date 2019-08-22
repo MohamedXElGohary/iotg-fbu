@@ -9,6 +9,7 @@ import struct
 import sys
 
 from siipsupport import sub_region_descriptor as srd
+from siipsupport import tools_path
 
 
 def create_gen_sec_command(
@@ -16,7 +17,7 @@ def create_gen_sec_command(
         output_file="SubRegionSec.sec", name=None
 ):
     compression_scheme = None
-    gen_sec_cmd = ["GenSec"]
+    gen_sec_cmd = [tools_path.GENSEC]
     gen_sec_cmd += ["-o", output_file]
     if name is not None:
         section_type = "EFI_SECTION_USER_INTERFACE"
@@ -38,7 +39,7 @@ def create_gen_sec_command(
 
 def create_gen_ffs_command(ffs_file, section_file,
                            output_file="SubRegionFfs.ffs"):
-    gen_ffs_cmd = ["GenFfs"]
+    gen_ffs_cmd = [tools_path.GENFFS]
     gen_ffs_cmd += ["-o", output_file]
     gen_ffs_cmd += ["-t", "EFI_FV_FILETYPE_FREEFORM"]
     gen_ffs_cmd += ["-g", ffs_file.s_ffs_guid]
@@ -47,7 +48,7 @@ def create_gen_ffs_command(ffs_file, section_file,
 
 
 def create_gen_fv_command(sub_region_desc, output_fv_file, ffs_files):
-    gen_fv_cmd = ["GenFv"]
+    gen_fv_cmd = [tools_path.GENFV]
     gen_fv_cmd += ["-o", output_fv_file]
     gen_fv_cmd += ["-b", "0x1000"]
     gen_fv_cmd += ["-f", " -f ".join(ffs_files)]

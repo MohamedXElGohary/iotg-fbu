@@ -1,15 +1,3 @@
-# @file
-# Unit Tests for Data Blob Generator
-#
-# Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
-# This program and the accompanying materials
-# are licensed and made available under the terms and conditions of the BSD
-# License which accompanies this distribution.  The full text of the license
-# may be found at http://opensource.org/licenses/bsd-license.php
-#
-# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-#
 
 import os
 import sys
@@ -22,6 +10,7 @@ from math import log
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import siipsupport.sub_region_descriptor as srd
 import siipsupport.sub_region_image as sri
+from siipsupport import tools_path
 
 
 class JsonPayloadParserTestCase(unittest.TestCase):
@@ -168,6 +157,9 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         ]
 
         subprocess.check_call(full_cmd_line, shell=True)
+
+        os.remove('capsule.out.bin')
+
         # TODO: check data fields match the input data and key used
 
     def test_HandleNumberDataFields(self):
@@ -288,7 +280,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         for index, ffs_file in enumerate(sub_region_desc.ffs_files):
             out_sec_name = ws + "SubRegionSec" + str(index) + ".sec"
             gen_sec_cmd_exp = (
-                "GenSec -o "
+                tools_path.GENSEC
+                + " -o "
                 + out_sec_name
                 + " -s EFI_SECTION_RAW -c PI_NONE "
                 + dummy_file
@@ -301,7 +294,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             self.assertEqual(gen_sec_cmd_exp, " ".join(gen_sec_cmd))
             out_sec_name = ws + "SubRegionSecUi" + str(index) + ".sec"
             gen_sec_cmd_exp = (
-                "GenSec -o "
+                tools_path.GENSEC
+                + " -o "
                 + out_sec_name
                 + " -s EFI_SECTION_USER_INTERFACE -n "
                 + dummy_ui_name
@@ -313,7 +307,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
 
             out_ffs_name = ws + "SubRegionFfs" + str(index) + ".ffs"
             gen_ffs_cmd_exp = (
-                "GenFfs -o "
+                tools_path.GENFFS
+                + " -o "
                 + out_ffs_name
                 + " -t EFI_FV_FILETYPE_FREEFORM -g "
                 + ffs_file.s_ffs_guid
@@ -327,7 +322,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
 
         dummy_ffs_files = [ws + "SubRegionFfs1.ffs", ws + "SubRegionFfs2.ffs"]
         gen_fv_cmd_exp = (
-            "GenFv -o OutputFile.Fv -b 0x1000 -f "
+            tools_path.GENFV
+            + " -o OutputFile.Fv -b 0x1000 -f "
             + " -f ".join(dummy_ffs_files)
             + " -g "
             + fmp_guid
@@ -340,7 +336,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))
         dummy_ffs_file = [ws + "SubRegionFfs1.ffs"]
         gen_fv_cmd_exp = (
-            "GenFv -o OutputFile.Fv -b 0x1000 -f "
+            tools_path.GENFV
+            + " -o OutputFile.Fv -b 0x1000 -f "
             + dummy_ffs_file[0]
             + " -g "
             + fmp_guid

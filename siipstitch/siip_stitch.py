@@ -5,7 +5,6 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-
 import os
 import platform
 import subprocess
@@ -13,15 +12,13 @@ import sys
 import argparse
 import shutil
 import re
+import glob
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from siip_support import ToolsLoc as tdir
-from siip_constants import IP_constants as ip_cnst
+from siipsupport.siip_constants import IP_constants as ip_cnst
+from siipsupport import tools_path
 
 __version__ = "0.6.1"
-
-# executables used to perform merging and replacing of PSE Firmware
-PROG = ["GenSec", "LzmaCompress", "GenFfs", "FMMT.exe"]
 
 
 print("######################################################################")
@@ -34,7 +31,7 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
 
 
-def search_for_fv(inputfile, ipname, myenv, workdir):
+def search_for_fv(inputfile, ipname):
     """Search for the firmware volume."""
 
     # use to find the name of the firmware to locate the firmware volume
@@ -45,10 +42,11 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
     print("\nFinding the Firmware Volume")
     fw_vol = None
 
-    command = ["FMMT.exe", "-v", os.path.abspath(inputfile), ">", "temp.txt"]
+    command = [tools_path.FMMT, "-v", os.path.abspath(inputfile), ">", "tmp.fmmt.txt"]
 
     try:
-        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True, timeout=60)
+        os.environ["PATH"] += os.pathsep + tools_path.TOOLS_DIR
+        subprocess.check_call(command, shell=True, timeout=60)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe: {}".format(status))
         return 1, fw_vol
@@ -59,12 +57,12 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
         result = os.system("taskkill /f /im FMMT.exe")
         if result == 0:
             return 1, fw_vol
-        sys.exit("\nError Must kill process and delete SIIP_wrkdr")
+        sys.exit("\nError Must kill process")
 
     # search FFS by name in firmware volumes
     fwvol_found = False
 
-    with open(os.path.join(workdir, "temp.txt"), "r") as searchfile:
+    with open("tmp.fmmt.txt", "r") as searchfile:
         for line in searchfile:
             match_fv = re.match(r"(^FV\d+) :", line)
             if match_fv:
@@ -196,6 +194,7 @@ def guild_section(sec_type, guild, guid_attrib, inputfile):
 
 def generate_section(inputfiles, align_sizes):
     """ generates the all section """
+
     cmd = GENSEC_SECTION.get("all")
     for index, file in enumerate(inputfiles):
         cmd += [file]
@@ -208,7 +207,7 @@ def generate_section(inputfiles, align_sizes):
 def create_gensec_cmd(cmd_options, inputfile):
     """Create genSec commands for the merge and replace of firmware section."""
 
-    cmd = ["GenSec", "-o"]
+    cmd = [tools_path.GENSEC, "-o"]
 
     if cmd_options[0] == "guid":
         sec_type, guid, attrib = cmd_options
@@ -230,7 +229,7 @@ def create_gensec_cmd(cmd_options, inputfile):
 def compress(compress_method, inputfile):
     """ compress the sections """
 
-    cmd = ["LZMAcompress", compress_method, "-o", "tmp.cmps", inputfile]
+    cmd = [tools_path.LZCOMPRESS, compress_method, "-o", "tmp.cmps", inputfile]
     return cmd
 
 
@@ -238,7 +237,7 @@ def create_ffs_cmd(filetype, guild, align, inputfile):
     """ generates the firmware volume according to file type"""
 
     fv_filetype = FFS_FILETYPE.get(filetype)
-    cmd = ["GenFfs", "-o", "tmp.ffs", "-t", fv_filetype, "-g",
+    cmd = [tools_path.GENFFS, "-o", "tmp.ffs", "-t", fv_filetype, "-g",
            guild, "-i", inputfile]
     if align is not None:
         cmd += ["-a", align]
@@ -248,7 +247,7 @@ def create_ffs_cmd(filetype, guild, align, inputfile):
 def replace_ip(outfile, fw_vol, ui_name, inputfile):
     """ replaces the give firmware value with the input file """
 
-    cmd = ["fmmt", "-r", inputfile, fw_vol, ui_name, "tmp.ffs", outfile]
+    cmd = [tools_path.FMMT, "-r", inputfile, fw_vol, ui_name, "tmp.ffs", outfile]
     return cmd
 
 
@@ -311,7 +310,7 @@ def create_commands(filenames, ipname, fwvol):
     return cmd_list
 
 
-def merge_and_replace(filename, guid_values, fwvol, env_vars, workdir):
+def merge_and_replace(filename, guid_values, fwvol):
     """Perform merge and replace of section using different executables."""
 
     cmds = create_commands(filename, guid_values, fwvol)
@@ -319,9 +318,9 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars, workdir):
     print("\nStarting merge and replacement of section")
 
     # Merging and Replacing
-    for command in cmds:
+    for idx, command in enumerate(cmds):
         try:
-            subprocess.check_call(command, env=env_vars, cwd=workdir, shell=True)
+            subprocess.check_call(command, shell=True)
         except subprocess.CalledProcessError as status:
             print("\nError executing {}".format(" ".join(command)))
             print("\nStatus Message: {}".format(status))
@@ -330,74 +329,19 @@ def merge_and_replace(filename, guid_values, fwvol, env_vars, workdir):
     return 0
 
 
-def cleanup(wk_dir):
-    """Remove files from directory."""
+def cleanup():
+    """Remove generated files from directory."""
 
-    # change directory
-    try:
-        os.chdir(wk_dir[0])
-    except OSError as error:
-        sys.exit("\nUnable to Change Directory : {}\n{}".format(wk_dir[0], error))
-    except Exception as error:
-        sys.exit("\nUnexpected error:{}, {}".format(sys.exc_info(), error))
-
-    shutil.rmtree(wk_dir[1], ignore_errors=True)
-
-
-def set_environment_vars():
-    """Determine platform and set working path and tools path."""
-
-    os_sys = platform.system()
-    progs = [
-        "GenSec",
-        "LzmaCompress",
-        "GenFfs",
-        "GenFv",
-        "FMMT.exe",
-        "FmmtConf.ini",
-        "rsa_helper.py",
+    to_remove = [
+        os.path.join(tools_path.TOOLS_DIR, 'privkey.pem'),
     ]
+    to_remove.extend(glob.glob('tmp.*', recursive=True))
 
-    # Determine operating system that script is running
-
-    if os_sys == "Linux" or os_sys == "linux2":
-        # linux
-        os_dir = "BinWrappers/PosixLike"
-        cmd = "which"
-        print("Running on Linux")
-    elif os_sys == "Windows":
-        # windows
-        os_dir = tdir.TOOLSWINDIR
-        cmd = "where"
-        print(" Running on Windows")
-    else:
-        sys.exit("\n{},is not supported".format(os_sys))
-
-    # set up environment variables
-    path = os.environ.get("PATH")
-    myenv = os.environ.copy()
-    my_path = os.getcwd()
-
-    # path to thrid party tools
-    siip_tools_path = os.path.join(os.sep, my_path, tdir.TOOLSDIR)
-    siip_tools_bin = os.path.join(os.sep, siip_tools_path, os_dir)
-    myenv["PATH"] = siip_tools_bin + ";" + path
-
-    # redirect output
-    dev_null = open(os.devnull, "w")
-
-    for siip_tool in progs:
-        command = [cmd, siip_tool]
-
+    for f in to_remove:
         try:
-            # check to see if the required tools are installed
-            subprocess.check_call(command, stdout=dev_null, env=myenv)
-        except subprocess.CalledProcessError:
-            sys.exit(
-                "\nError third party tool {} is not located in the siipSupport directory.".format(siip_tool)
-            )
-
-    return myenv
+            os.remove(f)
+        except:
+            pass
 
 
 def file_not_exist(file):
@@ -484,7 +428,7 @@ def parse_cmdline():
         "--version",
         help="Shows the current version of the BIOS Stitching Tool",
         action="version",
-        version="%(PROG)s {version}".format(version=__version__),
+        version="%(prog)s {version}".format(version=__version__),
     )
     parser.add_argument(
         "-o",
@@ -499,32 +443,11 @@ def parse_cmdline():
     return parser
 
 
-def copy_file(files, new_dir):
-    """Move file to directory."""
-
-    status = 0
-
-    for file in files:
-        try:
-            shutil.copy(file, new_dir)
-        except IOError as error:
-            print("\nUnable to copy file: {}{}".format(file, error))
-            status = 1
-            break
-        except Exception as error:
-            print("\nUnexpected error: {}".format(error))
-            status = 1
-            break
-
-    return status
-
-
 def main():
     """Entry to script."""
 
     parser = parse_cmdline()
     args = parser.parse_args()
-    env_vars = set_environment_vars()
 
     filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
     if args.ipname in ["gop", "pei", "vbt"]:
@@ -553,38 +476,17 @@ def main():
     if status != 0:
         sys.exit(status)
 
-    # current directory and working director
-    dirs = [os.getcwd(), "SIIP_wrkdir"]
-
-    # Create working directory
-    try:
-        os.mkdir(dirs[1])
-    except OSError as exception:
-        sys.exit("\nUnable to create directory: {}\n{}".format(dirs[1], exception))
-    except Exception as error:
-        sys.exit(
-            "\nUnexpected error occurred when trying to create directory: {}".format(
-                error
-            )
-        )
-
     # Copy key file to the required name needed for the rsa_helper.py
     if args.private_key in filenames:
-        shutil.copyfile(args.private_key, os.path.join(dirs[0], dirs[1], "privkey.pem"))
+        shutil.copyfile(args.private_key, os.path.join(tools_path.TOOLS_DIR, "privkey.pem"))
         filenames.remove(args.private_key)
 
-    # move files to working directory
-    status = copy_file(filenames, dirs[1])
-    if status != 0:
-        cleanup(dirs)
-        sys.exit(status)
-
     # search for firmware volume
-    status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname, env_vars, dirs[1])
+    status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname)
 
     # Check for error in using FMMT.exe or if firmware volume was not found.
     if status == 1 or fw_volume is None:
-        cleanup(dirs)
+        cleanup()
         if status == 0:
             print("\nError: No Firmware volume found")
         sys.exit(status)
@@ -592,17 +494,13 @@ def main():
     # firmware volume was found
     print("\nThe Firmware volume is {}\n".format(fw_volume))
 
-    # stripping path name from input files for executable programs to be used
-    # to perform the merge and replace
-    filenames = [os.path.basename(f) for f in filenames]
-
     # adding the path name to the output file
     filenames.append(os.path.abspath(args.OUTPUT_FILE))
 
     # create OseFw header, merge header and replace in Binary
-    status = merge_and_replace(filenames, args.ipname, fw_volume, env_vars, dirs[1])
+    status = merge_and_replace(filenames, args.ipname, fw_volume)
 
-    cleanup(dirs)
+    cleanup()
 
 
 if __name__ == "__main__":

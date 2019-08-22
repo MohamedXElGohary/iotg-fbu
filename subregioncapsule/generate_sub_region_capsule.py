@@ -10,11 +10,12 @@ import os
 import argparse
 import subprocess
 import shutil
+import glob
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from siipsupport import sub_region_descriptor as srd
 from siipsupport import sub_region_image as sri
-from siip_support import ToolsLoc as TDir  # noqa: E402
+#from siipsupport.tools_path import ToolsLoc as TDir  # noqa: E402
 
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
@@ -26,8 +27,6 @@ __prog__ = "GenerateSubRegionCapsule"
 __version__ = "0.6.1"
 __copyright__ = "Copyright (c) 2019, Intel Corporation. All rights reserved."
 __description__ = "Generate a sub region capsule.\n"
-
-default_workspace = "./temp/"
 
 section_name_lookup_table = {
     "EBA4A247-42C0-4C11-A167-A4058BC9D423": "IntelOseFw",
@@ -43,31 +42,27 @@ def lookup_section_name(ffs_guid):
         return None
 
 
-def create_clean_workspace(path):
-    if os.path.isdir(path):
-        shutil.rmtree(path)
-    os.mkdir(path)
+def cleanup():
+    to_remove = glob.glob("tmp.*")
+    to_remove.extend(glob.glob("SubRegionFv.*"))
+    to_remove.append("SubRegionImage.bin")
+
+    for f in to_remove:
+        try:
+            os.remove(f)
+        except FileNotFoundError:
+            pass
 
 
 def generate_sub_region_fv(
         image_file, sub_region_descriptor, output_fv_file="./SubRegion.FV"
 ):
     sub_region_image = "SubRegionImage.bin"
-    workspace_path = default_workspace
-    create_clean_workspace(workspace_path)
-
-    if os.name == "nt":
-        bin_path = TDir.TOOLSWINDIR
-    else:
-        print("Only support Windows OS")
-        exit(-1)
-    os.environ["PATH"] += os.pathsep + bin_path
 
     fv_ffs_file_list = []
     for file_index, ffs_file in enumerate(sub_region_descriptor.ffs_files):
         sri.generate_sub_region_image(ffs_file, sub_region_image)
-        sec_file_path = "{0}SubRegionSec{1}.sec".format(workspace_path,
-                                                        file_index)
+        sec_file_path = "tmp.{}.sec".format(file_index)
         gen_sec_cmd = sri.create_gen_sec_command(
             ffs_file,
             image_file=sub_region_image,
@@ -88,8 +83,7 @@ def generate_sub_region_fv(
 
         sec_ui_name = lookup_section_name(ffs_file.ffs_guid)
         if sec_ui_name is not None:
-            sec_ui_file = "{0}SubRegionSecUi{1}.sec".format(workspace_path,
-                                                            file_index)
+            sec_ui_file = "tmp.ui.{}.sec".format(file_index)
             gen_sec_ui_cmd = sri.create_gen_sec_command(
                 ffs_file, name=sec_ui_name, output_file=sec_ui_file
             )
@@ -111,8 +105,7 @@ def generate_sub_region_fv(
             ) as sec_ui_file_handle:
                 sec_file_handle.write(sec_ui_file_handle.read())
 
-        ffs_file_path = "{0}SubRegionFfs{1}.ffs".format(workspace_path,
-                                                        file_index)
+        ffs_file_path = "tmp.{}.ffs".format(file_index)
         gen_ffs_cmd = sri.create_gen_ffs_command(
             ffs_file, sec_file_path, output_file=ffs_file_path
         )
@@ -230,5 +223,7 @@ if __name__ == "__main__":
         out, err = popen_object.communicate()
         print("Error messages  :\n%s" % err.decode("utf-8"))
         print("Output messages :\n%s" % out.decode("utf-8"))
+
+    cleanup()
 
     sys.exit(popen_object.returncode)
