@@ -48,7 +48,7 @@ def search_for_fv(inputfile, ipname, myenv, workdir):
     command = ["FMMT.exe", "-v", os.path.abspath(inputfile), ">", "temp.txt"]
 
     try:
-        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True, timeout=10)
+        subprocess.check_call(command, env=myenv, cwd=workdir, shell=True, timeout=60)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe: {}".format(status))
         return 1, fw_vol
