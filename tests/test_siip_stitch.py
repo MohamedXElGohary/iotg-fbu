@@ -67,7 +67,7 @@ class TestFunctionality(unittest.TestCase):
         self.assertTrue(filecmp.cmp(os.path.join('tests', 'BIOS_OUT.BIN'), 
                                     os.path.join('tests', 'BIOS2.bin')))
 
-    def test_replace_oseFw_give_outputfile(self):  #output file given
+    def test_replace_pseFw_give_outputfile(self):  #output file given
         cmd = ['python', SIIPSTITCH, 'BIOS.bin', 'PseFw.bin','-ip', 'pse', 
                '-o', 'IFWI.bin']
         subprocess.check_call(cmd, cwd='tests')
@@ -154,59 +154,47 @@ class TestErrorCases(unittest.TestCase):
         except subprocess.CalledProcessError:
             pass
 
-    def test_bios_file_do_not_exist(self):  #Bios input file does not exists
+    def test_for_bad_inputfiles(self):
+        no_file = b"No such file or directory"
+        file_empty = b"file is empty"
+        file_large = b"file exceeds the size of the BIOS/IFWI"
+        #Bios input file does not exists
         cmd = ['python', SIIPSTITCH, 'SIIP.bin', 'PseFw.bin', '-ip', 'pse']
-
-        try:
-            results=subprocess.check_call(cmd, cwd='tests')
-            self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError as Error:
-            pass
-
-    def test_ip_file_does_not_exist(self):  #ip input file does not exists
+        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        assert no_file in results.stderr
+        
+        #ip input file does not exists
         cmd = ['python', SIIPSTITCH, 'BIOS.BIN', 'ose.bin', '-ip', 'pse']
+        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        assert no_file in results.stderr
 
-        try:
-            results=subprocess.check_call(cmd, cwd='tests')
-            self.fail('a call process eror should have occured')
-        except subprocess.CalledProcessError:
-            pass
-
-    def test_bios_file_is_empty(self):  #BIOS input file is blank
+        #BIOS input file is blank
         cmd = ['python', SIIPSTITCH, 'BIOS_NUL.BIN', 'PseFw.bin', '-ip', 'pse']
+        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        assert file_empty in results.stdout
 
-        try:
-           results=subprocess.check_output(cmd, cwd='tests')
-           if b'file is empty' in results:
-               pass
-           else:
-               self.fail('Wrong Error has occured')
-        except:
-            self.fail('Error should have been handle by siipstitch')
-
-    def test_ip_file_is_empty(self):  #BIOS input file is blank
+        #IP input file is blank
         cmd = ['python', SIIPSTITCH, 'BIOS.BIN', 'OseFw_NUL.bin', '-ip', 'pse']
+        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        assert file_empty in results.stdout
 
-        try:
-           results=subprocess.check_output(cmd, cwd='tests')
-           if b'file is empty' in results:
-               pass
-           else:
-               self.fail('Wrong Error has occured')
-        except:
-            self.fail('Error should have been handle by siipstitch')
+        #IP input file is too large
+        cmd = ['python', SIIPSTITCH, 'PseFw.bin', 'BIOS.bin', '-ip', 'pse']
+        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        assert file_large in results.stdout
+
+        #IP 2 input file is too large
+        cmd = ['python', SIIPSTITCH, 'IntelGraphicsPeim.efi', 'IntelGraphicsPeim.depex', 'BIOS_old.bin', '-ip', 
+              'pei', '-k', 'privkey.pem']
+        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        assert file_large in results.stdout
+
 
     def test_inputfile_w_incorrect_format(self):  #BIOS input file is not in correct format
-        cmd = ['python', SIIPSTITCH, 'BIOS_badFormat.bin', 'PseFw.bin', '-ip', 'pse']
+        cmd = ['python', SIIPSTITCH, 'BIOS_BadFormat.bin', 'PseFw.bin', '-ip', 'pse']
 
-        try:
-           results=subprocess.check_output(cmd, cwd='tests')
-           if b'FMMT.exe timed out' in results:
-               pass
-           else:
-               self.fail('Wrong Error has occured')
-        except:
-            self.fail('Error should have been handle by siipstitch')
+        results=subprocess.run(cmd, cwd='tests', capture_output=True)
+        assert b"FMMT.exe timed out" in results.stdout
 
     def test_no_fv_found(self):  #Firmware volume not found in the file
         cmd = ['python', SIIPSTITCH,'BIOS_old.bin', 'dummy_2.bin', '-ip', 'oob']

@@ -424,19 +424,22 @@ def check_key(file):
     return file
 
 
-def file_not_empty(files):
-    """ Check if file is empty."""
+def check_file_size(files):
+    """ Check if file is empty or greater than IFWI/BIOS file"""
 
-    status = 0
+    bios_size = os.path.getsize(files[0])
+
     for file in files:
-        if os.path.getsize(file) != 0:
-            continue
+        filesize = os.path.getsize(file)
+        if filesize != 0:
+            if not (filesize <= bios_size):
+                print("\n{} file is size {} file exceeds the size of the BIOS/IFWI file {}!".format(file, filesize, files[0]))
+                return 1
         else:
             print("\n{} file is empty!".format(file))
-            status = 1
-            break
+            return 1
 
-    return status
+    return 0
 
 
 def parse_cmdline():
@@ -545,10 +548,10 @@ def main():
             )
         )
 
-    # verify file is not empty
-    status = file_not_empty(filenames)
+    # verify file is not empty or the IP files are not larger than the input filesvcd
+    status = check_file_size(filenames)
     if status != 0:
-        sys.exit()
+        sys.exit(status)
 
     # current directory and working director
     dirs = [os.getcwd(), "SIIP_wrkdir"]
@@ -574,7 +577,7 @@ def main():
     status = copy_file(filenames, dirs[1])
     if status != 0:
         cleanup(dirs)
-        sys.exit()
+        sys.exit(status)
 
     # search for firmware volume
     status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname, env_vars, dirs[1])
@@ -584,7 +587,7 @@ def main():
         cleanup(dirs)
         if status == 0:
             print("\nError: No Firmware volume found")
-        sys.exit()
+        sys.exit(status)
 
     # firmware volume was found
     print("\nThe Firmware volume is {}\n".format(fw_volume))
