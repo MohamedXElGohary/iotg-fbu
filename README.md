@@ -9,8 +9,8 @@ This package consists of three scripts:
 
 The signing flow with associated input and output files are illustrated in the following diagram:
 
-![Signing Diagram](docs/SIIP_siging_stitching_flow.png)
-![Signing Diagram2](docs/SIIP_signing_capsule_flow.png)
+![Signing Diagram](docs/stitching_usage_flow.png)
+![Signing Diagram2](docs/subregion_capsule_usage_flow.png)
 
 
 # Getting Started

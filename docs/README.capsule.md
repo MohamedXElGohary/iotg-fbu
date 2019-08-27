@@ -23,7 +23,7 @@ Pre-compiled OpenSSL for Windows can be downloaded from https://wiki.openssl.org
 
 ```
 The usage for JSON input for one or more payload capsules is
-usage: generate_sub_region_capsule [-h] [-o OUTPUTCAPSULEFILE]
+usage: subregion_capsule [-h] [-o OUTPUTCAPSULEFILE]
                                    [--signer-private-cert OPENSSLSIGNERPRIVATECERTFILE]
                                    [--other-public-cert OPENSSLOTHERPUBLICCERTFILE]
                                    [--trusted-public-cert OPENSSLTRUSTEDPUBLICCERTFILE]
@@ -90,5 +90,5 @@ member_value - An integer or string. If a the string is "\_STDIN\_" then value w
 
 ## Example
 ```
-python generate_sub_region_capsule.py  -o .\signed_capsule.cap --signer-private-cert=.\test_cert.pem --other-public-cert=.\test_cert.pub.pem --trusted-public-cert=.\test_cert.pub.pem .\Examples\tsn_mac_address.json
+python subregion_capsule.py  -o .\signed_capsule.cap --signer-private-cert=.\test_cert.pem --other-public-cert=.\test_cert.pub.pem --trusted-public-cert=.\test_cert.pub.pem .\Examples\tsn_mac_address.json
 ```

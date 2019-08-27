@@ -13,9 +13,9 @@ import shutil
 import glob
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from siipsupport import sub_region_descriptor as srd
-from siipsupport import sub_region_image as sri
-#from siipsupport.tools_path import ToolsLoc as TDir  # noqa: E402
+import common.sub_region_descriptor as srd
+import common.sub_region_image as sri
+from common.tools_path import EDK2_CAPSULE_TOOL
 
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
@@ -23,7 +23,7 @@ if sys.version_info[0] < 3:
 #
 # Globals for help information
 #
-__prog__ = "GenerateSubRegionCapsule"
+__prog__ = "subregion_capsule"
 __version__ = "0.6.1"
 __copyright__ = "Copyright (c) 2019, Intel Corporation. All rights reserved."
 __description__ = "Generate a sub region capsule.\n"
@@ -195,11 +195,7 @@ if __name__ == "__main__":
     generate_sub_region_fv(sub_region_image_file, sub_region_desc,
                            sub_region_fv_file)
 
-    # TODO: until we refactor this code, both Generate*.py should be located
-    #  together
-    dir_name = os.path.dirname(os.path.abspath(__file__))
-
-    gen_cap_cmd = ["python", os.path.join(dir_name, "GenerateCapsule.py")]
+    gen_cap_cmd = ["python", EDK2_CAPSULE_TOOL]
     gen_cap_cmd += ["--encode"]
     gen_cap_cmd += ["--guid", sub_region_desc.s_fmp_guid]
     gen_cap_cmd += ["--fw-version", str(sub_region_desc.version)]

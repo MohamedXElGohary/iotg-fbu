@@ -7,7 +7,7 @@ import subprocess
 import shutil
 import glob
 
-SIIPSIGN = os.path.join('siipsign', 'siip_sign.py')
+SIIPSIGN = os.path.join('scripts', 'siip_sign.py')
 
 
 class TestSIIPSign(unittest.TestCase):

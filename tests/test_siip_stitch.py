@@ -18,9 +18,10 @@ import shutil
 import platform
 import glob
 
-from siipsupport import tools_path
+sys.path.insert(0, "..")
+from common.tools_path import TOOLS_DIR
 
-SIIPSTITCH = os.path.join("siipstitch", "siip_stitch.py")
+SIIPSTITCH = os.path.join("scripts", "siip_stitch.py")
 IMAGES_PATH = os.path.join("tests", "images")
 
 
@@ -305,7 +306,7 @@ def cleanup():
         'empty.bin',
         'large_key.pem',
         'temp.txt',
-        os.path.join(tools_path.TOOLS_DIR, 'privkey.pem'),
+        os.path.join(TOOLS_DIR, 'privkey.pem'),
     ]
     to_remove.extend(glob.glob('tmp.*', recursive=True))
 

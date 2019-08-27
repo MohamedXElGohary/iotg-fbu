@@ -15,8 +15,8 @@ import re
 import glob
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from siipsupport.siip_constants import IP_constants as ip_cnst
-from siipsupport import tools_path
+from common.siip_constants import IP_constants as ip_cnst
+from common.tools_path import FMMT, GENFFS, GENFV, GENSEC, LZCOMPRESS, TOOLS_DIR
 
 __version__ = "0.6.1"
 
@@ -42,10 +42,10 @@ def search_for_fv(inputfile, ipname):
     print("\nFinding the Firmware Volume")
     fw_vol = None
 
-    command = [tools_path.FMMT, "-v", os.path.abspath(inputfile), ">", "tmp.fmmt.txt"]
+    command = [FMMT, "-v", os.path.abspath(inputfile), ">", "tmp.fmmt.txt"]
 
     try:
-        os.environ["PATH"] += os.pathsep + tools_path.TOOLS_DIR
+        os.environ["PATH"] += os.pathsep + TOOLS_DIR
         subprocess.check_call(command, shell=True, timeout=60)
     except subprocess.CalledProcessError as status:
         print("\nError using FMMT.exe: {}".format(status))
@@ -207,7 +207,7 @@ def generate_section(inputfiles, align_sizes):
 def create_gensec_cmd(cmd_options, inputfile):
     """Create genSec commands for the merge and replace of firmware section."""
 
-    cmd = [tools_path.GENSEC, "-o"]
+    cmd = [GENSEC, "-o"]
 
     if cmd_options[0] == "guid":
         sec_type, guid, attrib = cmd_options
@@ -229,7 +229,7 @@ def create_gensec_cmd(cmd_options, inputfile):
 def compress(compress_method, inputfile):
     """ compress the sections """
 
-    cmd = [tools_path.LZCOMPRESS, compress_method, "-o", "tmp.cmps", inputfile]
+    cmd = [LZCOMPRESS, compress_method, "-o", "tmp.cmps", inputfile]
     return cmd
 
 
@@ -237,7 +237,7 @@ def create_ffs_cmd(filetype, guild, align, inputfile):
     """ generates the firmware volume according to file type"""
 
     fv_filetype = FFS_FILETYPE.get(filetype)
-    cmd = [tools_path.GENFFS, "-o", "tmp.ffs", "-t", fv_filetype, "-g",
+    cmd = [GENFFS, "-o", "tmp.ffs", "-t", fv_filetype, "-g",
            guild, "-i", inputfile]
     if align is not None:
         cmd += ["-a", align]
@@ -247,7 +247,7 @@ def create_ffs_cmd(filetype, guild, align, inputfile):
 def replace_ip(outfile, fw_vol, ui_name, inputfile):
     """ replaces the give firmware value with the input file """
 
-    cmd = [tools_path.FMMT, "-r", inputfile, fw_vol, ui_name, "tmp.ffs", outfile]
+    cmd = [FMMT, "-r", inputfile, fw_vol, ui_name, "tmp.ffs", outfile]
     return cmd
 
 
@@ -333,7 +333,7 @@ def cleanup():
     """Remove generated files from directory."""
 
     to_remove = [
-        os.path.join(tools_path.TOOLS_DIR, 'privkey.pem'),
+        os.path.join(TOOLS_DIR, 'privkey.pem'),
     ]
     to_remove.extend(glob.glob('tmp.*', recursive=True))
 
@@ -478,7 +478,7 @@ def main():
 
     # Copy key file to the required name needed for the rsa_helper.py
     if args.private_key in filenames:
-        shutil.copyfile(args.private_key, os.path.join(tools_path.TOOLS_DIR, "privkey.pem"))
+        shutil.copyfile(args.private_key, os.path.join(TOOLS_DIR, "privkey.pem"))
         filenames.remove(args.private_key)
 
     # search for firmware volume

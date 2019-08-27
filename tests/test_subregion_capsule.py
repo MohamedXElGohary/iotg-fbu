@@ -7,11 +7,11 @@ import unittest
 import uuid
 from math import log
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import siipsupport.sub_region_descriptor as srd
-import siipsupport.sub_region_image as sri
-from siipsupport import tools_path
+import common.sub_region_descriptor as srd
+import common.sub_region_image as sri
+from common import tools_path
 
+SUBREGION_CAPSULE_TOOL = os.path.join('scripts', 'subregion_capsule.py'),
 
 class JsonPayloadParserTestCase(unittest.TestCase):
     def test_ParseJsonSubRegDescriptorFiles(self):
@@ -147,9 +147,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         output_file = "capsule.out.bin"
 
         full_cmd_line = [
-            os.path.join('subregioncapsule', 'generate_sub_region_capsule.py'),
-            "-o",
-            output_file,
+            SUBREGION_CAPSULE_TOOL,
+            "-o", output_file,
             "--signer-private-cert=%s" % private_cert,
             "--other-public-cert=%s" % public_cert,
             "--trusted-public-cert=%s" % trusted_cert,

@@ -1,0 +1,28 @@
+{
+  "FmpGuid": "BF2AE378-01E0-4605-9E3B-2EE2FC7339DE",
+  "Version": 1,
+  "FV" :
+  {
+    "FvGuid": "775F2E50-7441-4DAD-B71E-5DBD5AAC57A6",
+    "FfsFiles":
+    [
+      {
+        "FileGuid": "4DB2A373-C936-4544-AA6D-8A194AA9CA7F",
+        "Compression": false,
+        "Data" :
+        [
+          [ "a_oob_prov_state", "DECIMAL", 4, 1 ],
+          [ "a_oob_root_ca", "STRING", 1229, "telit.pem"],
+          [ "a_oob_device_id", "STRING", 512, "ehl-h2-hfpga-capsule" ],
+          [ "a_oob_token_id", "STRING", 512, "3sqXDVKxPT0TBCs1" ],
+          [ "a_oob_cloud_type", "STRING", 16, "Telit" ],
+          [ "a_oob_cloud_host_url", "STRING", 512, "52.201.144.26" ],
+          [ "a_oob_cloud_host_port", "DECIMAL", 4, 8883 ],
+          [ "a_proxy_host_url", "STRING", 512, "proxy-chain.intel.com" ],
+          [ "a_proxy_host_port", "DECIMAL", 4, 911 ],
+          [ "a_bios_uefi_password", "STRING", 512, "intel123" ]
+        ]
+      }
+    ]
+  }
+}

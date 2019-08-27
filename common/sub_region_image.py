@@ -8,8 +8,8 @@
 import struct
 import sys
 
-from siipsupport import sub_region_descriptor as srd
-from siipsupport import tools_path
+from common import sub_region_descriptor as srd
+from common import tools_path
 
 
 def create_gen_sec_command(

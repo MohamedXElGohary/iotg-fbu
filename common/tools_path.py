@@ -8,9 +8,14 @@
 import os
 
 
-TOOLS_DIR = os.path.abspath(os.path.join("siipsupport", "Bin", "Win32"))
+THIRD_PARTY_DIR = "thirdparty"
+TOOLS_DIR = os.path.abspath(os.path.join(THIRD_PARTY_DIR, "Bin", "Win32"))
 FMMT = os.path.join(TOOLS_DIR, "FMMT.exe")
 GENSEC = os.path.join(TOOLS_DIR, "GenSec.exe")
 GENFFS = os.path.join(TOOLS_DIR, "GenFfs.exe")
 GENFV = os.path.join(TOOLS_DIR, "GenFV.exe")
 LZCOMPRESS = os.path.join(TOOLS_DIR, "LzmaCompress.exe")
+
+EDK2_CAPSULE_TOOL = os.path.abspath(os.path.join(THIRD_PARTY_DIR,
+                                                 "edk2_capsule_tool",
+                                                 "GenerateCapsule.py"))
