@@ -16,6 +16,7 @@ import sys
 import argparse
 import binascii
 
+from enum import Enum
 from ctypes import Structure
 from ctypes import c_char, c_uint32, c_uint8, c_uint64, c_uint16, sizeof, ARRAY
 
@@ -66,6 +67,13 @@ g_hash_choices = {
 
 g_hash_option = None
 g_hash_size = 0
+
+
+class ModuleType(Enum):
+    FKM = 0
+    FBM = 1
+    META = 2
+    MODULE = 3
 
 
 def hex_dump(data, n=16, indent=0, msg="Hex Dump"):
@@ -277,6 +285,7 @@ def create_cpd_header(files_info):
         cpd_entry.name = bytes(f[0], encoding="Latin-1")
         cpd_entry.offset = offset
         cpd_entry.length = f[1]
+        cpd_entry.module_type = f[2].value
         ptr += sizeof(SUBPART_DIR_ENTRY)
         offset += f[1]
 
@@ -314,7 +323,10 @@ def parse_cpd_header(cpd_data):
     ptr += sizeof(SUBPART_DIR_HEADER)
     for i in range(entry_count):
         cpd_entry = SUBPART_DIR_ENTRY.from_buffer(cpd_data, ptr)
-        files.append((cpd_entry.name.decode(), cpd_entry.offset, cpd_entry.length))
+        files.append((cpd_entry.name.decode(),
+                      cpd_entry.offset,
+                      cpd_entry.length,
+                      cpd_entry.module_type))
         ptr += sizeof(SUBPART_DIR_ENTRY)
 
     return files
@@ -471,7 +483,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
 
     # Create FKM blob separately required by spec
     fkm_data = create_fkm(privkey, payload_privkey, hash_option)
-    cpd_data = create_cpd_header([("FKM", len(fkm_data))])
+    cpd_data = create_cpd_header([("FKM", len(fkm_data), ModuleType.FKM)])
     with open("fkm.bin", "wb") as fkm_fd:
         fkm_fd.write(cpd_data)
         fkm_fd.write(fkm_data)
@@ -485,9 +497,9 @@ def create_image(payload_file, outfile, privkey, hash_option):
     payload_length = len(in_data)
 
     files_info = [
-        ("FBM", fbm_length),
-        ("METADATA", metadata_length),
-        ("PAYLOAD", payload_length),
+        ("FBM", fbm_length, ModuleType.FBM),
+        ("METADATA", metadata_length, ModuleType.META),
+        ("PAYLOAD", payload_length, ModuleType.MODULE),
     ]
 
     cpd_length = sizeof(SUBPART_DIR_HEADER) + (
@@ -594,11 +606,9 @@ def create_image(payload_file, outfile, privkey, hash_option):
 
     files = parse_cpd_header(data[0:cpd_length])
 
-    for idx, (name, ioff, ilen) in enumerate(files):
-        print(
-            "[%d] %s @ [0x%08x-0x%08x] len: 0x%x (%d) Bytes"
-            % (idx, name, ioff, ioff + ilen, ilen, ilen)
-        )
+    for idx, (name, ioff, ilen, itype) in enumerate(files):
+        print("[%d] %s.bin @ [0x%08x-0x%08x] len:0x%x (%d) type:%d"
+              % (idx, name, ioff, (ioff+ilen), ilen, ilen, itype))
 
     sys.stdout.write("Writing... ")
     with open(outfile, "wb") as out_fd:
@@ -619,13 +629,11 @@ def decompose_image(infile_signed):
     # Extract images
     if not os.path.exists("extract"):
         os.makedirs("extract")
-    for idx, (name, ioff, ilen) in enumerate(files):
-        print(
-            "[%d] Extracting to %s.bin @ [0x%08x-0x%08x] len: 0x%x (%d) "
-            % (idx, name, ioff, (ioff + ilen), ilen, ilen)
-        )
+    for idx, (name, ioff, ilen, itype) in enumerate(files):
         with open(os.path.join("extract", "%s.bin" % name), "wb") as out_fd:
             out_fd.write(in_data[ioff:ioff+ilen])
+            print("[%d] %s.bin @ [0x%08x-0x%08x] len:0x%x (%d) type:%d"
+                  % (idx, name, ioff, (ioff+ilen), ilen, ilen, itype))
 
 
 def verify_image(infile_signed, pubkey_pem_file, hash_option):
@@ -663,7 +671,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
 
     files = parse_cpd_header(fkm_data)
 
-    name, ioff, ilen = files[0]  # FKM
+    name, ioff, ilen, itype = files[0]  # FKM
     fkm_offset = ioff
     fkm_limit = fkm_offset + ilen
     fkm = FIRMWARE_KEY_MANIFEST.from_buffer(fkm_data, fkm_offset)
@@ -700,7 +708,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     hash_expected = compute_pubkey_hash(payload_puk_file)
 
     files = parse_cpd_header(in_data)
-    name, ioff, ilen = files[0]  # FBM
+    name, ioff, ilen, itype = files[0]  # FBM
     fbm_offset = ioff
     fbm_limit = fbm_offset + ilen
 
@@ -741,7 +749,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         exit(1)
 
     # STEP 3: Validate Metadata hash
-    name, ioff, ilen = files[1]  # Metadata
+    name, ioff, ilen, itype = files[1]  # Metadata
     metafile_offset = ioff
     metafile_limit = metafile_offset + ilen
 
@@ -755,7 +763,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         raise Exception("Verification failed: Metadata hash mismatch")
 
     # STEP 4: Validate payload
-    name, ioff, ilen = files[2]  # Payload
+    name, ioff, ilen, itype = files[2]  # Payload
     payload_offset = ioff
     payload_limit = payload_offset + ilen
 
