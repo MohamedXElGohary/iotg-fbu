@@ -8,7 +8,8 @@
 import os
 
 
-THIRD_PARTY_DIR = "thirdparty"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+THIRD_PARTY_DIR = os.path.join(BASE_DIR,"thirdparty")
 TOOLS_DIR = os.path.abspath(os.path.join(THIRD_PARTY_DIR, "Bin", "Win32"))
 FMMT = os.path.join(TOOLS_DIR, "FMMT.exe")
 GENSEC = os.path.join(TOOLS_DIR, "GenSec.exe")

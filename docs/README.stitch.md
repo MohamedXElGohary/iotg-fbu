@@ -66,17 +66,15 @@ At this point the directory should contain the following files and directory:
 ```
 Directory of c:\siip_tools
 
-07/25/2019  04:53 PM    <DIR>          .
-07/25/2019  04:53 PM    <DIR>          ..
-05/02/2019  03:00 PM             1,365 LICENSE
-07/18/2019  09:28 AM             2,960 README.md
-07/18/2019  09:28 AM            74,828 Releasenotes.docx
-07/24/2019  10:26 PM    <DIR>          siipsign
-07/24/2019  10:26 PM    <DIR>          siipstitch
-07/25/2019  04:20 PM    <DIR>          siipsupport
-07/24/2019  10:26 PM             2,498 siip_constants.py
-07/25/2019  11:43 AM             2,315 siip_support.py
-07/25/2019  10:35 AM    <DIR>          SubRegionCapsule
+08/28/2019  03:30 PM    <DIR>          .
+08/28/2019  03:30 PM    <DIR>          ..
+08/28/2019  01:40 PM    <DIR>          common
+08/28/2019  11:40 AM             1,347 LICENSE
+08/28/2019  11:44 AM            60,168 README.docx
+08/28/2019  11:40 AM             2,961 README.md
+08/28/2019  01:40 PM    <DIR>          scripts
+08/28/2019  01:12 PM    <DIR>          thirdparty
+               5 File(s)      1,293,568 bytes
 
 
 ```
@@ -95,20 +93,22 @@ If the host is behind proxy server, add `--proxy=<proxy_server>:<proxy_port>`
 ** NOTE: **: An RSA signing key is required to stitch GOP, PEIM GFX and VBT images with the BIOS image. This signing key must be the same key used by BIOS. If they are different, the output image may not be bootable when security is enabled on the platform.
 
 
-### STEP 4: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `OseFw.bin`)
+### STEP 4: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `PseFw.bin`)
 
 At this point, the working directory should contain the following files and directories:
 
 ```
 
-Directory of c:\siip_tools\siipStitch
+Directory of c:\siip_tools\scripts
 
-06/10/2019  02:50 PM    <DIR>          .
-06/10/2019  02:50 PM    <DIR>          ..
-06/04/2019  01:16 PM        33,554,432 BIOS.BIN
-06/04/2019  01:16 PM            56,076 PseFw.bin
-05/03/2019  01:23 PM            44,882 README.md.html
-06/07/2019  11:22 AM            17,187 siip_stitch.py
+08/28/2019  03:34 PM    <DIR>          .
+08/28/2019  03:34 PM    <DIR>          ..
+08/28/2019  01:12 PM    <DIR>          Examples
+08/28/2019  11:40 AM            27,543 siip_sign.py
+08/28/2019  11:40 AM            15,680 siip_stitch.py
+08/28/2019  11:40 AM             7,681 subregion_capsule.py
+08/28/2019  11:40 AM                 0 __init__.py
+               5 File(s)         50,904 bytes
 
 ```
 
@@ -147,9 +147,7 @@ Create New FD file successfully.
 
 Done!
 
- Firmware Merge complete
-
 C:\siip_tools\siipStitch>
 ```
 
-The new image `BIOS2.bin` is generated with `OseFw.bin` embedded in the BIOS image.
+The new image `BIOS2.bin` is generated with `PseFw.bin` embedded in the BIOS image.

@@ -153,12 +153,6 @@ ce da 8b b3 39 d4 37 af b8 b2 21 8a cc 83 03 4b  ....9.7...!....K
 [1] METADATA @ [0x0000036c-0x000003ec] len: 0x80 (128) Bytes
 [2] PAYLOAD @ [0x000003ec-0x00033f8c] len: 0x33ba0 (211872) Bytes
 Writing... Okay
-	Creating image with manifest data using key privkey.pem ...
-	[0] FKM @ [0x00000070-0x0000037c] len: 0x30c (780) Bytes
-	[1] FBM @ [0x0000037c-0x00000678] len: 0x2fc (764) Bytes
-	[2] METADATA @ [0x00000678-0x000006d4] len: 0x5c (92) Bytes
-	[3] PAYLOAD @ [0x000006d4-0x001006d4] len: 0x100000 (1048576) Bytes
-	Writing... Okay
 
 ```
 The following output files are generated:

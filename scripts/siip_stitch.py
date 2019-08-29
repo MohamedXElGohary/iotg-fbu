@@ -13,6 +13,7 @@ import argparse
 import shutil
 import re
 import glob
+from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.siip_constants import IP_constants as ip_cnst
@@ -449,7 +450,13 @@ def main():
     parser = parse_cmdline()
     args = parser.parse_args()
 
-    filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
+    # Convert to absolute path to work with thirdparty code
+    IFWI_file = Path(args.IFWI_IN.name).resolve()
+    IPNAME_file = Path(args.IPNAME_IN.name).resolve()
+
+ 
+    filenames = [ str(IFWI_file), str(IPNAME_file)]
+    #filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
     if args.ipname in ["gop", "pei", "vbt"]:
         if not args.private_key or not os.path.exists(args.private_key):
             print("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
@@ -459,7 +466,8 @@ def main():
             filenames.append(args.private_key)
         if args.ipname == "pei":
             if args.IPNAME_IN2 is not None:
-                filenames.append(args.IPNAME_IN2.name)
+                IPNAME2_file = Path(args.IPNAME_IN2.name).resolve()
+                filenames.append(str(IPNAME2_file))
             else:
                 print("\nIPNAME_IN2 input file is required.\n")
                 parser.print_help()
