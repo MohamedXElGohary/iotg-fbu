@@ -15,7 +15,12 @@ import re
 import glob
 from pathlib import Path
 
+from cryptography.hazmat.primitives import hashes as hashes
+from cryptography.hazmat.backends import default_backend
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.ifwi import IFWI_IMAGE
+from common.firmware_volume import FirmwareDevice
 from common.siip_constants import IP_constants as ip_cnst
 from common.tools_path import FMMT, GENFFS, GENFV, GENSEC, LZCOMPRESS, TOOLS_DIR
 
@@ -149,6 +154,12 @@ IP_OPTIONS = {
         ["raw", "PI_NONE"],
         [None],
         ["free", ip_cnst.VBT_FFS_GUID, None],
+    ],
+    "obb_digest": [
+        ["ui", ip_cnst.OBB_DIGEST_UI],
+        ["raw", "PI_NONE"],
+        [None],
+        ["free", ip_cnst.OBB_DIGEST_FFS_GUID, None],
     ],
     "gop": [
         ["ui", ip_cnst.GOP_UI],
@@ -444,19 +455,73 @@ def parse_cmdline():
     return parser
 
 
+def stitch_and_update(ifwi_file, ip_name, file_list, out_file):
+
+    # search for firmware volume
+    status, fw_volume = search_for_fv(ifwi_file, ip_name)
+
+    # Check for error in using FMMT.exe or if firmware volume was not found.
+    if status == 1 or fw_volume is None:
+        cleanup()
+        if status == 0:
+            print("\nError: No Firmware volume found")
+        sys.exit(status)
+
+    # firmware volume was found
+    print("\nThe Firmware volume is {}\n".format(fw_volume))
+
+    # adding the path name to the output file
+    file_list.append(os.path.abspath(out_file))
+
+    # Add firmware volume header and merge it in out_file
+    status = merge_and_replace(file_list, ip_name, fw_volume)
+
+
+def update_obb_digest(ifwi_file, digest_file):
+    """Calculate OBB hash according to a predefined range"""
+
+    ifwi = IFWI_IMAGE(ifwi_file)
+    if not ifwi.is_ifwi_image():
+        print("Bad IFWI image")
+        exit(1)
+
+    ifwi.parse()
+    bios_start = ifwi.region_list[1][1]
+    bios_limit = ifwi.region_list[1][2]
+
+    print("Parsing BIOS ...")
+    bios = FirmwareDevice(0, ifwi.data[bios_start:bios_limit+1])
+    bios.ParseFd()
+
+    # Extract FVs belongs to OBB
+    obb_offset = bios.FvList[13].Offset
+    obb_length = 0
+    for fv in bios.FvList[13:16]:  # TODO: hardcoded for now
+        obb_length += len(fv.FvData)
+
+    print("OBB offset: {:x} len {:x}".format(obb_offset, obb_length))
+
+    # Hash it
+    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+    digest.update(bios.FdData[obb_offset:obb_offset+obb_length])
+    result = digest.finalize()
+    with open(digest_file, "wb") as hash_fd:
+        hash_fd.write(result)
+
+    return
+
+
 def main():
     """Entry to script."""
 
     parser = parse_cmdline()
     args = parser.parse_args()
 
-    # Convert to absolute path to work with thirdparty code
+    # Use absolute path because GenSec does not like relative ones
     IFWI_file = Path(args.IFWI_IN.name).resolve()
     IPNAME_file = Path(args.IPNAME_IN.name).resolve()
 
- 
-    filenames = [ str(IFWI_file), str(IPNAME_file)]
-    #filenames = [args.IFWI_IN.name, args.IPNAME_IN.name]
+    filenames = [str(IFWI_file), str(IPNAME_file)]
     if args.ipname in ["gop", "pei", "vbt"]:
         if not args.private_key or not os.path.exists(args.private_key):
             print("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
@@ -489,24 +554,20 @@ def main():
         shutil.copyfile(args.private_key, os.path.join(TOOLS_DIR, "privkey.pem"))
         filenames.remove(args.private_key)
 
-    # search for firmware volume
-    status, fw_volume = search_for_fv(args.IFWI_IN.name, args.ipname)
+    print("*** Replacing {} ...".format(args.ipname))
+    stitch_and_update(args.IFWI_IN.name, args.ipname, filenames, args.OUTPUT_FILE)
 
-    # Check for error in using FMMT.exe or if firmware volume was not found.
-    if status == 1 or fw_volume is None:
-        cleanup()
-        if status == 0:
-            print("\nError: No Firmware volume found")
-        sys.exit(status)
+    # Update OBB digest after stitching any data inside OBB region
+    if args.ipname in ["vbt"]:
+        ipname = "obb_digest"
+        digest_file = "tmp.obb.hash.bin"
 
-    # firmware volume was found
-    print("\nThe Firmware volume is {}\n".format(fw_volume))
+        update_obb_digest(args.OUTPUT_FILE, digest_file)
 
-    # adding the path name to the output file
-    filenames.append(os.path.abspath(args.OUTPUT_FILE))
+        filenames = [str(Path(f).resolve()) for f in [args.OUTPUT_FILE, digest_file]]
 
-    # create OseFw header, merge header and replace in Binary
-    status = merge_and_replace(filenames, args.ipname, fw_volume)
+        print("*** Replacing {} ...".format(ipname))
+        stitch_and_update(args.OUTPUT_FILE, ipname, filenames, args.OUTPUT_FILE)
 
     cleanup()
 

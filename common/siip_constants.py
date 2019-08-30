@@ -35,3 +35,6 @@ class IP_constants:
 
     VBT_UI = "IntelGopVbt"
     VBT_FFS_GUID = "56752da9-de6b-4895-8819-1945b6b76c22"
+
+    OBB_DIGEST_UI = "ObbDigest"
+    OBB_DIGEST_FFS_GUID = "F57757FC-2603-404F-AAE2-34C6232388E8"
