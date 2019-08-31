@@ -47,7 +47,7 @@ class TestFunctionality(unittest.TestCase):
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      '-ip', 'pse']
         subprocess.check_call(cmd)
-        self.assertTrue(filecmp.cmp(os.path.join(IMAGES_PATH, 'BIOS2.BIN'), 'BIOS_OUT.bin'))
+        self.assertTrue(filecmp.cmp(os.path.join(IMAGES_PATH, 'rom_pse.bin'), 'BIOS_OUT.bin'))
 
     def test_replace_pse_give_outputfile(self):  #output file given
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
@@ -124,7 +124,6 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, capture_output=True)
         assert file_large in results.stdout
 
-
     def test_inputfile_w_incorrect_format(self):  #BIOS input file is not in correct format
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_BadFormat.bin'),
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
@@ -133,12 +132,14 @@ class TestErrorCases(unittest.TestCase):
         results=subprocess.run(cmd, capture_output=True)
         assert b"FMMT.exe timed out" in results.stdout
 
-    def test_no_fv_found(self):  #Firmware volume not found in the file
+    def test_no_fv_found(self):  #  Firmware volume not found in the file
+        with open('tmp.dummy.bin', 'wb') as fd:
+            fd.write(b'\xab' * 128)
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
-                                     os.path.join(IMAGES_PATH, 'dummy_2.bin'),
-                                     '-ip', 'oob']
+                                                 'tmp.dummy.bin',
+                                                 '-ip', 'pse']
 
-        results=subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, capture_output=True)
         assert b"Could not find file" in results.stdout
 
     def test_extra_inputfile(self):  #Replacement does not require 2 input files
@@ -244,8 +245,11 @@ class TestReplaceSubRegions(unittest.TestCase):
         self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'EHL_v1322.tsnip_updated.bin')))
 
     def test_replace_tcc_using_default(self):  # tcc
+        with open('tmp.dummy.bin', 'wb') as fd:
+            fd.write(b'\xcd' * 128)
+
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
-                                     os.path.join(IMAGES_PATH, 'dummy_2.bin'),
+                                     'tmp.dummy.bin',
                                      '-ip', 'tcc']
         subprocess.check_call(cmd)
         self.assertTrue(os.path.exists('BIOS_OUT.bin'))
@@ -261,7 +265,7 @@ class TestReplaceGOP(unittest.TestCase):
         cleanup()
 
     def test_replace_gopvbt(self):
-       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                     os.path.join(IMAGES_PATH, 'Vbt.bin'),
                                     '-ip', 'vbt',
                                     '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
@@ -269,15 +273,15 @@ class TestReplaceGOP(unittest.TestCase):
        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_vbt.bin')))
 
     def test_replace_gopdriver(self):
-       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                     os.path.join(IMAGES_PATH, 'IntelGopDriver.efi'),
                                     '-ip', 'gop',
                                     '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
        subprocess.check_call(cmd)
-       self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_drvr.bin')))
+       self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_gop.bin')))
 
     def test_replace_peigraphics(self):
-       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
                                     '-ip', 'pei',
@@ -288,14 +292,13 @@ class TestReplaceGOP(unittest.TestCase):
     def test_key_with_different_name(self):
         """Different name for priviate key"""
 
-        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
-                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
-                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
-                                     '-ip', 'pei',
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+                                     os.path.join(IMAGES_PATH, 'IntelGopDriver.efi'),
+                                     '-ip', 'gop',
                                      '-k', os.path.join(IMAGES_PATH, 'priv_key.pem')]
 
         subprocess.check_call(cmd)
-        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_pei.bin')))
+        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_gop.bin')))
 
 
 def cleanup():
