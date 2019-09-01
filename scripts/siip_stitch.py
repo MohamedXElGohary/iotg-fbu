@@ -185,7 +185,6 @@ GENSEC_SECTION = {
     "pe32": ["tmp.pe32", "-s", "EFI_SECTION_PE32"],
     "depex": ["tmp.dpx", "-s", "EFI_SECTION_PEI_DEPEX"],
     "cmprs": ["tmp.cmps", "-s", "EFI_SECTION_COMPRESSION", "-c"],
-    "all": ["tmp.all"],
 }
 
 # gets the firmware file system type needed for genFFs
@@ -207,7 +206,8 @@ def guild_section(sec_type, guild, guid_attrib, inputfile):
 def generate_section(inputfiles, align_sizes):
     """ generates the all section """
 
-    cmd = GENSEC_SECTION.get("all")
+    cmd = ["tmp.all"]
+
     for index, file in enumerate(inputfiles):
         cmd += [file]
         if align_sizes != [None]:
@@ -558,7 +558,7 @@ def main():
     stitch_and_update(args.IFWI_IN.name, args.ipname, filenames, args.OUTPUT_FILE)
 
     # Update OBB digest after stitching any data inside OBB region
-    if args.ipname in ["vbt"]:
+    if args.ipname in ["vbt", "pei"]:
         ipname = "obb_digest"
         digest_file = "tmp.obb.hash.bin"
 
