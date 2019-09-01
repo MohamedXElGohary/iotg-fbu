@@ -43,14 +43,14 @@ class TestFunctionality(unittest.TestCase):
         subprocess.check_call(cmd)
 
     def test_replace_pse_using_default(self):  #no output file given
-        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_EDK_13M_EDK_1352_00_D_Simics.bin'),
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      '-ip', 'pse']
         subprocess.check_call(cmd)
         self.assertTrue(filecmp.cmp(os.path.join(IMAGES_PATH, 'rom_pse.bin'), 'BIOS_OUT.bin'))
 
     def test_replace_pse_give_outputfile(self):  #output file given
-        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_EDK_13M_EDK_1352_00_D_Simics.bin'),
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      '-ip', 'pse', '-o', 'IFWI.bin']
         subprocess.check_call(cmd)
