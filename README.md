@@ -1,10 +1,10 @@
 # Elkhart Lake Firmware and BIOS Utilities
 
-This software contains a few tools and scripts to support binary modifications on UEFI BIOS images:
+This software contains tools and scripts to support binary modifications on UEFI BIOS images:
 
-* **Signing Tool** (`siip_sign.py`): Sign a payload image according to SIIP specification
-* **Stitching Tool** (`siip_stitch.py`): Stitch an image into an IFWI image according to UEFI Firmware File System format
-* **Subregion Capsule Tool** (`subregion_capsule.py`): Create a UEFI capsule image with subregion images generated from user defined configuration file
+* **Signing Tool** (`siip_sign.py`): Signs an image according to SIIP specification
+* **Stitching Tool** (`siip_stitch.py`): Stitches an image into an IFWI image according to UEFI Firmware File System format
+* **Subregion Capsule Tool** (`subregion_capsule.py`): Creates a UEFI capsule image with subregion images according to an user defined configuration file
 
 The flowchart with associated input and output files are illustrated in the following diagram:
 
@@ -18,7 +18,7 @@ All of these tools are command line driven scripts.
 
 ## STEP 1: Setup Host Environment with Python
 
-### Installing Python 3.7.3 for Windows to `C:\Python37`
+### Install Python 3.7.3 for Windows to `C:\Python37`
 
 1. Download Python from: https://www.python.org/downloads/
 2. Start installation and choose 'Customized Install'
@@ -29,7 +29,7 @@ All of these tools are command line driven scripts.
 Note: On Windows, files with extension `.py` may not associate to Python interpreter, e.g `*.py` is opened by text editor by default. Please fix that before running the script.
 
 
-### Installing Python Modules
+### Install Python Modules
 
 Set PROXY environment if your host is behind proxy server:
 
@@ -47,7 +47,7 @@ Install addiontional Python modules
 Note: If there are multiple Python versions installed on the host, it is highly recommended to use virtualenv or pipenv before running the scripts.
 
 
-## STEP 2: Required Input Files
+## STEP 2: Collect Required Input Files
 
 Before you are running scripts, please prepare the input files including images and signing keys
 
@@ -60,7 +60,7 @@ Before you are running scripts, please prepare the input files including images 
   - `TestSub.pub.pem`
 * Capsule payload configuration files (e.g., `tsn_mac_address.json`)
 
-## STEP 3: Running
+## STEP 3: Run Script
 
 Tip: Copying all inputs files to the same directory as the script is located makes it easier to execute the script.
 
