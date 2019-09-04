@@ -14,9 +14,9 @@ from __future__ import print_function
 import os
 import sys
 import argparse
-import binascii
 
 from enum import Enum
+import struct
 from ctypes import Structure
 from ctypes import c_char, c_uint32, c_uint8, c_uint64, c_uint16, sizeof, ARRAY
 
@@ -198,6 +198,19 @@ def compute_pubkey_hash(pubkey_pem_file):
     return puk_hash
 
 
+def calculate_sum32(data):
+    """sum of all elements from a buffer of 32-bit values."""
+
+    if (len(data) & 0x3) != 0:
+        raise ValueError("Length of data is not multiple of DWORDs")
+
+    fmt = "<{}I".format(len(data) // 4)
+    buffer32 = struct.unpack(fmt, data)
+    result = sum(buffer32) & 0xffffffff
+
+    return result
+
+
 def create_fkm(privkey, payload_privkey, hash_option):
     """Create FKM data from a list of keys"""
 
@@ -290,7 +303,7 @@ def create_cpd_header(files_info):
         offset += f[1]
 
     # Fill CRC32 checksum
-    cpd.crc32 = binascii.crc32(data)
+    cpd.crc32 = calculate_sum32(data)
     print("CPD Header CRC32 : 0x%X" % cpd.crc32)
 
     return data
@@ -311,7 +324,7 @@ def parse_cpd_header(cpd_data):
     expected_crc = cpd.crc32
     cpd.crc32 = 0
     cpd_length = sizeof(SUBPART_DIR_HEADER) + (entry_count * sizeof(SUBPART_DIR_ENTRY))
-    actual_crc = binascii.crc32(cpd_data[0:cpd_length])
+    actual_crc = calculate_sum32(cpd_data[0:cpd_length])
 
     if expected_crc != actual_crc:
         print(
