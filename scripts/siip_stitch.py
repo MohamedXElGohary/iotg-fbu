@@ -24,7 +24,7 @@ from common.firmware_volume import FirmwareDevice
 from common.siip_constants import IP_constants as ip_cnst
 from common.tools_path import FMMT, GENFFS, GENFV, GENSEC, LZCOMPRESS, TOOLS_DIR
 
-__version__ = "0.6.1"
+__version__ = "0.7.0"
 
 
 print("######################################################################")
