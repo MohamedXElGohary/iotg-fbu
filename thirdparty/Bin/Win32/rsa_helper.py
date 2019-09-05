@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2019, Intel Corporation. All rights reserved.
@@ -9,6 +9,7 @@ import os
 import sys
 import argparse
 import uuid
+
 from cryptography.hazmat.primitives import hashes as hashes
 from cryptography.hazmat.primitives import serialization as serialization
 from cryptography.hazmat.backends import default_backend
