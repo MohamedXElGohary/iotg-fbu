@@ -4,12 +4,12 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pytest = "*"
 flake8 = "*"
 black = "*"
 pypandoc = "*"
 pytest-cov = "*"
 pytest-html = "*"
+pytest = "==5.0.1"
 
 [packages]
 cryptography = "*"
