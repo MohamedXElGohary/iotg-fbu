@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.ifwi import IFWI_IMAGE
 from common.firmware_volume import FirmwareDevice
 from common.siip_constants import IP_constants as ip_cnst
-from common.tools_path import FMMT, GENFFS, GENFV, GENSEC, LZCOMPRESS, TOOLS_DIR
+from common.tools_path import FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, TOOLS_DIR
 
 __version__ = "0.7.0"
 
@@ -516,6 +516,10 @@ def main():
 
     parser = parse_cmdline()
     args = parser.parse_args()
+
+    for f in (FMMT, GENFFS, GENSEC, LZCOMPRESS):
+        if not os.path.exists(f):
+            raise FileNotFoundError("Thirdparty tool not found ({})".format(f))
 
     # Use absolute path because GenSec does not like relative ones
     IFWI_file = Path(args.IFWI_IN.name).resolve()

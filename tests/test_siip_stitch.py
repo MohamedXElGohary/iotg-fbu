@@ -19,7 +19,7 @@ import platform
 import glob
 
 sys.path.insert(0, "..")
-from common.tools_path import TOOLS_DIR
+from common.tools_path import TOOLS_DIR, GENFV, GENFFS, GENSEC, FMMT, LZCOMPRESS
 
 SIIPSTITCH = os.path.join("scripts", "siip_stitch.py")
 IMAGES_PATH = os.path.join("tests", "images")
@@ -62,10 +62,12 @@ class TestErrorCases(unittest.TestCase):
     def setUp(self):
         pass
 
-    def tearDown(self) :
+    def tearDown(self):
+        if os.path.exists('rename'):
+            os.rename('rename', TOOLS_DIR)
         cleanup()
 
-    def test_invalid_ip(self):  #invalid ipname
+    def test_invalid_ip(self):  # invalid ipname
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                      os.path.join(IMAGES_PATH,'PseFw.bin'), '-ip', 'ose']
         try:
@@ -207,6 +209,18 @@ class TestErrorCases(unittest.TestCase):
 
        results=subprocess.run(cmd, capture_output=True)
        assert b"is not an RSA priviate key" in results.stderr
+
+    def test_missing_tools(self):
+        """Verify script report errors if any thirdparty tool is missing"""
+
+        os.rename(TOOLS_DIR, 'rename')
+        for f in (FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS):
+            cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
+                                     '-ip', 'pse']
+            results = subprocess.run(cmd, capture_output=True)
+            assert b"Thirdparty tool not found" in results.stderr
+
 
 class TestReplaceSubRegions(unittest.TestCase):
     """ Test replacement of subregions"""
