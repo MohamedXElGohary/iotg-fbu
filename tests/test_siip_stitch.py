@@ -54,6 +54,7 @@ class TestFunctionality(unittest.TestCase):
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      '-ip', 'pse', '-o', 'IFWI.bin']
         subprocess.check_call(cmd)
+        
 
 
 class TestErrorCases(unittest.TestCase):
@@ -197,7 +198,22 @@ class TestErrorCases(unittest.TestCase):
                                     '-k', 'large_key.pem']
 
        results=subprocess.run(cmd, capture_output=True)
-       assert b"is larger than 2KB!" in results.stderr
+       assert b"the key file size must be greater than 0 and less than 2k!" in results.stderr
+
+    def test_empty_privkey(self):
+       """Verifies that empty key file will genarate an error"""
+
+       with open('empty_key.pem', 'wb') as f:
+           pass
+
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'Vbt.bin'),
+                                    '-ip', 'vbt',
+                                    '-k', 'empty_key.pem']
+
+       results=subprocess.run(cmd, capture_output=True)
+       assert b"the key file size must be greater than 0 and less than 2k!" in results.stderr
+       os.remove('empty_key.pem')
 
     def test_non_privkey(self):
        """Verifies that non rsa key file will genarate an error"""
@@ -209,6 +225,17 @@ class TestErrorCases(unittest.TestCase):
 
        results=subprocess.run(cmd, capture_output=True)
        assert b"is not an RSA priviate key" in results.stderr
+    
+    def test_privkey_not_exist(self):
+       """Verifies that non rsa key file will genarate an error"""
+
+       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
+                                    os.path.join(IMAGES_PATH, 'Vbt.bin'),
+                                    '-ip', 'vbt',
+                                    '-k', os.path.join(IMAGES_PATH, 'priv_key2.pem')]
+
+       results=subprocess.run(cmd, capture_output=True)
+       assert b"does not exist" in results.stderr
 
     def test_missing_tools(self):
         """Verify script report errors if any thirdparty tool is missing"""
@@ -311,6 +338,30 @@ class TestReplaceGOP(unittest.TestCase):
                                      '-ip', 'gop',
                                      '-k', os.path.join(IMAGES_PATH, 'priv_key.pem')]
 
+        subprocess.check_call(cmd)
+        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_gop.bin')))
+
+class TestFilesAbsPath(unittest.TestCase): # files with absolute path
+    TMP_DIR = os.path.join(os.getcwd(), "scripts", "tmp")
+
+    def setUp(self): 
+        #TMP_Dir = os.path.join("scripts", "tmp")
+        os.mkdir(TestFilesAbsPath.TMP_DIR, mode=0o666)
+        shutil.copy(os.path.join(IMAGES_PATH,'privkey.pem'),TestFilesAbsPath.TMP_DIR)
+        shutil.copy(os.path.join(IMAGES_PATH,'IntelGopDriver.efi'),TestFilesAbsPath.TMP_DIR)
+        pass
+
+    def tearDown(self):
+        #TMP_Dir = os.path.join("scripts", "tmp")
+        shutil.rmtree(TestFilesAbsPath.TMP_DIR)
+        cleanup()
+    
+    def test_keyfile_outside_dir(self): #Key with a direct path
+
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
+                                     os.path.join(TestFilesAbsPath.TMP_DIR, 'IntelGopDriver.efi'),
+                                    '-ip', 'gop',
+                                    '-k', os.path.join(TestFilesAbsPath.TMP_DIR, 'privkey.pem')]
         subprocess.check_call(cmd)
         self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_gop.bin')))
 

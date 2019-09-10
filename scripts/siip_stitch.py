@@ -24,7 +24,7 @@ from common.firmware_volume import FirmwareDevice
 from common.siip_constants import IP_constants as ip_cnst
 from common.tools_path import FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, TOOLS_DIR
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 
 print("######################################################################")
@@ -365,18 +365,23 @@ def file_not_exist(file):
 
 
 def check_key(file):
-    """ Check if file is empty or over max size"""
+    """ Check if file exist, empty, or over max size"""
 
-    FIRSTLINE = "-----BEGIN RSA PRIVATE KEY-----"
-    LASTLINE = "-----END RSA PRIVATE KEY-----"
+    if os.path.isfile(file):
+        FIRSTLINE = "-----BEGIN RSA PRIVATE KEY-----"
+        LASTLINE = "-----END RSA PRIVATE KEY-----"
+        size = os.path.getsize(file)
+        if size > 2000 or size == 0:
+            raise argparse.ArgumentTypeError("size of {} is {} the key file size must be greater than 0 and less than 2k!".format(file,size))
 
-    if os.path.getsize(file) > 2000:
-        raise argparse.ArgumentTypeError("{} is larger than 2KB!".format(file))
+        else:
+            with open(file, "r") as key:
+                 key_lines = key.readlines()
+            if not ((FIRSTLINE in key_lines[0]) and (LASTLINE in key_lines[-1])):
+                raise argparse.ArgumentTypeError("{} is not an RSA priviate key".format(file))
     else:
-        with open(file, "r") as key:
-            key_lines = key.readlines()
-        if not ((FIRSTLINE in key_lines[0]) and (LASTLINE in key_lines[-1])):
-            raise argparse.ArgumentTypeError("{} is not an RSA priviate key".format(file))
+        raise argparse.ArgumentTypeError("{} does not exist".format(file))
+
     return file
 
 
@@ -532,7 +537,8 @@ def main():
             parser.print_help()
             sys.exit(2)
         else:
-            filenames.append(args.private_key)
+            key_file = Path(args.private_key).resolve()
+            filenames.append(key_file)
         if args.ipname == "pei":
             if args.IPNAME_IN2 is not None:
                 IPNAME2_file = Path(args.IPNAME_IN2.name).resolve()
@@ -554,9 +560,10 @@ def main():
         sys.exit(status)
 
     # Copy key file to the required name needed for the rsa_helper.py
-    if args.private_key in filenames:
-        shutil.copyfile(args.private_key, os.path.join(TOOLS_DIR, "privkey.pem"))
-        filenames.remove(args.private_key)
+    if args.private_key:
+    #if key_file in filenames:
+        shutil.copyfile(key_file, os.path.join(TOOLS_DIR, "privkey.pem"))
+        filenames.remove(key_file)
 
     print("*** Replacing {} ...".format(args.ipname))
     stitch_and_update(args.IFWI_IN.name, args.ipname, filenames, args.OUTPUT_FILE)
