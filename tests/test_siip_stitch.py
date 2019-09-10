@@ -122,7 +122,7 @@ class TestErrorCases(unittest.TestCase):
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
                                      os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
                                      os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
-                                     '-ip', 'pei',
+                                     '-ip', 'gfxpeim',
                                      '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
         results = subprocess.run(cmd, capture_output=True)
         assert file_large in results.stdout
@@ -178,7 +178,7 @@ class TestErrorCases(unittest.TestCase):
        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
                                     '-k', os.path.join(IMAGES_PATH, 'privkey.pem'),
-                                    '-ip', 'pei']
+                                    '-ip', 'gfxpeim']
 
        try:
            results=subprocess.check_call(cmd)
@@ -325,7 +325,7 @@ class TestReplaceGOP(unittest.TestCase):
        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
-                                    '-ip', 'pei',
+                                    '-ip', 'gfxpeim',
                                     '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
        subprocess.check_call(cmd)
        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_pei.bin')))

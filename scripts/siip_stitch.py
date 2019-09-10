@@ -167,7 +167,7 @@ IP_OPTIONS = {
         [None],
         ["gop", ip_cnst.GOP_FFS_GUID, None],
     ],
-    "pei": [
+    "gfxpeim": [
         ["ui", ip_cnst.PEI_UI],
         ["pe32", None],
         ["depex", None],
@@ -268,7 +268,7 @@ def ip_inputfiles(filenames, ipname):
 
     inputfiles = [None, "tmp.raw", "tmp.ui", "tmp.all"]
 
-    if ipname != "pei":
+    if ipname != "gfxpeim":
         num_infiles = 1
         if ipname == "pse":
             inputfiles.extend(["tmp.cmps", "tmp.guid"])
@@ -417,7 +417,7 @@ def parse_cmdline():
     parser.add_argument(
         "IPNAME_IN",
         type=argparse.FileType("rb"),
-        help="Input IP firmware Binary file(Ex: OseFw.Bin to be replaced in the IFWI.bin",
+        help="Input IP firmware Binary file(Ex: PseFw.Bin to be replaced in the IFWI.bin",
     )
     parser.add_argument(
         "IPNAME_IN2",
@@ -531,7 +531,7 @@ def main():
     IPNAME_file = Path(args.IPNAME_IN.name).resolve()
 
     filenames = [str(IFWI_file), str(IPNAME_file)]
-    if args.ipname in ["gop", "pei", "vbt"]:
+    if args.ipname in ["gop", "gfxpeim", "vbt"]:
         if not args.private_key or not os.path.exists(args.private_key):
             print("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
             parser.print_help()
@@ -539,7 +539,7 @@ def main():
         else:
             key_file = Path(args.private_key).resolve()
             filenames.append(key_file)
-        if args.ipname == "pei":
+        if args.ipname == "gfxpeim":
             if args.IPNAME_IN2 is not None:
                 IPNAME2_file = Path(args.IPNAME_IN2.name).resolve()
                 filenames.append(str(IPNAME2_file))
@@ -569,7 +569,7 @@ def main():
     stitch_and_update(args.IFWI_IN.name, args.ipname, filenames, args.OUTPUT_FILE)
 
     # Update OBB digest after stitching any data inside OBB region
-    if args.ipname in ["vbt", "pei"]:
+    if args.ipname in ["vbt", "gfxpeim"]:
         ipname = "obb_digest"
         digest_file = "tmp.obb.hash.bin"
 
