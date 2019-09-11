@@ -5,6 +5,10 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
+"""A signing utility to create manifest data according to SIIP specification
+"""
+
+
 from __future__ import print_function
 
 import os
@@ -15,8 +19,8 @@ import binascii
 from ctypes import Structure
 from ctypes import c_char, c_uint32, c_uint8, c_uint64, c_uint16, sizeof, ARRAY
 
-if sys.version_info[0] < 3:
-    raise Exception("Must be using Python 3 (for now)")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.banner import banner
 
 try:
     from cryptography.hazmat.primitives import hashes as hashes
@@ -39,7 +43,15 @@ except ImportError:
     sys.exit(1)
 
 
+__prog__ = "siip_sign"
 __version__ = "0.7.0"
+
+TOOLNAME = "SIIP Signing Tool"
+
+banner(TOOLNAME, __version__)
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 is the minimal version required")
 
 RSA_KEYMOD_SIZE = 256
 RSA_KEYEXP_SIZE = 4
@@ -759,10 +771,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
 
 def main():
 
-    ap = argparse.ArgumentParser(
-        description="A SIIP signing tool to create manifest data supporting"
-        " SIIP firmware loading specification"
-    )
+    ap = argparse.ArgumentParser(prog=__prog__, description=__doc__)
 
     sp = ap.add_subparsers(help="command")
 

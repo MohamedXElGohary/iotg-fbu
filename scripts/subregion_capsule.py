@@ -5,17 +5,22 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
+"""A capsule image utility to generate UEFI sub-region capsule images
+"""
+
+
 import sys
 import os
 import argparse
 import subprocess
-import shutil
 import glob
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import common.sub_region_descriptor as srd
 import common.sub_region_image as sri
 from common.tools_path import EDK2_CAPSULE_TOOL
+from common.banner import banner
+
 
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
@@ -25,8 +30,10 @@ if sys.version_info[0] < 3:
 #
 __prog__ = "subregion_capsule"
 __version__ = "0.7.0"
-__copyright__ = "Copyright (c) 2019, Intel Corporation. All rights reserved."
-__description__ = "Generate a sub region capsule.\n"
+
+TOOLNAME = "Sub-Region Capsule Tool"
+
+banner(TOOLNAME, __version__)
 
 section_name_lookup_table = {
     "EBA4A247-42C0-4C11-A167-A4058BC9D423": "IntelOseFw",
@@ -145,7 +152,7 @@ def create_arg_parser():
 
     my_parser = argparse.ArgumentParser(
         prog=__prog__,
-        description=__description__ + __copyright__,
+        description=__doc__,
         conflict_handler="resolve",
         fromfile_prefix_chars="@",
     )

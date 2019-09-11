@@ -5,6 +5,10 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
+"""A stitching utility to replace code/data sub-regions in System BIOS image
+"""
+
+
 import os
 import platform
 import subprocess
@@ -23,18 +27,17 @@ from common.ifwi import IFWI_IMAGE
 from common.firmware_volume import FirmwareDevice
 from common.siip_constants import IP_constants as ip_cnst
 from common.tools_path import FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, TOOLS_DIR
+from common.banner import banner
 
+__prog__ = "siip_stitch"
 __version__ = "0.7.1"
+TOOLNAME = "SIIP Stitching Tool"
 
-
-print("######################################################################")
-print("Purpose of this utility is to replace the section in System BIOS ROM")
-print("file with new section")
-print("######################################################################")
+banner(TOOLNAME, __version__)
 
 
 if sys.version_info[0] < 3:
-    raise Exception("Must be using Python 3 (for now)")
+    raise Exception("Python 3 is the minimal version required")
 
 
 def search_for_fv(inputfile, ipname):
@@ -407,7 +410,7 @@ def parse_cmdline():
     """ Parsing and validating input arguments."""
 
     # initiate the parser
-    parser = argparse.ArgumentParser(prog="siip_stitch")
+    parser = argparse.ArgumentParser(prog=__prog__, description=__doc__,)
 
     parser.add_argument(
         "IFWI_IN",
