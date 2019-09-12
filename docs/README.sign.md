@@ -50,15 +50,30 @@ optional arguments:
 ## Step-by-Step Instructions
 
 
-### STEP 1: Unpack SIIP Tools package into a new directory (e.g., `D:\user\tools`)
+### STEP 1: Unpack SIIP Tools package into a new directory (e.g., `C:\siip_tools`)
+At this point the directory should contain the following files and directory:
 
+```
+ Directory of C:\siip_tools\fbu_siip_20190910
+
+10/09/2019  03:45 PM    <DIR>          .
+10/09/2019  03:45 PM    <DIR>          ..
+10/09/2019  05:36 PM    <DIR>          common
+27/08/2019  02:23 PM             1,347 LICENSE
+10/09/2019  03:44 PM            60,254 README.docx
+10/09/2019  02:53 PM             3,073 README.md
+10/09/2019  05:38 PM    <DIR>          scripts
+10/09/2019  03:45 PM    <DIR>          thirdparty
+               3 File(s)         64,674 bytes
+               5 Dir(s)  11,534,508,032 bytes free
+```
 
 ### STEP 2: Install python3 and required python module `cryptography` using pip
 
 Note: If your host is behind proxy server, add `--proxy=<proxy_server>:<proxy_port>`
 
 
-### STEP 3: Copy RSA private key and rename to `privkey.pem` into the same working directory
+### STEP 3: Copy RSA private key and rename to `privkey.pem` into the same working directory (e.g., `C:\siip_tools\scripts`)
 
 For testing, you can generate a test key using OpenSSL:
 
@@ -68,7 +83,7 @@ openssl genrsa -out privkey.pem 2048
 
 ### STEP 4: Copy SIIP firmware image to be signed (e.g. `OseFw.bin`)
 
-At this point, the working directory should contain the following files and directories:
+At this point, the working directory should contain the following files:
 
 ```
 	OseFw.bin
@@ -82,7 +97,7 @@ At this point, the working directory should contain the following files and dire
 For example:
 
 ```
-siip_sign.py sign -i OseFw.bin -k privkey.pem -o out.bin
+C:\siip_tools\scripts>siip_sign.py sign -i OseFw.bin -k privkey.pem -o out.bin
 
 Outputs:
 

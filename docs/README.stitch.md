@@ -14,7 +14,7 @@ The SIIP Stitch Tool supports replacing the following regions:
   * tcc configuration
   * out of band (oob) configuration
   * Graphical Output Protocol (gop) Driver
-  * PEI Graphics
+  * PEI Graphics(gfxpeim)
   * GOP Visual BIOS Table (vbt)
 
 
@@ -59,23 +59,23 @@ optional arguments:
 
 ## Step-by-Step Instructions
 
-### STEP 1: Unpack SIIP Tools package into a new directory (e.g., `C:\Siip_Tools`)
+### STEP 1: Unpack SIIP Tools package into a new directory (e.g., `C:\siip_tools`)
 
 At this point the directory should contain the following files and directory:
 
 ```
-Directory of c:\siip_tools
+ Directory of C:\Work\siip_tools\fbu_siip_20190910
 
-08/28/2019  03:30 PM    <DIR>          .
-08/28/2019  03:30 PM    <DIR>          ..
-08/28/2019  01:40 PM    <DIR>          common
-08/28/2019  11:40 AM             1,347 LICENSE
-08/28/2019  11:44 AM            60,168 README.docx
-08/28/2019  11:40 AM             2,961 README.md
-08/28/2019  01:40 PM    <DIR>          scripts
-08/28/2019  01:12 PM    <DIR>          thirdparty
-               5 File(s)      1,293,568 bytes
-
+10/09/2019  03:45 PM    <DIR>          .
+10/09/2019  03:45 PM    <DIR>          ..
+10/09/2019  05:36 PM    <DIR>          common
+27/08/2019  02:23 PM             1,347 LICENSE
+10/09/2019  03:44 PM            60,254 README.docx
+10/09/2019  02:53 PM             3,073 README.md
+10/09/2019  05:38 PM    <DIR>          scripts
+10/09/2019  03:45 PM    <DIR>          thirdparty
+               3 File(s)         64,674 bytes
+               5 Dir(s)  11,534,508,032 bytes free
 
 ```
 
@@ -93,7 +93,7 @@ If the host is behind proxy server, add `--proxy=<proxy_server>:<proxy_port>`
 ** NOTE: **: An RSA signing key is required to stitch GOP, PEIM GFX and VBT images with the BIOS image. This signing key must be the same key used by BIOS. If they are different, the output image may not be bootable when security is enabled on the platform.
 
 
-### STEP 4: Prepare initial BIOS image (e.g., `BIOS.bin`) and SIIP firmware to be replaced (e.g. `PseFw.bin`)
+### STEP 4: Prepare initial IFWI image (e.g., `IFWI.bin`) and SIIP firmware to be replaced (e.g. `PseFw.bin`)
 
 At this point, the working directory should contain the following files and directories:
 
@@ -113,12 +113,12 @@ Directory of c:\siip_tools\scripts
 ```
 
 
-### STEP 5: Run SIIP Stitch Tool to create new BIOS image (e.g., `BIOS2.bin`)
+### STEP 5: Run SIIP Stitch Tool to create new IFWI image 
 
 For example:
 
 ```
-C:\siip_tools\siipStitch>siip_stitch.py -ip pse -o BIOS2.bin BIOS.BIN PseFw.bin
+C:\siip_tools\scripts>siip_stitch.py -ip pse -o IFWI2.bin IFWI.BIN PseFw.bin
 #########################################################################################
 Purpose of this utility is to replace the section in System BIOS ROM file with new section
 #########################################################################################
@@ -133,7 +133,7 @@ Starting merge and replacement of section
 Encoding
 Intel(R) Firmware Module Management Tool(FMMT). Version 0.22, Mar 16 2018. Build 5204f5.
 
-The Guid Tool Definition comes from the 'C:\gitlab\pmt\siip_tools\siipsupport\bin\win32\FmmtConf.ini'.
+The Guid Tool Definition comes from the 'C:\siip_tools\thirdparty\bin\win32\FmmtConf.ini'.
 Decoding
 Decoding
 Decoding
@@ -147,7 +147,7 @@ Create New FD file successfully.
 
 Done!
 
-C:\siip_tools\siipStitch>
+C:\siip_tools\scripts>
 ```
 
-The new image `BIOS2.bin` is generated with `PseFw.bin` embedded in the BIOS image.
+The new image `IFWI2.bin` is generated with `PseFw.bin` embedded in the IFWI image.
