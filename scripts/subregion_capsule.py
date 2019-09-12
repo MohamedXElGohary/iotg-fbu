@@ -19,6 +19,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import common.sub_region_descriptor as srd
 import common.sub_region_image as sri
 from common.tools_path import EDK2_CAPSULE_TOOL
+from common.siip_constants import IP_OPTIONS
 from common.banner import banner
 
 
@@ -35,18 +36,9 @@ TOOLNAME = "Sub-Region Capsule Tool"
 
 banner(TOOLNAME, __version__)
 
+# Translate IP_OPTIONS dict into a GUID-to-NAME lookup dict
 section_name_lookup_table = {
-    "EBA4A247-42C0-4C11-A167-A4058BC9D423": "IntelOseFw",
-    "12E29FB4-AA56-4172-B34E-DD5F4B440AA9": "IntelTsnMacAddr",
-    "4FB7994D-D878-4BD1-8FE0-777B732D0A31": "IntelOseTsnMacConfig",
-}
-
-
-def lookup_section_name(ffs_guid):
-    try:
-        return section_name_lookup_table[ffs_guid]
-    except KeyError:
-        return None
+    option[-1][1]: option[0][1] for option in IP_OPTIONS.values()}
 
 
 def cleanup():
@@ -88,7 +80,7 @@ def generate_sub_region_fv(
             print("Error generating Section")
             exit(-1)
 
-        sec_ui_name = lookup_section_name(ffs_file.ffs_guid)
+        sec_ui_name = section_name_lookup_table.get(ffs_file.ffs_guid, None)
         if sec_ui_name is not None:
             sec_ui_file = "tmp.ui.{}.sec".format(file_index)
             gen_sec_ui_cmd = sri.create_gen_sec_command(

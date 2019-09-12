@@ -25,7 +25,7 @@ from cryptography.hazmat.backends import default_backend
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.ifwi import IFWI_IMAGE
 from common.firmware_volume import FirmwareDevice
-from common.siip_constants import IP_constants as ip_cnst
+from common.siip_constants import IP_OPTIONS
 from common.tools_path import FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, TOOLS_DIR
 from common.banner import banner
 
@@ -112,73 +112,6 @@ def search_for_fv(inputfile, ipname):
 # 'peim' creates EFI_FV_FILETYPE_PEIM
 ##############################################################################
 
-
-IP_OPTIONS = {
-    "pse": [
-        ["ui", ip_cnst.PSE_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["lzma", "-e"],
-        ["guid", ip_cnst.PSE_SEC_GUID, "PROCESSING_REQUIRED"],
-        ["free", ip_cnst.PSE_FFS_GUID, "1K"],
-    ],
-    "tmac": [
-        ["ui", ip_cnst.TMAC_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["free", ip_cnst.TMAC_FFS_GUID, "1k"],
-    ],
-    "tsnip": [
-        ["ui", ip_cnst.TSNIP_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["free", ip_cnst.TSNIP_FFS_GUID, None],
-    ],
-    "tsn": [
-        ["ui", ip_cnst.TSN_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["free", ip_cnst.TSN_FFS_GUID, None],
-    ],
-    "tcc": [
-        ["ui", ip_cnst.TCC_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["free", ip_cnst.TCC_FFS_GUID, None],
-    ],
-    "oob": [
-        ["ui", ip_cnst.OOB_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["free", ip_cnst.OOB_FFS_GUID, None],
-    ],
-    "vbt": [
-        ["ui", ip_cnst.VBT_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["free", ip_cnst.VBT_FFS_GUID, None],
-    ],
-    "obb_digest": [
-        ["ui", ip_cnst.OBB_DIGEST_UI],
-        ["raw", "PI_NONE"],
-        [None],
-        ["free", ip_cnst.OBB_DIGEST_FFS_GUID, None],
-    ],
-    "gop": [
-        ["ui", ip_cnst.GOP_UI],
-        ["pe32", None],
-        [None],
-        ["gop", ip_cnst.GOP_FFS_GUID, None],
-    ],
-    "gfxpeim": [
-        ["ui", ip_cnst.PEI_UI],
-        ["pe32", None],
-        ["depex", None],
-        [None, "32", "1", "1"],
-        ["cmprs", "PI_STD"],
-        ["peim", ip_cnst.PEI_FFS_GUID, None],
-    ],
-}
 
 # gets the section type needed for gensec.exe
 GENSEC_SECTION = {
@@ -410,7 +343,10 @@ def parse_cmdline():
     """ Parsing and validating input arguments."""
 
     # initiate the parser
-    parser = argparse.ArgumentParser(prog=__prog__, description=__doc__,)
+    epilog = "Supported Sub-Region Names: {}\n".format(list(IP_OPTIONS.keys()))
+    parser = argparse.ArgumentParser(prog=__prog__,
+                                     description=__doc__,
+                                     epilog=epilog)
 
     parser.add_argument(
         "IFWI_IN",
