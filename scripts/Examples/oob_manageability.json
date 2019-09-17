@@ -1,5 +1,5 @@
 {
-  "FmpGuid": "BF2AE378-01E0-4605-9E3B-2EE2FC7339DE",
+  "FmpGuid": "A7EE90B1-FB4A-4478-B868-367EE9EC97E2",
   "Version": 1,
   "FV" :
   {
@@ -11,16 +11,16 @@
         "Compression": false,
         "Data" :
         [
-          [ "a_oob_prov_state", "DECIMAL", 4, 1 ],
-          [ "a_oob_root_ca", "STRING", 1229, "telit.pem"],
-          [ "a_oob_device_id", "STRING", 512, "ehl-h2-hfpga-capsule" ],
-          [ "a_oob_token_id", "STRING", 512, "3sqXDVKxPT0TBCs1" ],
-          [ "a_oob_cloud_type", "STRING", 16, "Telit" ],
-          [ "a_oob_cloud_host_url", "STRING", 512, "52.201.144.26" ],
-          [ "a_oob_cloud_host_port", "DECIMAL", 4, 8883 ],
-          [ "a_proxy_host_url", "STRING", 512, "proxy-chain.intel.com" ],
-          [ "a_proxy_host_port", "DECIMAL", 4, 911 ],
-          [ "a_bios_uefi_password", "STRING", 512, "intel123" ]
+            [ "a_oob_prov_state", "DECIMAL", 4, 1 ],
+            [ "a_oob_root_ca", "FILE", 1229, "telit.pem"],
+            [ "a_oob_device_id", "STRING", 512, "ehl-h2-hfpga-capsule" ],
+            [ "a_oob_token_id", "STRING", 512, "3sqXDVKxPT0TBCs1" ],
+            [ "a_oob_cloud_type", "STRING", 16, "Telit" ],
+            [ "a_oob_cloud_host_url", "STRING", 512, "52.201.144.26" ],
+            [ "a_oob_cloud_host_port", "DECIMAL", 4, 8883 ],
+            [ "a_proxy_host_url", "STRING", 512, "proxy-chain.intel.com" ],
+            [ "a_proxy_host_port", "DECIMAL", 4, 911 ],
+            [ "a_bios_uefi_password", "STRING", 512, "intel123" ]
         ]
       }
     ]
