@@ -62,15 +62,19 @@ def search_for_fv(inputfile, ipname):
 
     try:
         os.environ["PATH"] += os.pathsep + TOOLS_DIR
-        subprocess.check_call(command, shell=True, timeout=60)
+        subprocess.check_call(" ".join(command), shell=True, timeout=60)
     except subprocess.CalledProcessError as status:
-        print("\nError using FMMT.exe: {}".format(status))
+        print("\nError using FMMT: {}".format(status))
         return 1, fw_vol
     except subprocess.TimeoutExpired:
         print(
-            "\nFMMT.exe timed out viewing {}! Check input file for correct format".format(inputfile)
+            "\nFMMT timed out viewing {}! Check input file for correct format".format(inputfile)
         )
-        result = os.system("taskkill /f /im FMMT.exe")
+
+        if sys.platform == 'win32':
+            result = os.system("taskkill /f /im FMMT.exe")
+        elif sys.platform == 'linux':
+            result = os.system("killall FMMT")
         if result == 0:
             return 1, fw_vol
         sys.exit("\nError Must kill process")
@@ -272,7 +276,7 @@ def merge_and_replace(filename, guid_values, fwvol):
     # Merging and Replacing
     for idx, command in enumerate(cmds):
         try:
-            subprocess.check_call(command, shell=True)
+            subprocess.check_call(command)
         except subprocess.CalledProcessError as status:
             print("\nError executing {}".format(" ".join(command)))
             print("\nStatus Message: {}".format(status))

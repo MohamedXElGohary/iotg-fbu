@@ -54,7 +54,7 @@ def cleanup():
 
 
 def generate_sub_region_fv(
-        image_file, sub_region_descriptor, output_fv_file="./SubRegion.FV"
+        image_file, sub_region_descriptor, output_fv_file=os.path.join(os.path.curdir, "SubRegion.FV")
 ):
     sub_region_image = "SubRegionImage.bin"
 
@@ -187,8 +187,8 @@ if __name__ == "__main__":
     parser = create_arg_parser()
     args = parser.parse_args()
 
-    sub_region_fv_file = "./SubRegionFv.fv"
-    sub_region_image_file = "./SubRegionImage.bin"
+    sub_region_fv_file = os.path.join(os.path.curdir, "SubRegionFv.fv")
+    sub_region_image_file = os.path.join(os.path.curdir, "SubRegionImage.bin")
     sub_region_desc = srd.SubRegionDescriptor()
     sub_region_desc.parse_json_data(args.InputFile)
     generate_sub_region_fv(sub_region_image_file, sub_region_desc,

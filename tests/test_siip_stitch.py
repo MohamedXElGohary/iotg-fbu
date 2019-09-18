@@ -89,7 +89,7 @@ class TestErrorCases(unittest.TestCase):
         assert no_file in results.stderr
 
         # ip input file does not exists
-        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.BIN'),
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                      os.path.join(IMAGES_PATH, 'ose.bin'),
                                      '-ip', 'pse']
         results = subprocess.run(cmd, capture_output=True)
@@ -104,7 +104,7 @@ class TestErrorCases(unittest.TestCase):
         assert file_empty in results.stdout
 
         # IP input file is blank
-        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.BIN'),
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                      'empty.bin',
                                      '-ip', 'pse']
         results = subprocess.run(cmd, capture_output=True)
@@ -123,7 +123,7 @@ class TestErrorCases(unittest.TestCase):
                                      '-ip', 'pse']
 
         results=subprocess.run(cmd, capture_output=True)
-        assert b"FMMT.exe timed out" in results.stdout
+        assert b"FMMT timed out" in results.stdout
 
     def test_no_fv_found(self):  #  Firmware volume not found in the file
         with open('tmp.dummy.bin', 'wb') as fd:
@@ -325,7 +325,7 @@ class TestFilesAbsPath(unittest.TestCase): # files with absolute path
 
     def setUp(self):
         #TMP_Dir = os.path.join("scripts", "tmp")
-        os.mkdir(TestFilesAbsPath.TMP_DIR, mode=0o666)
+        os.mkdir(TestFilesAbsPath.TMP_DIR, mode=0o777)
         shutil.copy(os.path.join(IMAGES_PATH,'privkey.pem'),TestFilesAbsPath.TMP_DIR)
         shutil.copy(os.path.join(IMAGES_PATH,'IntelGopDriver.efi'),TestFilesAbsPath.TMP_DIR)
         pass

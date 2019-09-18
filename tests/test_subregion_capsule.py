@@ -11,12 +11,12 @@ import common.sub_region_descriptor as srd
 import common.sub_region_image as sri
 from common import tools_path
 
-SUBREGION_CAPSULE_TOOL = os.path.join('scripts', 'subregion_capsule.py'),
+SUBREGION_CAPSULE_TOOL = os.path.join('scripts', 'subregion_capsule.py')
 
 class JsonPayloadParserTestCase(unittest.TestCase):
     def test_ParseJsonSubRegDescriptorFiles(self):
         sub_region_desc = srd.SubRegionDescriptor()
-        sub_region_desc.parse_json_data("./Tests/Collateral/GoodSubRegDescExample.json")
+        sub_region_desc.parse_json_data(os.path.join("tests", "Collateral", "GoodSubRegDescExample.json"))
         self.assertEqual(srd.FMP_CAPSULE_TSN_MAC_ADDRESS_FILE_GUID, sub_region_desc.fmp_guid)
         self.assertEqual(1, sub_region_desc.version)
         sample_ffs_file = sub_region_desc.ffs_files[0]
@@ -51,25 +51,25 @@ class JsonPayloadParserTestCase(unittest.TestCase):
         # Json with missing fields
         with self.assertRaises(srd.SubRegionDescSyntaxError):
             sub_region_desc.parse_json_data(
-                "./Tests/Collateral/MissingFieldSubRegDescExample.json"
+                os.path.join("tests", "Collateral", "MissingFieldSubRegDescExample.json")
             )
 
         # Json with bad guid
         with self.assertRaises(srd.SubRegionDescSyntaxError):
             sub_region_desc.parse_json_data(
-                "./Tests/Collateral/BadGuidSubRegDescExample.json"
+                os.path.join("tests", "Collateral", "BadGuidSubRegDescExample.json")
             )
 
         # Json with unknown guid
         with self.assertRaises(srd.UnknownSubRegionError):
             sub_region_desc.parse_json_data(
-                "./Tests/Collateral/UnknownGuidSubRegDescExample.json"
+                os.path.join("tests", "Collateral", "UnknownGuidSubRegDescExample.json")
             )
 
         # Json with bad data field
         with self.assertRaises(srd.SubRegionDescSyntaxError):
             sub_region_desc.parse_json_data(
-                "./Tests/Collateral/BadDataFieldSubRegDescExample.json"
+                os.path.join("tests", "Collateral", "BadDataFieldSubRegDescExample.json")
             )
 
     def test_CheckIfDataFieldValid(self):
@@ -140,10 +140,10 @@ class JsonPayloadParserTestCase(unittest.TestCase):
 class SubRegionImageGeneratorTestCase(unittest.TestCase):
     def test_GenerateSubRegionImage(self):
 
-        private_cert = os.path.join("Tests", "Collateral", "TestCert.pem")
-        public_cert = os.path.join("Tests", "Collateral", "TestSub.pub.pem")
-        trusted_cert = os.path.join("Tests", "Collateral", "TestRoot.pub.pem")
-        input_json = os.path.join("Tests", "Collateral", "TsnMacAddressDescExample.json")
+        private_cert = os.path.join("tests", "Collateral", "TestCert.pem")
+        public_cert = os.path.join("tests", "Collateral", "TestSub.pub.pem")
+        trusted_cert = os.path.join("tests", "Collateral", "TestRoot.pub.pem")
+        input_json = os.path.join("tests", "Collateral", "TsnMacAddressDescExample.json")
         output_file = "capsule.out.bin"
 
         full_cmd_line = [
@@ -152,10 +152,11 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             "--signer-private-cert=%s" % private_cert,
             "--other-public-cert=%s" % public_cert,
             "--trusted-public-cert=%s" % trusted_cert,
-            input_json,
+            input_json
         ]
+        full_cmd_line_str = " ".join(full_cmd_line)
 
-        subprocess.check_call(full_cmd_line, shell=True)
+        subprocess.check_call(full_cmd_line_str, shell=True)
 
         os.remove('capsule.out.bin')
 
@@ -209,8 +210,8 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         # self.assertEqual(struct.pack("<H", ONE_BYTE_VAL), data_buffer)
 
     def test_HandleFileDataFields(self):
-        dummy_file = "./Tests/Collateral/DummyFile.txt"
-        dummy_bin = "./Tests/Collateral/DummyBin.Bin"
+        dummy_file = os.path.join("tests", "Collateral", "DummyFile.txt")
+        dummy_bin = os.path.join("tests", "Collateral", "DummyBin.Bin")
 
         data_field_file_exact_size = srd.SubRegionDataField(
             ["field_1", srd.data_types.FILE, 11, dummy_file]
@@ -271,11 +272,11 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
 
     def test_CreateGenCommands(self):
         sub_region_desc = srd.SubRegionDescriptor()
-        sub_region_desc.parse_json_data("./Tests/Collateral/GoodSubRegDescExample.json")
+        sub_region_desc.parse_json_data(os.path.join("tests", "Collateral", "GoodSubRegDescExample.json"))
         fmp_guid = "8C8CE578-8A3D-4F1C-9935-896185C32DD3"
         dummy_file = "somefile.bin"
         dummy_ui_name = "DummyUi"
-        ws = "./temp/"
+        ws = os.path.join(os.path.curdir, "temp")
         for index, ffs_file in enumerate(sub_region_desc.ffs_files):
             out_sec_name = ws + "SubRegionSec" + str(index) + ".sec"
             gen_sec_cmd_exp = (
