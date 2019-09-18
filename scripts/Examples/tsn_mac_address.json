@@ -11,10 +11,24 @@
         "Compression": false,
         "Data" :
         [
+          ["Version", "DECIMAL", 4, 1],
+          ["NumPorts", "DECIMAL", 4, 4],
+
           ["BDF",            "HEXADECIMAL", 4, "000F4000"],
-          ["PortLength",     "DECIMAL",     4, 1],
           ["MacAddressLow",  "HEXADECIMAL", 4, "AAAAAAAA"],
-          ["MacAddressHigh", "HEXADECIMAL", 4, "00001111"]
+          ["MacAddressHigh", "HEXADECIMAL", 4, "00001111"],
+
+          ["BDF",            "HEXADECIMAL", 4, "000E9000"],
+          ["MacAddressLow",  "HEXADECIMAL", 4, "BBBBBBBB"],
+          ["MacAddressHigh", "HEXADECIMAL", 4, "00002222"],
+
+          ["BDF",            "HEXADECIMAL", 4, "000EA000"],
+          ["MacAddressLow",  "HEXADECIMAL", 4, "CCCCCCCC"],
+          ["MacAddressHigh", "HEXADECIMAL", 4, "00003333"],
+
+          ["BDF",            "HEXADECIMAL", 4, "00000000"],
+          ["MacAddressLow",  "HEXADECIMAL", 4, "AABBCCDD"],
+          ["MacAddressHigh", "HEXADECIMAL", 4, "00001122"]
         ]
       }
     ]
