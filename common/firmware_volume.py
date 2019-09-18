@@ -10,8 +10,6 @@
 import sys
 import uuid
 
-# import struct
-# import argparse
 from ctypes import Structure
 from ctypes import c_char, c_uint32, c_uint8, c_uint64, c_uint16, sizeof, ARRAY
 from functools import reduce
@@ -133,7 +131,25 @@ class EFI_FFS_FILE_HEADER(Structure):
 
 
 class EFI_COMMON_SECTION_HEADER(Structure):
-    _fields_ = [("Size", c_uint24), ("Type", c_uint8)]
+    _fields_ = [("Size", c_uint24),
+                ("Type", c_uint8)]
+
+
+class EFI_GUID_DEFINED_SECTION(Structure):
+    _fields_ = [
+        ("SectionDefinitionGuid", ARRAY(c_uint8, 16)),
+        ("DataOffset", c_uint16),
+        ("Attributes", c_uint16),
+        ("Type", c_uint8),
+        ("Attributes", c_uint8),
+    ]
+
+
+class EFI_COMPRESSED_SECTION(Structure):
+    _fields_ = [
+        ("UncompressedLength", c_uint32),
+        ("CompressionType", c_uint8),
+    ]
 
 
 class VARIABLE_STORE_HEADER(Structure):
@@ -156,11 +172,14 @@ class FTW_HEADER(Structure):
     ]
 
 
+GUIDED_SECTION_COMPRESSED = uuid.UUID("ee4e5898-3914-4259-9d6e-dc7bd79403cf")
+GUIDED_SECTION_RSASHA256 = uuid.UUID("a7717414-c616-4977-9420-844712a735bf")
+
 GUID_VARIABLE_STORE_SIGNATURE = uuid.UUID("aaf32c78-947b-439a-a180-2e144ec37792")
 GUID_FTW_WORKING_BLOCK_SIGNATURE = uuid.UUID("9e58292b-7c68-497d-a0ce-6500fd9f1b95")
 GUID_MICROCODE_SIGNATURE = uuid.UUID("197DB236-F856-4924-90F8-CDF12FB875F3")
+GUID_FSP_INFO_HEADER = uuid.UUID("912740BE-2284-4734-B971-84B027353F0C")
 GUID_EMPTY = uuid.UUID("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
-
 
 class FirmwareDevice:
     def __init__(self, offset, data):
@@ -199,6 +218,20 @@ class FirmwareDevice:
             self.FvList.append(fv)
             offset += fv.FvHdr.FvLength
 
+    def get_fv_index_by_guid(self, guid):
+        """Return the index of FV within FvList, -1 if not found"""
+        for idx, fv in enumerate(self.FvList):
+            if isinstance(guid, bytes) and isinstance(fv, FirmwareVolume):
+                if guid == fv.Name:
+                    return idx
+        return -1
+
+    def is_fsp_wrapper(self):
+        for i in self.FvList:
+            if isinstance(i, FirmwareVolume) and i.FspExists:
+                return True
+        return False
+
 
 class MiscFile:
     def __init__(self, name, offset, data):
@@ -218,13 +251,16 @@ class FirmwareVolume:
         self.FvHdr = EFI_FIRMWARE_VOLUME_HEADER.from_buffer(fvdata, 0)
         self.FvData = fvdata[0 : self.FvHdr.FvLength]
         self.Offset = offset
+        self.FspExists = False
+        self.FfsList = []
         if self.FvHdr.ExtHeaderOffset > 0:
             self.FvExtHdr = EFI_FIRMWARE_VOLUME_EXT_HEADER.from_buffer(
                 self.FvData, self.FvHdr.ExtHeaderOffset
             )
+            self.Name = bytes(self.FvExtHdr.FvName)
         else:
             self.FvExtHdr = None
-        self.FfsList = []
+            self.Name = bytes(self.FvHdr.FileSystemGuid)
 
     def ParseFv(self):
         fvsize = len(self.FvData)
@@ -281,6 +317,12 @@ class FirmwareVolume:
                 )
                 self.FfsList.append(ucode)
                 offset += int(ffshdr.Size)
+            elif ffs_name == GUID_FSP_INFO_HEADER:
+                print("  FSP Info Header file")
+                self.FspExists = True
+                ffs = FirmwareFile(offset, self.FvData[offset : offset + int(ffshdr.Size)])
+                self.FfsList.append(ffs)
+                offset += int(ffshdr.Size)
             else:
                 print("  FFS file")
                 ffs = FirmwareFile(
@@ -322,11 +364,42 @@ class Section:
         self.Type = self.SecHdr.Type
         if self.SecHdr.Type == EFI_SECTION_TYPE.USER_INTERFACE:
             self.Name = self.SecData[4:].decode("utf-16le").rstrip("\0")
+        elif self.SecHdr.Type == EFI_SECTION_TYPE.FIRMWARE_VOLUME_IMAGE:
+            fv_sec = EFI_FIRMWARE_VOLUME_HEADER.from_buffer(
+                                           self.SecData,
+                                           sizeof(EFI_COMMON_SECTION_HEADER))
+            self.Name = fv_sec.FileSystemGuid
+        elif self.SecHdr.Type == EFI_SECTION_TYPE.GUID_DEFINED:
+            guided_sec = EFI_GUID_DEFINED_SECTION.from_buffer(
+                                self.SecData,
+                                sizeof(EFI_COMMON_SECTION_HEADER))
+            self.Name = guided_sec.SectionDefinitionGuid
         else:
-            self.Name = None
+            self.Name = self.SecData[4:20]  # Any data
 
     def __str__(self, indent=0):
-        return "Type:%x Name:%s" % (self.Type, self.Name)
+        if (self.Type == EFI_SECTION_TYPE.FIRMWARE_VOLUME_IMAGE):
+            name = uuid.UUID(bytes_le=bytes(self.Name))
+            name = "Volume Image ({})".format(name)
+        elif (self.Type == EFI_SECTION_TYPE.GUID_DEFINED):
+            name = uuid.UUID(bytes_le=bytes(self.Name))
+            if (name == GUIDED_SECTION_COMPRESSED):
+                name = "LZMA Compressed".format(name)
+            elif (name == GUIDED_SECTION_RSASHA256):
+                name = "RSA Signed".format(name)
+        elif (self.Type == EFI_SECTION_TYPE.USER_INTERFACE):
+            name = self.Name
+        elif (self.Type == EFI_SECTION_TYPE.RAW):
+            name = "Raw Data"
+        elif (self.Type == EFI_SECTION_TYPE.FREEFORM_SUBTYPE_GUID):
+            name = "Free Form"
+        else:
+            name = "TBD"
+
+        return "Type:%02x Size:%x Info:%s" % (
+                    self.Type,
+                    len(self.SecData),
+                    name)
 
 
 def main():

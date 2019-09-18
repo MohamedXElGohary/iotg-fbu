@@ -17,7 +17,9 @@ import argparse
 import shutil
 import re
 import glob
+import uuid
 from pathlib import Path
+
 
 from cryptography.hazmat.primitives import hashes as hashes
 from cryptography.hazmat.backends import default_backend
@@ -40,6 +42,8 @@ banner(TOOLNAME, __version__)
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 is the minimal version required")
+
+GUID_FVADVANCED = uuid.UUID("B23E7388-9953-45C7-9201-0473DDE5487A")
 
 
 def search_for_fv(inputfile, ipname):
@@ -440,9 +444,22 @@ def update_obb_digest(ifwi_file, digest_file):
     bios.ParseFd()
 
     # Extract FVs belongs to OBB
-    obb_offset = bios.FvList[13].Offset
+    obb_fv_idx = bios.get_fv_index_by_guid(GUID_FVADVANCED.bytes_le)
+    if not (0 < obb_fv_idx < len(bios.FvList)):
+        raise ValueError("Starting OBB FV is not found")
+
+    print("OBB region starts from FV{}".format(obb_fv_idx))
+    obb_offset = bios.FvList[obb_fv_idx].Offset
     obb_length = 0
-    for fv in bios.FvList[13:16]:  # TODO: hardcoded for now
+    if bios.is_fsp_wrapper():
+        # FVADVANCED + FVPOSTMEMORY + FSPS
+        print("FSP Wrapper BIOS")
+        obb_fv_end = obb_fv_idx + 3
+    else:
+        # FVADVANCED + FVPOSTMEMORY
+        print("EDK2 BIOS")
+        obb_fv_end = obb_fv_idx + 2
+    for fv in bios.FvList[obb_fv_idx:obb_fv_end]:
         obb_length += len(fv.FvData)
 
     print("OBB offset: {:x} len {:x}".format(obb_offset, obb_length))
