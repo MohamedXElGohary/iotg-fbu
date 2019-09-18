@@ -25,7 +25,7 @@ IP_OPTIONS = {
         ["ui", "IntelFvTsnMacAddr"],
         ["raw", "PI_NONE"],
         [None],
-        ["free", "12E29FB4-AA56-4172-B34E-DD5F4B440AA9", "1k"],
+        ["free", "12E29FB4-AA56-4172-B34E-DD5F4B440AA9", None],
     ],
     "tsnip": [
         ["ui", "IntelPseTsnIpConfig"],

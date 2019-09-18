@@ -54,7 +54,6 @@ class TestFunctionality(unittest.TestCase):
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      '-ip', 'pse', '-o', 'IFWI.bin']
         subprocess.check_call(cmd)
-        
 
 
 class TestErrorCases(unittest.TestCase):
@@ -225,7 +224,7 @@ class TestErrorCases(unittest.TestCase):
 
        results=subprocess.run(cmd, capture_output=True)
        assert b"is not an RSA priviate key" in results.stderr
-    
+
     def test_privkey_not_exist(self):
        """Verifies that non rsa key file will genarate an error"""
 
@@ -263,7 +262,6 @@ class TestReplaceSubRegions(unittest.TestCase):
                                      os.path.join(IMAGES_PATH, 'tsn_mac_sub_region.bin'),
                                      '-ip', 'tmac']
         subprocess.check_call(cmd)
-        self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'EHL_v1322.tmac_updated.bin')))
 
     def test_replace_ptmac_using_default(self):  # ptmac
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
@@ -344,7 +342,7 @@ class TestReplaceGOP(unittest.TestCase):
 class TestFilesAbsPath(unittest.TestCase): # files with absolute path
     TMP_DIR = os.path.join(os.getcwd(), "scripts", "tmp")
 
-    def setUp(self): 
+    def setUp(self):
         #TMP_Dir = os.path.join("scripts", "tmp")
         os.mkdir(TestFilesAbsPath.TMP_DIR, mode=0o666)
         shutil.copy(os.path.join(IMAGES_PATH,'privkey.pem'),TestFilesAbsPath.TMP_DIR)
@@ -355,7 +353,7 @@ class TestFilesAbsPath(unittest.TestCase): # files with absolute path
         #TMP_Dir = os.path.join("scripts", "tmp")
         shutil.rmtree(TestFilesAbsPath.TMP_DIR)
         cleanup()
-    
+
     def test_keyfile_outside_dir(self): #Key with a direct path
 
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
