@@ -5,9 +5,11 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
 
-import struct
 import sys
+import os
+import struct
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import sub_region_descriptor as srd
 from common import tools_path
 
@@ -87,3 +89,18 @@ def generate_sub_region_image(ffs_file, output_file="./output.bin"):
         for data_field in ffs_file.data:
             line_buffer = create_buffer_from_data_field(data_field)
             out_buffer.write(line_buffer)
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) != 3:
+        print("Usage: script <json-file> <out-file-name>")
+        sys.exit(2)
+
+    json_file = sys.argv[1]
+    outfile = sys.argv[2]
+    desc = srd.SubRegionDescriptor()
+    desc.parse_json_data(json_file)
+
+    # Currently only creates the first file
+    generate_sub_region_image(desc.ffs_files[0], output_file=outfile)

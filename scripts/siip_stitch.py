@@ -23,6 +23,8 @@ from cryptography.hazmat.primitives import hashes as hashes
 from cryptography.hazmat.backends import default_backend
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from common.sub_region_descriptor import SubRegionDescriptor
+from common.sub_region_image import generate_sub_region_image
 from common.ifwi import IFWI_IMAGE
 from common.firmware_volume import FirmwareDevice
 from common.siip_constants import IP_OPTIONS
@@ -467,7 +469,19 @@ def main():
 
     # Use absolute path because GenSec does not like relative ones
     IFWI_file = Path(args.IFWI_IN.name).resolve()
-    IPNAME_file = Path(args.IPNAME_IN.name).resolve()
+
+    # If input IP file is a JSON file, convert it to binary as the real input file
+    if args.IPNAME_IN.name.lower().endswith('.json'):
+        print("Found JSON as input file. Converting it to binary ...\n")
+
+        desc = SubRegionDescriptor()
+        desc.parse_json_data(args.IPNAME_IN.name)
+
+        # Currently only creates the first file
+        generate_sub_region_image(desc.ffs_files[0], output_file="tmp.payload.bin")
+        IPNAME_file = Path("tmp.payload.bin").resolve()
+    else:
+        IPNAME_file = Path(args.IPNAME_IN.name).resolve()
 
     filenames = [str(IFWI_file), str(IPNAME_file)]
     if args.ipname in ["gop", "gfxpeim", "vbt"]:

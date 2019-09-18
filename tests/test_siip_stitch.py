@@ -257,6 +257,27 @@ class TestReplaceSubRegions(unittest.TestCase):
     def tearDown(self):
         cleanup()
 
+    def test_load_json_to_stitch(self):
+        JSON_FILES = {
+            "tsn": "tsn_config.json",
+            "tsnip": "tsn_ip_config.json",
+            "tmac": "tsn_mac_address.json",
+        }
+        for k, v in JSON_FILES.items():
+            cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
+                                         os.path.join('scripts', 'Examples', v),
+                                         '-o', 'tmp.{}.bin'.format(k),
+                                         '-ip', k]
+            subprocess.check_call(cmd)
+
+    def test_oob_with_testkey(self):
+        shutil.copy(os.path.join(IMAGES_PATH,'privkey.pem'), 'telit.pem')
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
+                                         os.path.join('scripts', 'Examples', 'oob_manageability.json'),
+                                         '-o', 'tmp.oob.bin',
+                                         '-ip', 'oob']
+        subprocess.check_call(cmd)
+
     def test_replace_TsnMacAdr_using_default(self):  # tmac
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_v1322.bin'),
                                      os.path.join(IMAGES_PATH, 'tsn_mac_sub_region.bin'),
