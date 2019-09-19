@@ -117,15 +117,6 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, capture_output=True)
         assert file_large in results.stdout
 
-        # IP 2 input file is too large
-        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
-                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
-                                     os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
-                                     '-ip', 'gfxpeim',
-                                     '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
-        results = subprocess.run(cmd, capture_output=True)
-        assert file_large in results.stdout
-
     def test_inputfile_w_incorrect_format(self):  #BIOS input file is not in correct format
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_BadFormat.bin'),
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
@@ -144,21 +135,6 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, capture_output=True)
         assert b"Could not find file" in results.stdout
 
-    def test_extra_inputfile(self):  #Replacement does not require 2 input files
-        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
-                                     os.path.join(IMAGES_PATH, 'PseFw.bin'),
-                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
-                                     '-ip', 'pse']
-
-        try:
-           results=subprocess.check_output(cmd)
-           if b'IPNAME_IN2 input file is not required' in results:
-              pass
-           else:
-              self.fail('\nNot correct error')
-        except:
-           self.fail('\nSIIPStitch should have handled error')
-
     def test_missing_key(self):
         """Missing priviate key"""
 
@@ -170,20 +146,6 @@ class TestErrorCases(unittest.TestCase):
             self.fail('a call process eror should have occured')
         except subprocess.CalledProcessError:
             pass
-
-    def test_missing_inputfile(self):
-       """Replacement requires 2 input files"""
-
-       cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_old.bin'),
-                                    os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
-                                    '-k', os.path.join(IMAGES_PATH, 'privkey.pem'),
-                                    '-ip', 'gfxpeim']
-
-       try:
-           results=subprocess.check_call(cmd)
-           self.fail('a call process eror should have occured')
-       except subprocess.CalledProcessError:
-           pass
 
     def test_large_privkey(self):
        """Verifies that large key file will genarate an error"""
@@ -343,11 +305,9 @@ class TestReplaceGOP(unittest.TestCase):
     def test_replace_peigraphics(self):
        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                     os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.efi'),
-                                    os.path.join(IMAGES_PATH, 'IntelGraphicsPeim.depex'),
                                     '-ip', 'gfxpeim',
                                     '-k', os.path.join(IMAGES_PATH, 'privkey.pem')]
        subprocess.check_call(cmd)
-       self.assertTrue(filecmp.cmp('BIOS_OUT.bin', os.path.join(IMAGES_PATH, 'rom_pei.bin')))
 
     def test_key_with_different_name(self):
         """Different name for priviate key"""

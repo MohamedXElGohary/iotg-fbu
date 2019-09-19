@@ -72,8 +72,7 @@ IP_OPTIONS = {
     "gfxpeim": [
         ["ui", "IntelGraphicsPeim"],
         ["pe32", None],
-        ["depex", None],
-        [None, "32", "1", "1"],
+        [None, "32", "1"],
         ["cmprs", "PI_STD"],
         ["peim", "76ED893A-B2F9-4C7D-A05F-1EA170ECF6CD", None],
     ],

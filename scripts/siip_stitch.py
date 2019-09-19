@@ -210,17 +210,14 @@ def ip_inputfiles(filenames, ipname):
 
     inputfiles = [None, "tmp.raw", "tmp.ui", "tmp.all"]
 
-    if ipname != "gfxpeim":
-        num_infiles = 1
-        if ipname == "pse":
-            inputfiles.extend(["tmp.cmps", "tmp.guid"])
-        elif ipname == "gop":
-            inputfiles.remove("tmp.raw")
-            inputfiles.insert(1, "tmp.pe32")
-    else:
-        num_infiles = 2
-        inputfiles[1:2] = ["tmp.pe32", "tmp.dpx"]
-        inputfiles.append("tmp.cmps")
+    num_infiles = 1
+    if ipname == "pse":
+        inputfiles.extend(["tmp.cmps", "tmp.guid"])
+    elif ipname in ["gop", "gfxpeim"]:
+        inputfiles.remove("tmp.raw")
+        inputfiles.insert(1, "tmp.pe32")
+        if ipname == "gfxpeim":
+            inputfiles.append("tmp.cmps")
 
     # add user given input files
     infiles = filenames[1:num_infiles + 1]
@@ -365,13 +362,6 @@ def parse_cmdline():
         help="Input IP firmware Binary file(Ex: PseFw.Bin to be replaced in the IFWI.bin",
     )
     parser.add_argument(
-        "IPNAME_IN2",
-        type=argparse.FileType("rb"),
-        nargs="?",
-        help="The 2nd input IP firmware Binary file needed to replaced the PEI Graphics",
-        default=None,
-    )
-    parser.add_argument(
         "-ip",
         "--ipname",
         help="The name of the IP in the IFWI_IN file to be replaced. This is required.",
@@ -509,20 +499,6 @@ def main():
         else:
             key_file = Path(args.private_key).resolve()
             filenames.append(key_file)
-        if args.ipname == "gfxpeim":
-            if args.IPNAME_IN2 is not None:
-                IPNAME2_file = Path(args.IPNAME_IN2.name).resolve()
-                filenames.append(str(IPNAME2_file))
-            else:
-                print("\nIPNAME_IN2 input file is required.\n")
-                parser.print_help()
-                sys.exit(2)
-    elif args.IPNAME_IN2 is not None:
-        print(
-            "IPNAME_IN2 input file is not required. Not using {}".format(
-                args.IPNAME_IN2.name
-            )
-        )
 
     # verify file is not empty or the IP files are not larger than the input filesvcd
     status = check_file_size(filenames)

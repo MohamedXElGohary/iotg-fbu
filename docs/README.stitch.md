@@ -33,14 +33,13 @@ SIIP Stitch Tool runs on Windows 10 OS. Linux support will be added in the futur
 
 ```
 usage: siip_stitch [-h] -ip ipname [-k PRIVATE_KEY] [-v] [-o FileName]
-                   IFWI_IN IPNAME_IN [IPNAME_IN2]
+                   IFWI_IN IPNAME_IN
 
 positional arguments:
   IFWI_IN               Input BIOS Binary file(Ex: IFWI.bin) to be updated with
                         the given input IP firmware
   IPNAME_IN             Input IP firmware Binary file(Ex: PseFw.bin) to be
                         replaced in the IFWI.bin
-  IPNAME_IN2            The 2nd input IP firmware Binary file (ex:IntelGraphicsPeim.depex ) needed
                         to replaced the PEI Graphics
 
 optional arguments:
@@ -113,7 +112,7 @@ Directory of c:\siip_tools\scripts
 ```
 
 
-### STEP 5: Run SIIP Stitch Tool to create new IFWI image 
+### STEP 5: Run SIIP Stitch Tool to create new IFWI image
 
 For example:
 
