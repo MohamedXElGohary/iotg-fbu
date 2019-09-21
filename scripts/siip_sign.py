@@ -44,7 +44,7 @@ except ImportError:
 
 
 __prog__ = "siip_sign"
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 TOOLNAME = "SIIP Signing Tool"
 

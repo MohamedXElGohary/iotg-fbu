@@ -30,7 +30,7 @@ if sys.version_info[0] < 3:
 # Globals for help information
 #
 __prog__ = "subregion_capsule"
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 TOOLNAME = "Sub-Region Capsule Tool"
 
