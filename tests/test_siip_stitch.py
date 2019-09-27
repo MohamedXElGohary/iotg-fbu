@@ -19,7 +19,7 @@ import platform
 import glob
 
 sys.path.insert(0, "..")
-from common.tools_path import TOOLS_DIR, GENFV, GENFFS, GENSEC, FMMT, LZCOMPRESS
+from common.tools_path import TOOLS_DIR, GENFV, GENFFS, GENSEC, FMMT, LZCOMPRESS, RSA_HELPER, FMMT_CFG
 
 SIIPSTITCH = os.path.join("scripts", "siip_stitch.py")
 IMAGES_PATH = os.path.join("tests", "images")
@@ -202,7 +202,7 @@ class TestErrorCases(unittest.TestCase):
         """Verify script report errors if any thirdparty tool is missing"""
 
         os.rename(TOOLS_DIR, 'rename')
-        for f in (FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS):
+        for f in (FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, RSA_HELPER, FMMT_CFG):
             cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      '-ip', 'pse']

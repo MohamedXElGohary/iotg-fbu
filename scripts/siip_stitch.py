@@ -31,6 +31,7 @@ from common.ifwi import IFWI_IMAGE
 from common.firmware_volume import FirmwareDevice
 from common.siip_constants import IP_OPTIONS
 from common.tools_path import FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, TOOLS_DIR
+from common.tools_path import RSA_HELPER, FMMT_CFG
 from common.banner import banner
 
 __prog__ = "siip_stitch"
@@ -470,7 +471,7 @@ def main():
     parser = parse_cmdline()
     args = parser.parse_args()
 
-    for f in (FMMT, GENFFS, GENSEC, LZCOMPRESS):
+    for f in (FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, RSA_HELPER, FMMT_CFG):
         if not os.path.exists(f):
             raise FileNotFoundError("Thirdparty tool not found ({})".format(f))
 
