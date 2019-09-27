@@ -346,8 +346,10 @@ def check_file_size(files):
 def parse_cmdline():
     """ Parsing and validating input arguments."""
 
-    # initiate the parser
-    epilog = "Supported Sub-Region Names: {}\n".format(list(IP_OPTIONS.keys()))
+    visible_ip_list = list(IP_OPTIONS.keys())
+    visible_ip_list.remove("obb_digest")
+
+    epilog = "Supported Sub-Region Names: {}\n".format(visible_ip_list)
     parser = argparse.ArgumentParser(prog=__prog__,
                                      description=__doc__,
                                      epilog=epilog)
@@ -368,7 +370,7 @@ def parse_cmdline():
         help="The name of the IP in the IFWI_IN file to be replaced. This is required.",
         metavar="ipname",
         required=True,
-        choices=list(IP_OPTIONS.keys()),
+        choices=visible_ip_list,
     )
     parser.add_argument(
         "-k",
