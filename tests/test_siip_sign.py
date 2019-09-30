@@ -64,7 +64,7 @@ class TestSIIPSign(unittest.TestCase):
         cmd = ['python', SIIPSIGN, '-V']
         subprocess.check_call(cmd)
 
-    def test_signing(self):
+    def test_signing_rsa2k(self):
         '''Test signing'''
 
         hash_options = ['sha256', 'sha384', 'sha512']
@@ -76,6 +76,37 @@ class TestSIIPSign(unittest.TestCase):
 
         # Create a new test RSA key
         cmd = ['openssl', 'genrsa', '-out', 'key.pem', '2048']
+        subprocess.check_call(cmd)
+
+        # Get public key from test key
+        cmd = ['openssl', 'rsa', '-pubout', '-in',
+               'key.pem', '-out', 'key.pub.pem']
+        subprocess.check_call(cmd)
+
+        for hash_alg in hash_options:
+            cmd = ['python', SIIPSIGN, 'sign', '-i', pld_file, '-o', out_file,
+                   '-k', 'key.pem', '-s', hash_alg]
+            subprocess.check_call(cmd)
+
+            cmd = ['python', SIIPSIGN, 'verify', '-i', out_file,
+                   '-p', 'key.pub.pem', '-s', hash_alg]
+            subprocess.check_call(cmd)
+
+            cmd = ['python', SIIPSIGN, 'decompose', '-i', out_file]
+            subprocess.check_call(cmd)
+
+    def test_signing_rsa3k(self):
+        '''Test signing'''
+
+        hash_options = ['sha256', 'sha384', 'sha512']
+        pld_file = 'payload.bin'
+        out_file = 'signed.bin'
+
+        with open(pld_file, 'wb') as pld:
+            pld.write(os.urandom(1024*1024))
+
+        # Create a new test RSA key
+        cmd = ['openssl', 'genrsa', '-out', 'key.pem', '3072']
         subprocess.check_call(cmd)
 
         # Get public key from test key

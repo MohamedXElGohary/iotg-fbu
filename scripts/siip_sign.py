@@ -54,8 +54,6 @@ banner(TOOLNAME, __version__)
 if sys.version_info[0] < 3:
     raise Exception("Python 3 is the minimal version required")
 
-RSA_KEYMOD_SIZE = 256
-RSA_KEYEXP_SIZE = 4
 KB = 1024
 MB = 1024 * KB
 
@@ -121,6 +119,21 @@ def verify_hash(data, expected_hash):
     return result
 
 
+def get_key_length(privkey_pem):
+    """Get key size (in bytes) from PEM file"""
+
+    with open(privkey_pem, "rb") as privkey_file:
+        key = serialization.load_pem_private_key(
+            privkey_file.read(), password=None, backend=default_backend()
+        )
+
+    if key.key_size < 2048:
+        raise Exception("{}-bit RSA key size is too short."
+                        "Please use 2048-bit or 3072-bit RSA key for signing".format(key.key_size))
+
+    return (key.key_size + 8 - 1) // 8   # Number of bytes to store all bits
+
+
 def get_pubkey_from_privkey(privkey_pem):
     """Extract public key from private key in PEM format"""
 
@@ -138,8 +151,9 @@ def get_pubkey_hash_from_privkey(privkey_pem):
     puk = get_pubkey_from_privkey(privkey_pem)
     puk_num = puk.public_numbers()
 
-    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
-    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    key_len = get_key_length(privkey_pem)
+    mod_buf = pack_num(puk_num.n, key_len)
+    exp_buf = pack_num(puk_num.e, 4)
     hex_dump((mod_buf + exp_buf), msg="Public Key (%s)" % privkey_pem)
 
     pubkey_data = mod_buf + exp_buf
@@ -157,9 +171,6 @@ def compute_signature(data, privkey_pem):
         key = serialization.load_pem_private_key(
             privkey_file.read(), password=None, backend=default_backend()
         )
-
-    if key.key_size < 2048:
-        raise Exception("Key size {} bits is too small.".format(key.key_size))
 
     # Calculate signature using private key
     signature = key.sign(bytes(data), crypto_padding.PKCS1v15(), g_hash_option)
@@ -188,10 +199,10 @@ def compute_pubkey_hash(pubkey_pem_file):
         puk = serialization.load_pem_public_key(
             pubkey_pem_fd.read(), backend=default_backend()
         )
-
+    key_len = (puk.key_size + 8 - 1) // 8
     puk_num = puk.public_numbers()
-    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
-    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    mod_buf = pack_num(puk_num.n, key_len)
+    exp_buf = pack_num(puk_num.e, 4)
 
     puk_hash = compute_hash(bytes(mod_buf + exp_buf))
 
@@ -231,8 +242,8 @@ def create_fkm(privkey, payload_privkey, hash_option):
     fkm.manifest_header.id = 0x324E4D24  # '$MN2'
     fkm.manifest_header.num_of_metadata = 0  # FKM has no metadata appended
     fkm.manifest_header.structure_version = 0x1000
-    fkm.manifest_header.modulus_size = 64  # In DWORD
-    fkm.manifest_header.exponent_size = 1
+    fkm.manifest_header.modulus_size = get_key_length(privkey)  # In DWORD
+    fkm.manifest_header.exponent_size = 1  # In DWORD
 
     # 3: SIIP OEM Firmware Manifest; 4: SIIP Intel Firmware Manifest
     fkm.extension_type = 14  # CSE Key Manifest Extension Type
@@ -262,13 +273,14 @@ def create_fkm(privkey, payload_privkey, hash_option):
     puk = get_pubkey_from_privkey(privkey)
     puk_num = puk.public_numbers()
 
-    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
-    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    key_len = get_key_length(privkey)
+    mod_buf = pack_num(puk_num.n, key_len)
+    exp_buf = pack_num(puk_num.e, 4)
     hex_dump((mod_buf + exp_buf), msg="FKM Public Key")
 
-    fkm.manifest_header.public_key[:] = mod_buf
+    fkm.manifest_header.public_key[:key_len] = mod_buf
     fkm.manifest_header.exponent[:] = exp_buf
-    fkm.manifest_header.signature[:] = signature
+    fkm.manifest_header.signature[:key_len] = signature
 
     return fkm_data
 
@@ -406,9 +418,9 @@ class FIRMWARE_MANIFEST_HEADER(Structure):
         ("reserved", ARRAY(c_uint8, 80)),
         ("modulus_size", c_uint32),
         ("exponent_size", c_uint32),
-        ("public_key", ARRAY(c_uint8, 256)),  # 256B for PKCS 1.5 2048bit
+        ("public_key", ARRAY(c_uint8, 384)),  # Take RSA 3072 key length
         ("exponent", ARRAY(c_uint8, 4)),
-        ("signature", ARRAY(c_uint8, 256)),  # 256B for PKCS 1.5 2048bit
+        ("signature", ARRAY(c_uint8, 384)),  # Take RSA 3072 key length
     ]
 
 
@@ -501,7 +513,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
         fkm_fd.write(cpd_data)
         fkm_fd.write(fkm_data)
 
-    # Create the rest (FBM, Meta Data and payaload) in one piece
+    # Create the rest (FBM, Meta Data and payload) in one piece
     with open(payload_file, "rb") as in_fd:
         in_data = bytearray(in_fd.read())
 
@@ -540,8 +552,8 @@ def create_image(payload_file, outfile, privkey, hash_option):
     fbm.manifest_header.id = 0x324E4D24  # '$MN2'
     fbm.manifest_header.num_of_metadata = 1  # FBM has exactly one metadata
     fbm.manifest_header.structure_version = 0x1000
-    fbm.manifest_header.modulus_size = 64  # In DWORD
-    fbm.manifest_header.exponent_size = 1
+    fbm.manifest_header.modulus_size = get_key_length(privkey)  # In DWORDs
+    fbm.manifest_header.exponent_size = 1  # In DWORDs
     fbm.extension_type = 15  # CSME Signed Package Info Extension type
 
     fbm.package_name = 0x45534F24  # '$OSE'
@@ -596,9 +608,9 @@ def create_image(payload_file, outfile, privkey, hash_option):
     # STEP 3: Calculate signature of FBM (except signature and public keys)
     #         and store it in FBM header
     fbm_limit = fbm_offset + fbm_length
-    fbm.manifest_header.public_key[:] = [0] * 256
+    fbm.manifest_header.public_key[:] = [0] * 384
     fbm.manifest_header.exponent[:] = [0] * 4
-    fbm.manifest_header.signature[:] = [0] * 256
+    fbm.manifest_header.signature[:] = [0] * 384
     (signature, key) = compute_signature(
         bytes(data[fbm_offset:fbm_limit]), payload_privkey
     )
@@ -606,13 +618,14 @@ def create_image(payload_file, outfile, privkey, hash_option):
     puk = get_pubkey_from_privkey(payload_privkey)
     puk_num = puk.public_numbers()
 
-    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
-    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    key_len = (puk.key_size + 8 - 1) // 8
+    mod_buf = pack_num(puk_num.n, key_len)
+    exp_buf = pack_num(puk_num.e, 4)
     hex_dump((mod_buf + exp_buf), msg="FBM Public Key")
 
-    fbm.manifest_header.public_key[:] = mod_buf
+    fbm.manifest_header.public_key[:key_len] = mod_buf
     fbm.manifest_header.exponent[:] = exp_buf
-    fbm.manifest_header.signature[:] = signature
+    fbm.manifest_header.signature[:key_len] = signature
 
     # STEP 4: Append payload data as is
     data[total_length-payload_length:total_length] = in_data
@@ -676,9 +689,10 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         puk = serialization.load_pem_public_key(
             pubkey_pem_fd.read(), backend=default_backend()
         )
+    key_len = (puk.key_size + 8 - 1) // 8
     puk_num = puk.public_numbers()
-    mod_buf = pack_num(puk_num.n, RSA_KEYMOD_SIZE)
-    exp_buf = pack_num(puk_num.e, RSA_KEYEXP_SIZE)
+    mod_buf = pack_num(puk_num.n, key_len)
+    exp_buf = pack_num(puk_num.e, 4)
 
     hash_expected = compute_hash(bytes(mod_buf + exp_buf))
 
@@ -693,7 +707,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         exit(1)
 
     # Calculate public key hash in FKM header
-    pubkey_n = fkm.manifest_header.public_key[:]
+    pubkey_n = fkm.manifest_header.public_key[:key_len]
     pubkey_e = fkm.manifest_header.exponent[:]
 
     hash_actual = verify_hash(bytes(pubkey_n + pubkey_e), hash_expected)
@@ -701,12 +715,12 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     try:
         sys.stdout.write("Verifying FKM ...")
 
-        fkm_sig = fkm.manifest_header.signature[:]
+        fkm_sig = fkm.manifest_header.signature[:key_len]
 
         # Clear public key and signature data first
-        fkm.manifest_header.public_key[:] = [0] * 256
+        fkm.manifest_header.public_key[:] = [0] * 384
         fkm.manifest_header.exponent[:] = [0] * 4
-        fkm.manifest_header.signature[:] = [0] * 256
+        fkm.manifest_header.signature[:] = [0] * 384
 
         verify_signature(
             fkm_sig, bytes(fkm_data[fkm_offset:fkm_limit]), pubkey_pem_file
@@ -733,7 +747,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     # TODO: compare key usage bitmaps between FKM and FBM
     print("FBM Usage Bitmap      : 0x%2x" % fbm.usage_bitmap[7])
 
-    pubkey_n = fbm.manifest_header.public_key[:]
+    pubkey_n = fbm.manifest_header.public_key[:key_len]
     pubkey_e = fbm.manifest_header.exponent[:]
 
     hash_actual = compute_hash(bytes(pubkey_n + pubkey_e))
@@ -743,15 +757,15 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         exit(1)
 
     # Validate FBM
-    fbm_sig = fbm.manifest_header.signature[:]
+    fbm_sig = fbm.manifest_header.signature[:key_len]
 
     try:
         sys.stdout.write("Verifying FBM ...")
 
         # Clear public key and signature data first
-        fbm.manifest_header.public_key[:] = [0] * 256
+        fbm.manifest_header.public_key[:] = [0] * 384
         fbm.manifest_header.exponent[:] = [0] * 4
-        fbm.manifest_header.signature[:] = [0] * 256
+        fbm.manifest_header.signature[:] = [0] * 384
 
         verify_signature(
             fbm_sig, bytes(in_data[fbm_offset:fbm_limit]), payload_puk_file
@@ -825,7 +839,7 @@ def main():
     signp.add_argument(
         "-s",
         "--hash-option",
-        default="sha256",
+        default="sha384",
         choices=list(g_hash_choices.keys()),
         help="Hashing algorithm",
     )
@@ -860,7 +874,7 @@ def main():
     verifyp.add_argument(
         "-s",
         "--hash-option",
-        default="sha256",
+        default="sha384",
         choices=list(g_hash_choices.keys()),
         help="Hashing algorithm",
     )
