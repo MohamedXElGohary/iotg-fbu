@@ -22,6 +22,9 @@ from ctypes import c_char, c_uint32, c_uint8, c_uint64, c_uint16, sizeof, ARRAY
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.banner import banner
+import common.logging as logging
+
+logger = logging.getLogger("siip_sign")
 
 try:
     from cryptography.hazmat.primitives import hashes as hashes
@@ -33,14 +36,14 @@ try:
     import cryptography
 
     if cryptography.__version__ < "2.2.2":
-        print(
+        logger.critical(
             "Error: Cryptography version must be 2.2.2 or higher"
             " (installed version: {})".format(cryptography.__version__)
         )
         exit(1)
 
 except ImportError:
-    print("Error: Cryptography could not be found, please install using pip")
+    logger.critical("Error: Cryptography could not be found, please install using pip")
     sys.exit(1)
 
 
@@ -75,12 +78,12 @@ class ModuleType(Enum):
 
 
 def hex_dump(data, n=16, indent=0, msg="Hex Dump"):
-    print("%s (%d Bytes):" % (msg, len(data)))
+    logger.info("%s (%d Bytes):" % (msg, len(data)))
     for i in range(0, len(data), n):
         line = bytearray(data[i:i+n])
         hex = " ".join("%02x" % c for c in line)
         text = "".join(chr(c) if 0x21 <= c <= 0x7E else "." for c in line)
-        print("%*s%-*s %s" % (indent, "", n * 3, hex, text))
+        logger.info("%*s%-*s %s" % (indent, "", n * 3, hex, text))
 
 
 def pack_num(val, minlen=0):
@@ -316,7 +319,7 @@ def create_cpd_header(files_info):
 
     # Fill CRC32 checksum
     cpd.crc32 = calculate_sum32(data)
-    print("CPD Header CRC32 : 0x%X" % cpd.crc32)
+    logger.info("CPD Header CRC32 : 0x%X" % cpd.crc32)
 
     return data
 
@@ -327,7 +330,7 @@ def parse_cpd_header(cpd_data):
     ptr = 0
     cpd = SUBPART_DIR_HEADER.from_buffer(cpd_data, 0)
     if cpd.header_marker != 0x44504324:
-        print("Invalid input file. CPD signature not found.")
+        logger.critical("Invalid input file. CPD signature not found.")
         exit(1)
 
     files = []
@@ -339,7 +342,7 @@ def parse_cpd_header(cpd_data):
     actual_crc = calculate_sum32(cpd_data[0:cpd_length])
 
     if expected_crc != actual_crc:
-        print(
+        logger.critical(
             "CPD header CRC32 invalid (exp: 0x%x, actual: 0x%x)"
             % (expected_crc, actual_crc)
         )
@@ -494,7 +497,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
     g_hash_option = g_hash_choices[hash_option][0]
     g_hash_size = g_hash_option.digest_size
 
-    print("Hashing Algorithm : %s" % g_hash_option.name)
+    logger.info("Hashing Algorithm : %s" % g_hash_option.name)
 
     payload_cfg = payload_file.split(",")  # <file>,<signing_key>
     if len(payload_cfg) == 2:
@@ -503,8 +506,8 @@ def create_image(payload_file, outfile, privkey, hash_option):
     else:
         payload_privkey = privkey  # Use the same key from -k commandline
 
-    print("FKM signing key : %s" % privkey)
-    print("FBM signing key : %s" % payload_privkey)
+    logger.info("FKM signing key : %s" % privkey)
+    logger.info("FBM signing key : %s" % payload_privkey)
 
     # Create FKM blob separately required by spec
     fkm_data = create_fkm(privkey, payload_privkey, hash_option)
@@ -633,13 +636,13 @@ def create_image(payload_file, outfile, privkey, hash_option):
     files = parse_cpd_header(data[0:cpd_length])
 
     for idx, (name, ioff, ilen, itype) in enumerate(files):
-        print("[%d] %s.bin @ [0x%08x-0x%08x] len:0x%x (%d) type:%d"
+        logger.info("[%d] %s.bin @ [0x%08x-0x%08x] len:0x%x (%d) type:%d"
               % (idx, name, ioff, (ioff+ilen), ilen, ilen, itype))
 
-    sys.stdout.write("Writing... ")
+    logger.info("Writing... ")
     with open(outfile, "wb") as out_fd:
         out_fd.write(data)
-    print("Okay")
+    logger.info("Okay")
 
 
 def decompose_image(infile_signed):
@@ -658,7 +661,7 @@ def decompose_image(infile_signed):
     for idx, (name, ioff, ilen, itype) in enumerate(files):
         with open(os.path.join("extract", "%s.bin" % name), "wb") as out_fd:
             out_fd.write(in_data[ioff:ioff+ilen])
-            print("[%d] %s.bin @ [0x%08x-0x%08x] len:0x%x (%d) type:%d"
+            logger.info("[%d] %s.bin @ [0x%08x-0x%08x] len:0x%x (%d) type:%d"
                   % (idx, name, ioff, (ioff+ilen), ilen, ilen, itype))
 
 
@@ -703,7 +706,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     fkm_limit = fkm_offset + ilen
     fkm = FIRMWARE_KEY_MANIFEST.from_buffer(fkm_data, fkm_offset)
     if fkm.manifest_header.id != 0x324E4D24:
-        print("Bad FKM signature.")
+        logger.critical("Bad FKM signature.")
         exit(1)
 
     # Calculate public key hash in FKM header
@@ -726,9 +729,9 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
             fkm_sig, bytes(fkm_data[fkm_offset:fkm_limit]), pubkey_pem_file
         )
 
-        print("Okay")
+        logger.info("Okay")
     except Exception:
-        print("Failed")
+        logger.critical("Failed")
         exit(1)
 
     # STEP 2: Validate FBM key hash and signature
@@ -741,11 +744,11 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
 
     fbm = FIRMWARE_BLOB_MANIFEST.from_buffer(in_data, fbm_offset)
     if fbm.manifest_header.id != 0x324E4D24:
-        print("Bad FBM signature.")
+        logger.critical("Bad FBM signature.")
         exit(1)
 
     # TODO: compare key usage bitmaps between FKM and FBM
-    print("FBM Usage Bitmap      : 0x%2x" % fbm.usage_bitmap[7])
+    logger.info("FBM Usage Bitmap      : 0x%2x" % fbm.usage_bitmap[7])
 
     pubkey_n = fbm.manifest_header.public_key[:key_len]
     pubkey_e = fbm.manifest_header.exponent[:]
@@ -753,7 +756,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     hash_actual = compute_hash(bytes(pubkey_n + pubkey_e))
 
     if hash_expected != hash_actual:
-        print("Verification failed: FBM key hash mismatch")
+        logger.critical("Verification failed: FBM key hash mismatch")
         exit(1)
 
     # Validate FBM
@@ -770,9 +773,9 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         verify_signature(
             fbm_sig, bytes(in_data[fbm_offset:fbm_limit]), payload_puk_file
         )
-        print("Okay")
+        logger.info("Okay")
     except Exception:
-        print("Failed")
+        logger.critical("Failed")
         exit(1)
 
     # STEP 3: Validate Metadata hash
@@ -801,7 +804,7 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     if hash_actual != hash_expected:
         raise Exception("Verification failed: payload hash mismatch")
 
-    print("Verification success!")
+    logger.info("Verification success!")
 
 
 def main():
@@ -811,7 +814,7 @@ def main():
     sp = ap.add_subparsers(help="command")
 
     def cmd_create(args):
-        print("Creating image with manifest data using key %s ..." % args.private_key)
+        logger.info("Creating image with manifest data using key %s ..." % args.private_key)
         create_image(
             args.input_file, args.output_file, args.private_key, args.hash_option
         )
@@ -847,7 +850,7 @@ def main():
     signp.set_defaults(func=cmd_create)
 
     def cmd_decomp(args):
-        print("Decomposing %s ..." % args.input_file)
+        logger.info("Decomposing %s ..." % args.input_file)
         decompose_image(args.input_file)
 
     decompp = sp.add_parser("decompose", help="Decompose a signed image")
@@ -857,7 +860,7 @@ def main():
     decompp.set_defaults(func=cmd_decomp)
 
     def cmd_verify(args):
-        print("Verifying a signed image ...")
+        logger.info("Verifying a signed image ...")
         verify_image(args.input_file, args.pubkey_pem_file, args.hash_option)
 
     verifyp = sp.add_parser("verify", help="Verify a signed image")

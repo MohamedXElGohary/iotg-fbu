@@ -21,7 +21,9 @@ import common.sub_region_image as sri
 from common.tools_path import EDK2_CAPSULE_TOOL
 from common.siip_constants import IP_OPTIONS
 from common.banner import banner
+import common.logging as logging
 
+logger = logging.getLogger("siip_sign")
 
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3 (for now)")
@@ -77,7 +79,7 @@ def generate_sub_region_fv(
         while p_open_object.returncode is None:
             p_open_object.wait()
         if p_open_object.returncode != 0:
-            print("Error generating Section")
+            logger.critical("Error generating Section")
             exit(-1)
 
         sec_ui_name = section_name_lookup_table.get(ffs_file.ffs_guid, None)
@@ -95,7 +97,7 @@ def generate_sub_region_fv(
             while p_open_object.returncode is None:
                 p_open_object.wait()
             if p_open_object.returncode != 0:
-                print("Error generating UI Section")
+                logger.critical("Error generating UI Section")
                 exit(-1)
 
             # Cat Image Section with UI Section
@@ -117,7 +119,7 @@ def generate_sub_region_fv(
         while p_open_object.returncode is None:
             p_open_object.wait()
         if p_open_object.returncode != 0:
-            print("Error generating FFS File")
+            logger.critical("Error generating FFS File")
             exit(-1)
         fv_ffs_file_list.append(ffs_file_path)
 
@@ -127,11 +129,11 @@ def generate_sub_region_fv(
         " ".join(gen_fv_cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         shell=True
     )
-    print(" ".join(gen_fv_cmd))
+    logger.debug(" ".join(gen_fv_cmd))
     while p_open_object.returncode is None:
         p_open_object.wait()
     if p_open_object.returncode != 0:
-        print("Error generating FV File")
+        logger.critical("Error generating FV File")
         exit(-1)
 
 
@@ -216,8 +218,8 @@ if __name__ == "__main__":
     )
     while popen_object.returncode is None:
         out, err = popen_object.communicate()
-        print("Error messages  :\n%s" % err.decode("utf-8"))
-        print("Output messages :\n%s" % out.decode("utf-8"))
+        logger.warning("Error messages  :\n%s" % err.decode("utf-8"))
+        logger.warning("Output messages :\n%s" % out.decode("utf-8"))
 
     cleanup()
 

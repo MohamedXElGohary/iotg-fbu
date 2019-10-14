@@ -33,6 +33,7 @@ from common.siip_constants import IP_OPTIONS
 from common.tools_path import FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, TOOLS_DIR
 from common.tools_path import RSA_HELPER, FMMT_CFG
 from common.banner import banner
+import common.logging as logging
 
 __prog__ = "siip_stitch"
 __version__ = "0.7.1"
@@ -40,6 +41,7 @@ TOOLNAME = "SIIP Stitching Tool"
 
 banner(TOOLNAME, __version__)
 
+logger = logging.getLogger("siip_stitch")
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 is the minimal version required")
@@ -55,7 +57,7 @@ def search_for_fv(inputfile, ipname):
 
     ui_name = build_list[0][1]
 
-    print("\nFinding the Firmware Volume")
+    logger.info("\nFinding the Firmware Volume")
     fw_vol = None
 
     command = [FMMT, "-v", os.path.abspath(inputfile), ">", "tmp.fmmt.txt"]
@@ -64,10 +66,10 @@ def search_for_fv(inputfile, ipname):
         os.environ["PATH"] += os.pathsep + TOOLS_DIR
         subprocess.check_call(" ".join(command), shell=True, timeout=60)
     except subprocess.CalledProcessError as status:
-        print("\nError using FMMT: {}".format(status))
+        logger.warning("\nError using FMMT: {}".format(status))
         return 1, fw_vol
     except subprocess.TimeoutExpired:
-        print(
+        logger.warning(
             "\nFMMT timed out viewing {}! Check input file for correct format".format(inputfile)
         )
 
@@ -95,7 +97,7 @@ def search_for_fv(inputfile, ipname):
                     break
         else:
             fw_vol = None  # firmware volume was not found.
-            print("\nCould not find file {} in {}".format(ui_name, inputfile))
+            logger.warning("\nCould not find file {} in {}".format(ui_name, inputfile))
 
     return 0, fw_vol
 
@@ -271,15 +273,15 @@ def merge_and_replace(filename, guid_values, fwvol):
 
     cmds = create_commands(filename, guid_values, fwvol)
 
-    print("\nStarting merge and replacement of section")
+    logger.info("\nStarting merge and replacement of section")
 
     # Merging and Replacing
     for idx, command in enumerate(cmds):
         try:
             subprocess.check_call(command)
         except subprocess.CalledProcessError as status:
-            print("\nError executing {}".format(" ".join(command)))
-            print("\nStatus Message: {}".format(status))
+            logger.warning("\nError executing {}".format(" ".join(command)))
+            logger.warning("\nStatus Message: {}".format(status))
             return 1
 
     return 0
@@ -338,10 +340,10 @@ def check_file_size(files):
         filesize = os.path.getsize(file)
         if filesize != 0:
             if not (filesize <= bios_size):
-                print("\n{} file is size {} file exceeds the size of the BIOS/IFWI file {}!".format(file, filesize, files[0]))
+                logger.warning("\n{} file is size {} file exceeds the size of the BIOS/IFWI file {}!".format(file, filesize, files[0]))
                 return 1
         else:
-            print("\n{} file is empty!".format(file))
+            logger.warning("\n{} file is empty!".format(file))
             return 1
 
     return 0
@@ -411,11 +413,11 @@ def stitch_and_update(ifwi_file, ip_name, file_list, out_file):
     if status == 1 or fw_volume is None:
         cleanup()
         if status == 0:
-            print("\nError: No Firmware volume found")
+            logger.critical("\nError: No Firmware volume found")
         sys.exit(status)
 
     # firmware volume was found
-    print("\nThe Firmware volume is {}\n".format(fw_volume))
+    logger.info("\nThe Firmware volume is {}\n".format(fw_volume))
 
     # adding the path name to the output file
     file_list.append(os.path.abspath(out_file))
@@ -429,14 +431,14 @@ def update_obb_digest(ifwi_file, digest_file):
 
     ifwi = IFWI_IMAGE(ifwi_file)
     if not ifwi.is_ifwi_image():
-        print("Bad IFWI image")
+        logger.critical("Bad IFWI image")
         exit(1)
 
     ifwi.parse()
     bios_start = ifwi.region_list[1][1]
     bios_limit = ifwi.region_list[1][2]
 
-    print("Parsing BIOS ...")
+    logger.info("Parsing BIOS ...")
     bios = FirmwareDevice(0, ifwi.data[bios_start:bios_limit+1])
     bios.ParseFd()
 
@@ -445,21 +447,21 @@ def update_obb_digest(ifwi_file, digest_file):
     if not (0 < obb_fv_idx < len(bios.FvList)):
         raise ValueError("Starting OBB FV is not found")
 
-    print("OBB region starts from FV{}".format(obb_fv_idx))
+    logger.debug("OBB region starts from FV{}".format(obb_fv_idx))
     obb_offset = bios.FvList[obb_fv_idx].Offset
     obb_length = 0
     if bios.is_fsp_wrapper():
         # FVADVANCED + FVPOSTMEMORY + FSPS
-        print("FSP Wrapper BIOS")
+        logger.info("FSP Wrapper BIOS")
         obb_fv_end = obb_fv_idx + 3
     else:
         # FVADVANCED + FVPOSTMEMORY
-        print("EDK2 BIOS")
+        logger.info("EDK2 BIOS")
         obb_fv_end = obb_fv_idx + 2
     for fv in bios.FvList[obb_fv_idx:obb_fv_end]:
         obb_length += len(fv.FvData)
 
-    print("OBB offset: {:x} len {:x}".format(obb_offset, obb_length))
+    logger.debug("OBB offset: {:x} len {:x}".format(obb_offset, obb_length))
 
     # Hash it
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
@@ -486,7 +488,7 @@ def main():
 
     # If input IP file is a JSON file, convert it to binary as the real input file
     if args.IPNAME_IN.name.lower().endswith('.json'):
-        print("Found JSON as input file. Converting it to binary ...\n")
+        logger.info("Found JSON as input file. Converting it to binary ...\n")
 
         desc = SubRegionDescriptor()
         desc.parse_json_data(args.IPNAME_IN.name)
@@ -500,7 +502,7 @@ def main():
     filenames = [str(IFWI_file), str(IPNAME_file)]
     if args.ipname in ["gop", "gfxpeim", "vbt"]:
         if not args.private_key or not os.path.exists(args.private_key):
-            print("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
+            logger.critical("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
             parser.print_help()
             sys.exit(2)
         else:
@@ -518,7 +520,7 @@ def main():
         shutil.copyfile(key_file, os.path.join(TOOLS_DIR, "privkey.pem"))
         filenames.remove(key_file)
 
-    print("*** Replacing {} ...".format(args.ipname))
+    logger.info("*** Replacing {} ...".format(args.ipname))
     stitch_and_update(args.IFWI_IN.name, args.ipname, filenames, args.OUTPUT_FILE)
 
     # Update OBB digest after stitching any data inside OBB region
@@ -530,7 +532,7 @@ def main():
 
         filenames = [str(Path(f).resolve()) for f in [args.OUTPUT_FILE, digest_file]]
 
-        print("*** Replacing {} ...".format(ipname))
+        logger.info("*** Replacing {} ...".format(ipname))
         stitch_and_update(args.OUTPUT_FILE, ipname, filenames, args.OUTPUT_FILE)
 
     cleanup()

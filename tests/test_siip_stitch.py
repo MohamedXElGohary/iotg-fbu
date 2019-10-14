@@ -101,21 +101,21 @@ class TestErrorCases(unittest.TestCase):
                                      os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      '-ip', 'pse']
         results = subprocess.run(cmd, capture_output=True)
-        assert file_empty in results.stdout
+        assert file_empty in results.stderr
 
         # IP input file is blank
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                      'empty.bin',
                                      '-ip', 'pse']
         results = subprocess.run(cmd, capture_output=True)
-        assert file_empty in results.stdout
+        assert file_empty in results.stderr
 
         # IP input file is too large
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'PseFw.bin'),
                                      os.path.join(IMAGES_PATH, 'BIOS.bin'),
                                      '-ip', 'pse']
         results = subprocess.run(cmd, capture_output=True)
-        assert file_large in results.stdout
+        assert file_large in results.stderr
 
     def test_inputfile_w_incorrect_format(self):  #BIOS input file is not in correct format
         cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'BIOS_BadFormat.bin'),
@@ -123,7 +123,7 @@ class TestErrorCases(unittest.TestCase):
                                      '-ip', 'pse']
 
         results=subprocess.run(cmd, capture_output=True)
-        assert b"FMMT timed out" in results.stdout
+        assert b"FMMT timed out" in results.stderr
 
     def test_no_fv_found(self):  #  Firmware volume not found in the file
         with open('tmp.dummy.bin', 'wb') as fd:
@@ -133,7 +133,7 @@ class TestErrorCases(unittest.TestCase):
                                                  '-ip', 'pse']
 
         results = subprocess.run(cmd, capture_output=True)
-        assert b"Could not find file" in results.stdout
+        assert b"Could not find file" in results.stderr
 
     def test_missing_key(self):
         """Missing priviate key"""
