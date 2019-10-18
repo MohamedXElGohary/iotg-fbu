@@ -34,7 +34,7 @@ IP_OPTIONS = {
         ["free", "40BD5BCD-094F-43B3-8D8D-1D72F850C3CB", None],
     ],
     "tsn": [
-       ["ui", "IntelTsnConfig"],
+        ["ui", "IntelTsnConfig"],
         ["raw", "PI_NONE"],
         [None],
         ["free", "4FB7994D-D878-4BD1-8FE0-777B732D0A31", None],
