@@ -32,7 +32,7 @@ class JsonPayloadParserTestCase(unittest.TestCase):
         sample_ffs_file = sub_region_desc.ffs_files[0]
         self.assertNotEqual(None, sample_ffs_file.data)
 
-        field_names = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+        field_names = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
         field_values = [0,
                         524,
                         333,
@@ -41,8 +41,10 @@ class JsonPayloadParserTestCase(unittest.TestCase):
                         255,
                         819,
                         162364294545257138462923369967,
-                        2106967472293113107385212910597918500865023886834641740578657241782190877997108]
-        field_sizes = [1, 2, 3, 15, 20, 1, 3, 20, 21]
+                        2106967472293113107385212910597918500865023886834641740578657241782190877997108,
+                        "abc"]
+        field_sizes = [1, 2, 3, 15, 20, 1, 3, 20, 21, 0]
+        actual_sizes = [1, 2, 3, 15, 20, 1, 3, 20, 21, 3]
         field_types = [dscrptr.data_types.DECIMAL,
                        dscrptr.data_types.HEXADECIMAL,
                        dscrptr.data_types.DECIMAL,
@@ -51,13 +53,18 @@ class JsonPayloadParserTestCase(unittest.TestCase):
                        dscrptr.data_types.HEXADECIMAL,
                        dscrptr.data_types.HEXADECIMAL,
                        dscrptr.data_types.HEXADECIMAL,
-                       dscrptr.data_types.HEXADECIMAL]
-        for i in range(9):
+                       dscrptr.data_types.HEXADECIMAL,
+                       dscrptr.data_types.STRING]
+        for i in range(10):
             data_field = sample_ffs_file.data[i]
             self.assertEqual("field_" + field_names[i], data_field.name)
             self.assertEqual(field_types[i], data_field.Type)
             self.assertEqual(field_sizes[i], data_field.ByteSize)
-            self.assertEqual(field_values[i], data_field.dValue)
+            if field_types[i] in [dscrptr.data_types.DECIMAL, dscrptr.data_types.HEXADECIMAL]:
+                self.assertEqual(field_values[i], data_field.dValue)
+            else:
+                self.assertEqual(field_values[i], data_field.Value)
+                self.assertEqual(actual_sizes[i], len(data_field.Value))
         # Json with missing fields
         with self.assertRaises(dscrptr.SubRegionDescSyntaxError):
             sub_region_desc.parse_json_data(
@@ -89,8 +96,7 @@ class JsonPayloadParserTestCase(unittest.TestCase):
         data_field_good1 = ["field_1", dscrptr.data_types.DECIMAL, 1, 0]
         data_field_good2 = ["field_1", dscrptr.data_types.STRING, 1, "_STDIN_"]
         data_field_bad_field_name = [1, dscrptr.data_types.DECIMAL, 1, 0]
-        data_field_bad_byte_size1 = ["field_1", dscrptr.data_types.DECIMAL, 0, 0]
-        data_field_bad_byte_size2 = ["field_1", dscrptr.data_types.DECIMAL, -1, 0]
+        data_field_bad_byte_size = ["field_1", dscrptr.data_types.DECIMAL, -1, 0]
         data_field_bad_none_data = ["field_1", dscrptr.data_types.DECIMAL, 1, None]
         data_field_bad_type = ["field_1", "SOMETHING", 1, 0]
 
@@ -106,11 +112,7 @@ class JsonPayloadParserTestCase(unittest.TestCase):
         ffs_file = dscrptr.SubRegionFfsFile(good_guid, False, data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
-        data = [data_field_good1, data_field_good2, data_field_bad_byte_size1]
-        ffs_file = dscrptr.SubRegionFfsFile(good_guid, False, data)
-        self.assertFalse(sub_region_desc.check_file_good(ffs_file))
-
-        data = [data_field_good1, data_field_good2, data_field_bad_byte_size2]
+        data = [data_field_good1, data_field_good2, data_field_bad_byte_size]
         ffs_file = dscrptr.SubRegionFfsFile(good_guid, False, data)
         self.assertFalse(sub_region_desc.check_file_good(ffs_file))
 
@@ -237,6 +239,9 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         data_field_file_small = dscrptr.SubRegionDataField(
             ["field_1", dscrptr.data_types.FILE, 5, dummy_file]
         )
+        data_field_file_auto = dscrptr.SubRegionDataField(
+            ["field_1", dscrptr.data_types.FILE, 0, dummy_file]
+        )
 
         # File Data
         data_buffer = img.create_buffer_from_data_field(data_field_file_exact_size)
@@ -253,6 +258,11 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             tmp = df.read()
         self.assertTrue(tmp.decode().startswith(data_buffer.decode()))
         self.assertEqual(len(data_buffer), data_field_file_small.ByteSize)
+        data_buffer = img.create_buffer_from_data_field(data_field_file_auto)
+        with open(dummy_file, "rb") as df:
+            tmp = df.read()
+        self.assertTrue(tmp.decode() == data_buffer.decode())
+        self.assertEqual(len(data_buffer), len(tmp))
 
     def test_HandleStdinDataFields(self):
         stdin = "_STDIN_"
