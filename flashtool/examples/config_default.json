@@ -1,0 +1,23 @@
+{
+    "logging":
+    {"version": 1,
+    "disable_existing_loggers": true,
+    "formatters": {
+        "default": {
+            "format": "%(name)s %(levelname)s %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "flashtool.logging.StreamHandler",
+            "level": "SUCCESS",
+            "formatter": "default"
+        }
+    },
+    "root": {"handlers": ["console"], "level": "DEBUG"}},
+    "app": {
+        "timeout": 10,
+        "force": false,
+        "retries": 0
+    }
+}

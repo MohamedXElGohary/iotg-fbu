@@ -1,0 +1,49 @@
+{
+    "logging": {
+        "version": 1,
+        "disable_existing_loggers": true,
+        "formatters": {
+            "default": {
+                "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+            },
+            "console": {
+                "class": "flashtool.logging.SuppressExceptionFormatter",
+                "format": "%(name)s: %(levelname)s. %(message)s"
+            }
+        },
+        "handlers": {
+            "file": {
+                "class": "flashtool.logging.FileHandler",
+                "level": "DEBUG",
+                "formatter": "default",
+                "filename": "flashtool.log"
+            },
+            "console": {
+                "class": "flashtool.logging.ClickHandler",
+                "level": "SUCCESS",
+                "formatter": "console",
+                "levelcolor": {
+                    "CRITICAL": "red",
+                    "ERROR": "red",
+                    "WARNING": "yellow",
+                    "INFO": null,
+                    "DEBUG": null,
+                    "NOTSET": null,
+                    "SUCCESS": "green"
+                }
+            }
+        },
+        "root": {
+            "handlers": [
+                "file",
+                "console"
+            ],
+            "level": "DEBUG"
+        }
+    },
+    "app": {
+        "timeout": 10,
+        "force": false,
+        "retries": 0
+    }
+}
