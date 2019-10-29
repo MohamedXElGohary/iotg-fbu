@@ -20,7 +20,7 @@ class PyTest(Command):
 
 setuptools.setup(
     name="elkhart-lake-platmform-firmware-and-bios-utilities",
-    version="0.2.0",
+    version="0.7.2",
     author="Intel Corp.",
     author_email="build.admin@intel.com",
     description="Stitching, signing and capsule creation scripts",
