@@ -10,9 +10,12 @@ pypandoc = "*"
 pytest-cov = "*"
 pytest-html = "*"
 pytest = "==5.0.1"
+bandit = "*"
+pylint = "*"
 
 [packages]
 cryptography = "*"
+click = "*"
 
 [requires]
 python_version = "3.7"

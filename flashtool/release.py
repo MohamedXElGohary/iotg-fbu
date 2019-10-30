@@ -9,11 +9,13 @@ from datetime import datetime
 
 import pypandoc
 
+OUTDIR = "dist"
 
 BOM = [
     "flashtool",
     "flashtool.py",
     "examples",
+    "README.md",
     "docs",
     "LICENSE",
     "setup.py",
@@ -46,10 +48,13 @@ def create_archive(out_zip, file_list):
 def main():
 
     date_created = datetime.now().strftime('%Y%m%d')
+    zip_file = os.path.join(OUTDIR, "fbu_flashtool_{}.zip".format(date_created))
 
     pypandoc.convert_file("README.md", "docx", outputfile="README.docx")
 
-    create_archive("flashtool_{}.zip".format(date_created), BOM)
+    if not os.path.exists(OUTDIR):
+        os.mkdir(OUTDIR)
+    create_archive(zip_file, BOM)
 
 
 if __name__ == "__main__":

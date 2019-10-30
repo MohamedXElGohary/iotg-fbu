@@ -50,7 +50,7 @@ def main():
     os_str = sys.platform.lower()
     if os_str.startswith('win'):
         os_str = 'win'
-    zip_file = os.path.join(OUTDIR, "fbu_siip_{}_{}.zip"
+    zip_file = os.path.join(OUTDIR, "fbu_siiptool_{}_{}.zip"
                             .format(os_str, date_created))
 
     pypandoc.convert_file("README.md", "docx", outputfile="README.docx")
