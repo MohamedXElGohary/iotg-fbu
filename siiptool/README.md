@@ -26,6 +26,19 @@ All of these tools are command line driven scripts.
 4. Make sure pip and 'Add to PATH' are selected
 5. Complete installation
 
+### Install Python 3.7 for Ubuntu 18.04.3 LTS, for earlier versions manual installation might be required.
+1. Install Python 3.7 using apt-get
+```shell
+    $ sudo apt update
+    $ sudo apt install python3.7
+
+```
+
+2. Install Pip for Python 3
+```shell
+    $ sudo apt install python3-pip
+```
+
 Note: On Windows, files with extension `.py` may not associate to Python interpreter, e.g `*.py` is opened by text editor by default. Please fix that before running the script.
 
 
@@ -33,15 +46,34 @@ Note: On Windows, files with extension `.py` may not associate to Python interpr
 
 Set PROXY environment if your host is behind proxy server:
 
+
+For Windows
+```shell
+  D:\tmp>set HTTP_PROXY=<SERVER>:<PORT>
+  D:\tmp>set HTTPS_PROXY=<SERVER>:<PORT>
 ```
-  D:\tmp>set HTTP_PROXY=<...>
-  D:\tmp>set HTTPS_PROXY=<...>
+
+For Linux
+```shell
+    $ export http_proxy=<SERVER>:<PORT>
+    $ export https_proxy=<SERVER>:<PORT>
 ```
+
 
 Install additional Python modules
 
-```
+
+For Windows
+```shell
   C:\Python37\Scripts\pip.exe install cryptography
+  C:\Python37\Scripts\pip.exe install click
+```
+
+For Linux
+
+```shell
+    $ python3.7 -m pip install --user cryptography
+    $ python3.7 -m pip install --user click
 ```
 
 Note: If there are multiple Python versions installed on the host, it is highly recommended to use virtualenv or pipenv before running the scripts.

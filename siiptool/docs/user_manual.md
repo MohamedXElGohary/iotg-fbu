@@ -38,7 +38,7 @@ SIIP Stitch Tool supports python 3.7.2. Additionally, it utilizes the following 
 
 These tools are included in the release.
 
-SIIP Stitch Tool runs on Windows 10 OS. Linux support will be added in the future releases.
+SIIP Stitch Tool runs on Windows 10 and Ubuntu 18.04.3 LTS or newer OS.
 
 ## Usage
 
@@ -173,7 +173,7 @@ located within the boot firmware.
 
 Sub Region Capsule script supports python 3.x.
 
-Sub Region Capsule script runs on Windows 10 OS
+Sub Region Capsule script runs on Windows 10 and Linux OS
 
 
 ## Installation
