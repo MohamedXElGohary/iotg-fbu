@@ -47,7 +47,11 @@ def create_archive(out_zip, file_list):
 def main():
 
     date_created = datetime.now().strftime('%Y%m%d')
-    zip_file = os.path.join(OUTDIR, "fbu_siip_{}.zip".format(date_created))
+    os_str = sys.platform.lower()
+    if os_str.startswith('win'):
+        os_str = 'win'
+    zip_file = os.path.join(OUTDIR, "fbu_siip_{}_{}.zip"
+                            .format(os_str, date_created))
 
     pypandoc.convert_file("README.md", "docx", outputfile="README.docx")
     pypandoc.convert_file(os.path.join("docs", "user_manual.md"), "html",
