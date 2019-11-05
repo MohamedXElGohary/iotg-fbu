@@ -322,71 +322,72 @@ def main():
 
     # files created that needs to be remove
     to_remove = ["tmp.fmmt.txt", "tmp.raw", "tmp.ui", "tmp.all", "tmp.cmps",
-                 "tmp.guid", "tmp.pe32"]
-    parser = parse_cmdline()
-    args = parser.parse_args()
+                 "tmp.guid", "tmp.pe32", "tmp.ffs"]
+    try:
+        parser = parse_cmdline()
+        args = parser.parse_args()
 
-    for f in (FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, RSA_HELPER, FMMT_CFG):
-        if not os.path.exists(f):
-            raise FileNotFoundError("Thirdparty tool not found ({})".format(f))
+        for f in (FMMT, GENFV, GENFFS, GENSEC, LZCOMPRESS, RSA_HELPER, FMMT_CFG):
+            if not os.path.exists(f):
+                raise FileNotFoundError("Thirdparty tool not found ({})".format(f))
 
-    # Use absolute path because GenSec does not like relative ones
-    IFWI_file = Path(args.IFWI_IN.name).resolve()
+        # Use absolute path because GenSec does not like relative ones
+        IFWI_file = Path(args.IFWI_IN.name).resolve()
 
-    # If input IP file is a JSON file, convert it to binary as the real input file
-    if args.IPNAME_IN.name.lower().endswith('.json'):
-        logger.info("Found JSON as input file. Converting it to binary ...\n")
+        # If input IP file is a JSON file, convert it to binary as the real input file
+        if args.IPNAME_IN.name.lower().endswith('.json'):
+            logger.info("Found JSON as input file. Converting it to binary ...\n")
 
-        desc = SubRegionDescriptor()
-        desc.parse_json_data(args.IPNAME_IN.name)
+            desc = SubRegionDescriptor()
+            desc.parse_json_data(args.IPNAME_IN.name)
 
-        # Currently only creates the first file
-        generate_sub_region_image(desc.ffs_files[0], output_file="tmp.payload.bin")
-        IPNAME_file = Path("tmp.payload.bin").resolve()
+            # Currently only creates the first file
+            generate_sub_region_image(desc.ffs_files[0], output_file="tmp.payload.bin")
+            IPNAME_file = Path("tmp.payload.bin").resolve()
 
-        # add to remove files
-        to_remove.append("tmp.payload.bin")
-    else:
-        IPNAME_file = Path(args.IPNAME_IN.name).resolve()
-
-    filenames = [str(IFWI_file), str(IPNAME_file)]
-    if args.ipname in ["gop", "gfxpeim", "vbt"]:
-        if not args.private_key or not os.path.exists(args.private_key):
-            logger.critical("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
-            parser.print_help()
-            sys.exit(2)
+            # add to remove files
+            to_remove.append("tmp.payload.bin")
         else:
-            key_file = Path(args.private_key).resolve()
-            filenames.append(key_file)
+            IPNAME_file = Path(args.IPNAME_IN.name).resolve()
 
-    # verify file is not empty or the IP files are not larger than the input filesvcd
-    status = check_file_size(filenames)
-    if status != 0:
-        sys.exit(status)
+        filenames = [str(IFWI_file), str(IPNAME_file)]
+        if args.ipname in ["gop", "gfxpeim", "vbt"]:
+            if not args.private_key or not os.path.exists(args.private_key):
+                logger.critical("\nMissing RSA key to stitch GOP/PEIM GFX/VBT from command line\n")
+                parser.print_help()
+                sys.exit(2)
+            else:
+                key_file = Path(args.private_key).resolve()
+                filenames.append(key_file)
 
-    # Copy key file to the required name needed for the rsa_helper.py
-    if args.private_key:
-        shutil.copyfile(key_file, os.path.join(TOOLS_DIR, "privkey.pem"))
-        to_remove.append(os.path.join(TOOLS_DIR, 'privkey.pem'))
-        filenames.remove(key_file)
+        # Verify file is not empty or the IP files are smaller than the input file
+        status = check_file_size(filenames)
+        if status != 0:
+            sys.exit(status)
 
-    logger.info("*** Replacing {} ...".format(args.ipname))
-    stitch_and_update(args.IFWI_IN.name, args.ipname, filenames, args.OUTPUT_FILE)
+        # Copy key file to the required name needed for the rsa_helper.py
+        if args.private_key:
+            shutil.copyfile(key_file, os.path.join(TOOLS_DIR, "privkey.pem"))
+            to_remove.append(os.path.join(TOOLS_DIR, 'privkey.pem'))
+            filenames.remove(key_file)
 
-    # Update OBB digest after stitching any data inside OBB region
-    if args.ipname in ["vbt", "gfxpeim"]:
-        ipname = "obb_digest"
-        digest_file = "tmp.obb.hash.bin"
+        logger.info("*** Replacing {} ...".format(args.ipname))
+        stitch_and_update(args.IFWI_IN.name, args.ipname, filenames, args.OUTPUT_FILE)
 
-        to_remove.append(digest_file)
+        # Update OBB digest after stitching any data inside OBB region
+        if args.ipname in ["vbt", "gfxpeim"]:
+            ipname = "obb_digest"
+            digest_file = "tmp.obb.hash.bin"
 
-        update_obb_digest(args.OUTPUT_FILE, digest_file)
+            to_remove.append(digest_file)
 
-        filenames = [str(Path(f).resolve()) for f in [args.OUTPUT_FILE, digest_file]]
+            update_obb_digest(args.OUTPUT_FILE, digest_file)
 
-        logger.info("*** Replacing {} ...".format(ipname))
-        stitch_and_update(args.OUTPUT_FILE, ipname, filenames, args.OUTPUT_FILE)
+            filenames = [str(Path(f).resolve()) for f in [args.OUTPUT_FILE, digest_file]]
 
+            logger.info("*** Replacing {} ...".format(ipname))
+            stitch_and_update(args.OUTPUT_FILE, ipname, filenames, args.OUTPUT_FILE)
+    finally:
         utils.cleanup(to_remove)
 
 

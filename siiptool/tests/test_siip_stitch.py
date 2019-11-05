@@ -29,6 +29,7 @@ from common.tools_path import (
     RSA_HELPER,
     FMMT_CFG,
 )
+from functools import wraps
 
 SIIPSTITCH = os.path.join("scripts", "siip_stitch.py")
 IMAGES_PATH = os.path.join("tests", "images")
@@ -90,6 +91,17 @@ class TestErrorCases(unittest.TestCase):
             os.rename("rename", TOOLS_DIR)
         cleanup()
 
+    def assert_cleanup(fn):
+        to_remove = ["tmp.fmmt.txt", "tmp.raw", "tmp.ui", "tmp.all", "tmp.cmps",
+                     "tmp.guid", "tmp.pe32", "tmp.ffs"]
+        @wraps(fn)
+        def wrapped(*args, **kwargs):
+            fn(*args, **kwargs)
+            for f in to_remove:
+                assert not os.path.exists(f)
+        return wrapped
+
+    @assert_cleanup
     def test_invalid_ip(self):  # invalid ipname
         cmd = [
             "python",
@@ -186,6 +198,7 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, capture_output=True)
         assert b"FMMT timed out" in results.stderr
 
+    @assert_cleanup
     def test_no_fv_found(self):  #  Firmware volume not found in the file
         with open("tmp_dummy.bin", "wb") as fd:
             fd.write(b"\xab" * 128)
@@ -201,6 +214,7 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, capture_output=True)
         assert b"Could not find file" in results.stderr
 
+    @assert_cleanup
     def test_missing_key(self):
         """Missing priviate key"""
 
@@ -218,6 +232,7 @@ class TestErrorCases(unittest.TestCase):
         except subprocess.CalledProcessError:
             pass
 
+    @assert_cleanup
     def test_large_privkey(self):
         """Verifies that large key file will genarate an error"""
 
@@ -241,6 +256,7 @@ class TestErrorCases(unittest.TestCase):
             in results.stderr
         )
 
+    @assert_cleanup
     def test_empty_privkey(self):
         """Verifies that empty key file will genarate an error"""
 
@@ -265,6 +281,7 @@ class TestErrorCases(unittest.TestCase):
         )
         os.remove("empty_key.pem")
 
+    @assert_cleanup
     def test_non_privkey(self):
         """Verifies that non rsa key file will genarate an error"""
 
@@ -282,6 +299,7 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, capture_output=True)
         assert b"is not an RSA priviate key" in results.stderr
 
+    @assert_cleanup
     def test_privkey_not_exist(self):
         """Verifies that non rsa key file will genarate an error"""
 
@@ -299,6 +317,7 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, capture_output=True)
         assert b"does not exist" in results.stderr
 
+    @assert_cleanup
     def test_missing_tools(self):
         """Verify script report errors if any thirdparty tool is missing"""
 
