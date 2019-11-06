@@ -18,7 +18,8 @@ The SIIP firmware image is stored in the BIOS region. A post processing step, kn
 The SIIP Stitch Tool is used to swap a SIIP firmware without rebuilding BIOS image.
 
 The SIIP Stitch Tool supports replacing the following regions:
-  * programmable software engine (pse) firmware
+  * Programmable Software Engine (pse) firmware
+  * SIIP Firmware Key Manifest (fkm)
   * TSN MAC Address address (tmac)
   * TSN configuration (tsn)
   * TSN IP configuration (tsnip)
@@ -529,6 +530,14 @@ Note: You will need IFWI image and PSE image as input files
 siip_stitch.py -o output.bin -ip pse IFWI.bin pse-rom.bin
 ```
 
+## Stitching FKM Image
+
+Note: You will need IFWI image and FKM image as input files. The FKM image is generated from the siip_sign.py script.
+      Please reference the siip_sign.py example for additional information.
+
+```
+siip_stitch.py -o output.bin -ip fkm IFWI.bin fkm.bin
+```
 
 ## Stitching TSN MAC address using a JSON file
 
