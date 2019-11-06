@@ -21,6 +21,14 @@ IP_OPTIONS = {
         ["guid", GUID_DEFINED_LZMA, "PROCESSING_REQUIRED"],
         ["free", "EBA4A247-42C0-4C11-A167-A4058BC9D423", "1K"],
     ],
+     "fkm": [
+        ["ui", "SiipFkm" ],
+        ["raw", "PI_NONE"],
+        [None],
+        ["lzma", "-e"],  # Compressed section
+        ["guid", GUID_DEFINED_LZMA, "PROCESSING_REQUIRED"],
+        ["free", "8AFFBA0F-C312-4717-9DD5-6AB1FE5FCB47", "1K"],
+    ],
     "tmac": [
         ["ui", "IntelFvTsnMacAddr"],
         ["raw", "PI_NONE"],

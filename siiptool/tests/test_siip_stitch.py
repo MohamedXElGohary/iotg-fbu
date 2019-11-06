@@ -65,6 +65,15 @@ class TestFunctionality(unittest.TestCase):
         self.assertTrue(
             filecmp.cmp(os.path.join(IMAGES_PATH, "rom_pse.bin"), "BIOS_OUT.bin")
         )
+    
+    def test_replace_fkm(self):
+        
+        cmd = ['python', SIIPSTITCH, os.path.join(IMAGES_PATH, 'EHL_FSP_13M_FSPWRAPPER_1451_00_D_Simics.bin'),
+                                     os.path.join(IMAGES_PATH, 'pse_fkm.bin'),
+                                     '-ip', 'fkm',
+                                     ]
+
+        subprocess.check_call(cmd)
 
     def test_replace_pse_give_outputfile(self):  # output file given
         cmd = [
