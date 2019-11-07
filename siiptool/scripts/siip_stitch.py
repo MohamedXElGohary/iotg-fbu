@@ -43,8 +43,8 @@ banner(TOOLNAME, __version__)
 
 logger = logging.getLogger("siip_stitch")
 
-if sys.version_info[0] < 3:
-    raise Exception("Python 3 is the minimal version required")
+if sys.version_info < (3, 7):
+    raise Exception("Python 3.7 is the minimal version required")
 
 GUID_FVADVANCED = uuid.UUID("B23E7388-9953-45C7-9201-0473DDE5487A")
 

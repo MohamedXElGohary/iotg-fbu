@@ -24,8 +24,8 @@ import common.logging as logging
 
 logger = logging.getLogger("siip_sign")
 
-if sys.version_info[0] < 3:
-    raise Exception("Must be using Python 3 (for now)")
+if sys.version_info < (3, 7):
+    raise Exception("Python 3.7 is the minimal version required")
 
 #
 # Globals for help information

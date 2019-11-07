@@ -54,8 +54,8 @@ TOOLNAME = "SIIP Signing Tool"
 
 banner(TOOLNAME, __version__)
 
-if sys.version_info[0] < 3:
-    raise Exception("Python 3 is the minimal version required")
+if sys.version_info < (3, 7):
+    raise Exception("Python 3.7 is the minimal version required")
 
 KB = 1024
 MB = 1024 * KB
