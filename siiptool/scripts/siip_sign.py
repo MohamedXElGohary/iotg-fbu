@@ -498,6 +498,9 @@ def create_image(payload_file, outfile, privkey, hash_option):
     g_hash_size = g_hash_option.digest_size
 
     logger.info("Hashing Algorithm : %s" % g_hash_option.name)
+    if g_hash_option.digest_size * 8 < 384:
+        logger.warning("Security guideline recommends using digest size "
+                       "384-bit or longer for hashing algorithm")
 
     payload_cfg = payload_file.split(",")  # <file>,<signing_key>
     if len(payload_cfg) == 2:
@@ -506,8 +509,14 @@ def create_image(payload_file, outfile, privkey, hash_option):
     else:
         payload_privkey = privkey  # Use the same key from -k commandline
 
-    logger.info("FKM signing key : %s" % privkey)
-    logger.info("FBM signing key : %s" % payload_privkey)
+    fkm_key_len = get_key_length(privkey)
+    pld_key_len = get_key_length(payload_privkey)
+    logger.info("FKM signing key : %s (%d-bit)" % (privkey, fkm_key_len*8))
+    logger.info("FBM signing key : %s (%d-bit)" % (payload_privkey, pld_key_len*8))
+
+    if (fkm_key_len * 8) < 3072 or (pld_key_len * 8) < 3072:
+        logger.warning("Security guideline recommends using 3072-bit "
+                       "(or stronger) RSA key for signing")
 
     # Create FKM blob separately required by spec
     fkm_data = create_fkm(privkey, payload_privkey, hash_option)
