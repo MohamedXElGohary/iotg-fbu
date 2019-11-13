@@ -5,13 +5,18 @@ import struct
 import subprocess
 import unittest
 import uuid
+import filecmp
 from math import log
 
 import common.subregion_descriptor as dscrptr
 import common.subregion_image as img
 from common import tools_path
+sys.path.insert(0, "..")
 
 SUBREGION_CAPSULE_TOOL = os.path.join('scripts', 'subregion_capsule.py')
+IMAGES_PATH = os.path.join("tests", "images")
+JSON_PATH = os.path.join("scripts", "Examples")
+COLLATER_PATH = os.path.join("tests", "Collateral")
 
 class JsonPayloadParserTestCase(unittest.TestCase):
     def test_ParseJsonSubRegDescriptorFiles(self):
@@ -314,31 +319,78 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         gen_fv_cmd_exp = (
             tools_path.GENFV
             + " -o OutputFile.Fv -b 0x1000 -f "
-            + " -f ".join(dummy_ffs_files)
+            + dummy_ffs_files[0]
             + " -g "
             + fmp_guid
             + " --FvNameGuid "
             + sub_region_desc.s_fv_guid
         )
         gen_fv_cmd = img.create_gen_fv_command(
-            sub_region_desc, "OutputFile.Fv", dummy_ffs_files
+            sub_region_desc.s_fv_guid, "OutputFile.Fv", dummy_ffs_files[0]
         )
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))
-        dummy_ffs_file = [ws + "SubRegionFfs1.ffs"]
         gen_fv_cmd_exp = (
             tools_path.GENFV
+            + " -i OutputFile.Fv"
             + " -o OutputFile.Fv -b 0x1000 -f "
-            + dummy_ffs_file[0]
+            + dummy_ffs_files[1]
             + " -g "
             + fmp_guid
             + " --FvNameGuid "
             + sub_region_desc.s_fv_guid
         )
         gen_fv_cmd = img.create_gen_fv_command(
-            sub_region_desc, "OutputFile.Fv", dummy_ffs_file
+            sub_region_desc.s_fv_guid, "OutputFile.Fv", dummy_ffs_files[1], "OutputFile.Fv"
         )
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))
 
+        fv_cmd_0 = [tools_path.GENFV, "-o", "OutputFile.Fv", "-b", "0x1000", "-f", dummy_ffs_files[0],
+                    "-g", fmp_guid, "--FvNameGuid", sub_region_desc.s_fv_guid]
+        
+        fv_cmd_1 = [tools_path.GENFV, "-i", "OutputFile.Fv", "-o", "OutputFile.Fv", "-b", "0x1000", "-f",
+                    dummy_ffs_files[1], "-g", fmp_guid, "--FvNameGuid", sub_region_desc.s_fv_guid]
+        fv_cmd_list =[fv_cmd_0, fv_cmd_1]
+        gen_fv_cmd_list = img.build_fv_from_ffs_files(
+            sub_region_desc, "OutputFile.Fv", dummy_ffs_files
+        )
+        self.assertEqual(fv_cmd_list , gen_fv_cmd_list)
 
+class SubRegionFunctionalityTestCases(unittest.TestCase):
+    
+    def test_generate_capsule(self):
+        cmd = [
+            "python",
+            SUBREGION_CAPSULE_TOOL,
+            "-o",
+            "Tmac_Capsule.bin",
+            "-s",
+            os.path.join(COLLATER_PATH, "TestCert.pem"),
+            "-p",
+            os.path.join(COLLATER_PATH, "TestSub.pub.pem"),
+            "-t",
+            os.path.join(COLLATER_PATH, "TestRoot.pub.pem"),
+            os.path.join(JSON_PATH,"tsn_mac_address.json"),
+        ]
+        subprocess.check_call(cmd)
+        os.remove("Tmac_Capsule.bin")
+
+    def test_generate_capsule_with_multi_ffs_files(self):
+
+        cmd = [
+            "python",
+            SUBREGION_CAPSULE_TOOL,
+            "-o",
+            "PseCapsule.bin",
+            "-s",
+            os.path.join(COLLATER_PATH, "TestCert.pem"),
+            "-p",
+            os.path.join(COLLATER_PATH, "TestSub.pub.pem"),
+            "-t",
+            os.path.join(COLLATER_PATH, "TestRoot.pub.pem"),
+            os.path.join(IMAGES_PATH,"pse.json"),
+        ]
+        subprocess.check_call(cmd)
+        os.remove("PseCapsule.bin")
+        
 if __name__ == "__main__":
     unittest.main()

@@ -22,7 +22,7 @@ from common.tools_path import EDK2_CAPSULE_TOOL
 from common.banner import banner
 import common.logging as logging
 
-logger = logging.getLogger("siip_sign")
+logger = logging.getLogger("subregion_capsule")
 
 if sys.version_info < (3, 7):
     raise Exception("Python 3.7 is the minimal version required")
@@ -72,12 +72,12 @@ def generate_sub_region_fv(
         os.rename("tmp.ffs", ffs_file_path)
         fv_ffs_file_list.append(ffs_file_path)
 
-    gen_fv_cmd = sbrgn_image.create_gen_fv_command(
-        sub_region_descriptor,
-        output_fv_file,
-        fv_ffs_file_list)
+        fv_cmd_list = sbrgn_image.build_fv_from_ffs_files(
+                     sub_region_descriptor,
+                     output_fv_file,
+                     fv_ffs_file_list)
 
-    if utils.execute_cmds(logger, [gen_fv_cmd]) == 1:
+    if utils.execute_cmds(logger, fv_cmd_list) == 1:
         print("Error generating FV File")
         exit(-1)
 
@@ -153,13 +153,13 @@ if __name__ == "__main__":
     gen_cap_cmd += ["--other-public-cert", args.OpenSslOtherPublicCertFile]
     gen_cap_cmd += ["--trusted-public-cert", args.OpenSslTrustedPublicCertFile]
     gen_cap_cmd += ["-v"]
-    
+
     if args.SigningToolPath is not None:
         gen_cap_cmd += ["--signing-tool-path", args.SigningToolPath]
     gen_cap_cmd += [sub_region_fv_file]
 
     status = utils.execute_cmds(logger, [gen_cap_cmd])
-    
+
     # Creating list of files to remove
     to_remove = glob.glob("tmp.*")
     to_remove.extend(glob.glob("SubRegionFv.*"))

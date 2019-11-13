@@ -18,11 +18,9 @@ def execute_cmds(log, cmds):
     for _, command in enumerate(cmds):
         try:
             log.info("\n{}".format(" ".join(command)))
-            #print("\n{}".format(" ".join(command)))
             subprocess.check_call(command)
         except subprocess.CalledProcessError as status:
             log.warning("\nStatus Message: {}".format(status))
-            #print("\nStatus Message: {}".format(status))
             return 1
     return 0
 

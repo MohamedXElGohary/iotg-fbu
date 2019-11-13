@@ -46,7 +46,7 @@ GENSEC_SECTION = {
     "guid": ["tmp.guid", "-s", "EFI_SECTION_GUID_DEFINED", "-g"],
     "pe32": ["tmp.pe32", "-s", "EFI_SECTION_PE32"],
     "depex": ["tmp.dpx", "-s", "EFI_SECTION_PEI_DEPEX"],
-    "cmprs": ["tmp.cmps", "-s", "EFI_SECTION_COMPRESSION", "-c"],
+    "cmprs": ["tmp.cmps", "-s", "EFI_SECTION_COMPRESSION", "-c"]
 }
 
 # gets the firmware file system type needed for genFFs
@@ -66,11 +66,10 @@ def ip_info_from_guid(lookup_val):
     return get_key_and_value(IP_OPTIONS, lookup_val, [-1, 1])
 
 
-def guild_section(sec_type, guild, guid_attrib, inputfile):
+def guid_section(sec_type, guid, guid_attrib, inputfile):
     """ generates the GUID defined section """
-
-    cmd = GENSEC_SECTION.get(sec_type)
-    cmd += [guild, "-r", guid_attrib, inputfile]
+    cmd = ["tmp.guid", "-s", "EFI_SECTION_GUID_DEFINED", "-g"]
+    cmd += [guid, "-r", guid_attrib, inputfile]
     return cmd
 
 
@@ -94,7 +93,7 @@ def create_gensec_cmd(cmd_options, inputfile):
 
     if cmd_options[0] == "guid":
         sec_type, guid, attrib = cmd_options
-        cmd += guild_section(sec_type, guid, attrib, inputfile[0])
+        cmd += guid_section(sec_type, guid, attrib, inputfile[0])
         # EFI_SECTION_RAW, EFI_SECTION_PE32, EFI_SECTION_COMPRESSION or
         # EFI_SECTION_USER_INTERFACE
     elif cmd_options[0] is not None:
@@ -173,16 +172,34 @@ def build_command_list(build_list, inputfiles, num_replace_files):
     return cmd_list
 
 
-def create_gen_fv_command(sub_region_desc, output_fv_file, ffs_files):
+def build_fv_from_ffs_files(sub_region_desc, out_file, ffs_file_list):
+    """ Build FV file with multi firmware file syste """
+
+    fv_cmd_list = []
+    for file_index, file in enumerate(ffs_file_list):
+        if file_index > 0:
+            # Using the created output file as input. Updating the output file with new ffs_File
+            fv_cmd = create_gen_fv_command(sub_region_desc.s_fv_guid, out_file, file, out_file,)
+        else:
+            fv_cmd = create_gen_fv_command(sub_region_desc.s_fv_guid, out_file, file)
+
+        fv_cmd_list.append(fv_cmd)
+
+    return fv_cmd_list
+
+
+def create_gen_fv_command(fv_guid, output_fv_file, ffs_file, input_fv_file=None,):
     gen_fv_cmd = [GENFV]
+    if input_fv_file is not None:
+        gen_fv_cmd += ["-i", input_fv_file]
     gen_fv_cmd += ["-o", output_fv_file]
     gen_fv_cmd += ["-b", "0x1000"]
-    gen_fv_cmd += ["-f", " -f ".join(ffs_files)]
+    gen_fv_cmd += ["-f", ffs_file]
     gen_fv_cmd += [
         "-g",
         "8C8CE578-8A3D-4F1C-9935-896185C32DD3",
     ]  # gEfiFirmwareFileSystem2Guid
-    gen_fv_cmd += ["--FvNameGuid", sub_region_desc.s_fv_guid]
+    gen_fv_cmd += ["--FvNameGuid", fv_guid]
     return gen_fv_cmd
 
 
