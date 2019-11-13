@@ -15,10 +15,7 @@ BOM = [
     "scripts",
     "common",
     "thirdparty",
-    "README.md",
     "LICENSE",
-
-    "README.docx",
     "USER_MANUAL.html",
 ]
 
@@ -53,7 +50,6 @@ def main():
     zip_file = os.path.join(OUTDIR, "fbu_siiptool_{}_{}.zip"
                             .format(os_str, date_created))
 
-    pypandoc.convert_file("README.md", "docx", outputfile="README.docx")
     pypandoc.convert_file(os.path.join("docs", "user_manual.md"), "html",
                           outputfile="USER_MANUAL.html")
 
