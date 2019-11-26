@@ -14,6 +14,7 @@ from __future__ import print_function
 import os
 import sys
 import argparse
+from datetime import datetime
 
 from enum import Enum
 import struct
@@ -61,13 +62,16 @@ KB = 1024
 MB = 1024 * KB
 
 g_hash_choices = {
-    "sha256": (hashes.SHA256(), 2),
-    "sha384": (hashes.SHA384(), 3),
-    "sha512": (hashes.SHA512(), 4),
+    "sha256": (hashes.SHA256(), 2, 0x10000),
+    "sha384": (hashes.SHA384(), 3, 0x11000),
+    "sha512": (hashes.SHA512(), 4, 0x12000),
 }
 
 g_hash_option = None
 g_hash_size = 0
+
+# SIGNING_DATE = int(datetime.now().strftime('%Y%m%d'), 16)
+SIGNING_DATE = 0x20191115  # Hardcode it for now for identical signature
 
 
 class ModuleType(Enum):
@@ -162,6 +166,8 @@ def get_pubkey_hash_from_privkey(privkey_pem):
     pubkey_data = mod_buf + exp_buf
     hash_result = compute_hash(bytes(pubkey_data))
 
+    hex_dump(hash_result, msg="Key Hash")
+
     return hash_result
 
 
@@ -220,9 +226,10 @@ def calculate_sum32(data):
 
     fmt = "<{}I".format(len(data) // 4)
     buffer32 = struct.unpack(fmt, data)
-    result = sum(buffer32) & 0xffffffff
+    result32 = sum(buffer32) & 0xffffffff
+    result32 = 0xFFFFFFFF - result32 + 1
 
-    return result
+    return result32
 
 
 def create_fkm(privkey, payload_privkey, hash_option):
@@ -236,16 +243,15 @@ def create_fkm(privkey, payload_privkey, hash_option):
     fkm = FIRMWARE_KEY_MANIFEST.from_buffer(fkm_data, 0)
     fkm.manifest_header.type = 0x4
     fkm.manifest_header.length = sizeof(FIRMWARE_MANIFEST_HEADER)
-    fkm.manifest_header.version = 0x10000
+    fkm.manifest_header.version = g_hash_choices[hash_option][2]
     fkm.manifest_header.flags = 0x0
     fkm.manifest_header.vendor = 0x8086  # Intel device
-    # int(datetime.now().strftime('%Y%m%d'), 16)
-    fkm.manifest_header.date = 0x20190418
+    fkm.manifest_header.date = SIGNING_DATE
     fkm.manifest_header.size = sizeof(FIRMWARE_KEY_MANIFEST)
     fkm.manifest_header.id = 0x324E4D24  # '$MN2'
     fkm.manifest_header.num_of_metadata = 0  # FKM has no metadata appended
     fkm.manifest_header.structure_version = 0x1000
-    fkm.manifest_header.modulus_size = get_key_length(privkey)  # In DWORD
+    fkm.manifest_header.modulus_size = get_key_length(privkey) // 4 # In DWORD
     fkm.manifest_header.exponent_size = 1  # In DWORD
 
     # 3: SIIP OEM Firmware Manifest; 4: SIIP Intel Firmware Manifest
@@ -276,14 +282,19 @@ def create_fkm(privkey, payload_privkey, hash_option):
     puk = get_pubkey_from_privkey(privkey)
     puk_num = puk.public_numbers()
 
+    fkm_hash = compute_hash(fkm_data)
+    hex_dump(fkm_hash, msg="FKM Hash:")
+
     key_len = get_key_length(privkey)
     mod_buf = pack_num(puk_num.n, key_len)
     exp_buf = pack_num(puk_num.e, 4)
     hex_dump((mod_buf + exp_buf), msg="FKM Public Key")
 
-    fkm.manifest_header.public_key[:key_len] = mod_buf
-    fkm.manifest_header.exponent[:] = exp_buf
+    fkm.manifest_header.public_key[:key_len] = mod_buf[::-1]
+    fkm.manifest_header.exponent[:] = exp_buf[::-1]
     fkm.manifest_header.signature[:key_len] = signature
+
+    hex_dump(signature, msg="FKM Signature")
 
     return fkm_data
 
@@ -410,7 +421,7 @@ class FIRMWARE_MANIFEST_HEADER(Structure):
     _fields_ = [
         ("type", c_uint32),
         ("length", c_uint32),
-        ("version", c_uint32),  # 0x10000
+        ("version", c_uint32),  # SHA related flags
         ("flags", c_uint32),
         ("vendor", c_uint32),
         ("date", c_uint32),
@@ -464,7 +475,7 @@ class METADATA_ENTRY(Structure):
         ("type", c_uint8),
         ("hash_algorithm", c_uint8),
         ("hash_size", c_uint16),
-        ("size", c_uint32),
+        ("metadata_size", c_uint32),
         ("hash", ARRAY(c_uint8, 64)),
     ]
 
@@ -483,7 +494,7 @@ class FIRMWARE_BLOB_MANIFEST(Structure):
         ("fw_subtype", c_uint8),
         ("reserved", c_uint16),
         ("num_of_devices", c_uint32),
-        ("device_list", ARRAY(c_uint32, 4)),
+        ("device_list", ARRAY(c_uint32, 8)),
         ("metadata_entries", ARRAY(METADATA_ENTRY, 1)),
     ]
 
@@ -555,16 +566,15 @@ def create_image(payload_file, outfile, privkey, hash_option):
     fbm = FIRMWARE_BLOB_MANIFEST.from_buffer(data, fbm_offset)
     fbm.manifest_header.type = 0x4
     fbm.manifest_header.length = sizeof(FIRMWARE_BLOB_MANIFEST)
-    fbm.manifest_header.version = 0x10000
+    fbm.manifest_header.version = g_hash_choices[hash_option][2]
     fbm.manifest_header.flags = 0x0
     fbm.manifest_header.vendor = 0x8086  # Intel device
-    #    fbm.manifest_header.date = int(create_date)
-    fbm.manifest_header.date = 0x20190418
+    fbm.manifest_header.date = SIGNING_DATE
     fbm.manifest_header.size = fbm.manifest_header.length
     fbm.manifest_header.id = 0x324E4D24  # '$MN2'
     fbm.manifest_header.num_of_metadata = 1  # FBM has exactly one metadata
     fbm.manifest_header.structure_version = 0x1000
-    fbm.manifest_header.modulus_size = get_key_length(privkey)  # In DWORDs
+    fbm.manifest_header.modulus_size = get_key_length(privkey) // 4 # In DWORDs
     fbm.manifest_header.exponent_size = 1  # In DWORDs
     fbm.extension_type = 15  # CSME Signed Package Info Extension type
 
@@ -575,7 +585,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
     fbm.fw_type = 0
     fbm.fw_subtype = 0
     fbm.reserved = 0
-    fbm.num_of_devices = 4
+    fbm.num_of_devices = 8
     fbm.device_list[:] = [0] * fbm.num_of_devices
 
     fbm.metadata_entries[0].id = 0xDEADBEEF
@@ -583,7 +593,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
     fbm.metadata_entries[0].type = 2
     fbm.metadata_entries[0].hash_algorithm = g_hash_choices[hash_option][1]
     fbm.metadata_entries[0].hash_size = g_hash_size
-    fbm.metadata_entries[0].size = sizeof(METADATA_FILE_STRUCT)
+    fbm.metadata_entries[0].metadata_size = sizeof(METADATA_FILE_STRUCT)
     fbm.metadata_entries[0].hash[:] = [0] * 64
 
     fbm.extension_length = sizeof(FIRMWARE_BLOB_MANIFEST)
@@ -615,6 +625,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
     metadata_limit = metadata_offset + metadata_length
 
     hash_result = compute_hash(bytes(data[metadata_offset:metadata_limit]))
+    hex_dump(hash_result, msg="Metadata Hash")
     fbm.metadata_entries[0].hash[:g_hash_size] = hash_result
 
     # STEP 3: Calculate signature of FBM (except signature and public keys)
@@ -626,6 +637,7 @@ def create_image(payload_file, outfile, privkey, hash_option):
     (signature, key) = compute_signature(
         bytes(data[fbm_offset:fbm_limit]), payload_privkey
     )
+    hex_dump(signature, msg="FBM signature")
 
     puk = get_pubkey_from_privkey(payload_privkey)
     puk_num = puk.public_numbers()
@@ -635,8 +647,8 @@ def create_image(payload_file, outfile, privkey, hash_option):
     exp_buf = pack_num(puk_num.e, 4)
     hex_dump((mod_buf + exp_buf), msg="FBM Public Key")
 
-    fbm.manifest_header.public_key[:key_len] = mod_buf
-    fbm.manifest_header.exponent[:] = exp_buf
+    fbm.manifest_header.public_key[:key_len] = mod_buf[::-1]
+    fbm.manifest_header.exponent[:] = exp_buf[::-1]
     fbm.manifest_header.signature[:key_len] = signature
 
     # STEP 4: Append payload data as is
@@ -719,8 +731,8 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
         exit(1)
 
     # Calculate public key hash in FKM header
-    pubkey_n = fkm.manifest_header.public_key[:key_len]
-    pubkey_e = fkm.manifest_header.exponent[:]
+    pubkey_n = fkm.manifest_header.public_key[:key_len][::-1]
+    pubkey_e = fkm.manifest_header.exponent[:][::-1]
 
     hash_actual = verify_hash(bytes(pubkey_n + pubkey_e), hash_expected)
 
@@ -759,8 +771,8 @@ def verify_image(infile_signed, pubkey_pem_file, hash_option):
     # TODO: compare key usage bitmaps between FKM and FBM
     logger.info("FBM Usage Bitmap      : 0x%2x" % fbm.usage_bitmap[7])
 
-    pubkey_n = fbm.manifest_header.public_key[:key_len]
-    pubkey_e = fbm.manifest_header.exponent[:]
+    pubkey_n = fbm.manifest_header.public_key[:key_len][::-1]
+    pubkey_e = fbm.manifest_header.exponent[::-1]
 
     hash_actual = compute_hash(bytes(pubkey_n + pubkey_e))
 
