@@ -78,13 +78,13 @@ def cli():
 @click.option("-v", "--verbose", "verbose", count=True)
 @click.option("-t", "--timeout", type=int, default=-1, help="Timeout in seconds.")
 @click.option("-d", '--device-type', type=click.Choice(('usb', 'pcie'), case_sensitive=False), multiple=True, help="Filter devices based on type: USB or PCIe")
-# @click.option("-s", "--serialno", help="Select device with this serialno only.")
+@click.option("-s", "--serialno", help="Select device with this serialno only.")
 @click.argument("fip", type=click.Path(exists=True, resolve_path=True), required=True)
 @click.option("-f", "--force", is_flag=True, help="Skip FIP checking.")
-# def download(verbose, timeout, device_type, serialno, fip, force):
-def download(verbose, timeout, device_type, fip, force):
+def download(verbose, timeout, device_type, serialno, fip, force):
+# def download(verbose, timeout, device_type, fip, force):
     """Download FIP into device"""
-    serialno = None
+    # serialno = None
     try:
         if verbose > 0:
             for handler in logger.root.handlers:
@@ -127,7 +127,7 @@ def download(verbose, timeout, device_type, fip, force):
                 raise kmb.DeviceNotFoundError("Keembay device not found")
 
         if serialno:
-            devices = [device for device in devices if getattr(device, "dev_id", None) == serialno]
+            devices = [device for device in devices if getattr(device, "serialno", None) == serialno]
             if not devices:
                 raise kmb.DeviceNotFoundError("Keembay device not found")
 
@@ -148,7 +148,8 @@ def download(verbose, timeout, device_type, fip, force):
 @cli.command("devices", short_help='List available devices. Type "flashtool devices -h" for more')
 @click.option("-v", "--verbose", "verbose", count=True)
 @click.option("-d", '--device-type', type=click.Choice(('usb', 'pcie'), case_sensitive=False), multiple=True, help="Filter devices based on type: USB or PCIe")
-def devices(verbose, device_type):
+@click.option("-s", "--serialno", help="Select device with this serialno only.")
+def devices(verbose, device_type, serialno):
     """List available devices"""
     try:
         if verbose > 0:
@@ -171,6 +172,11 @@ def devices(verbose, device_type):
         except IndexError:
             logger.debug("All devices selected")
             devices = [*kmb.SingleUSBDevice.discover(), *kmb.PCIEDevice.discover()]
+            if not devices:
+                raise kmb.DeviceNotFoundError("Keembay device not found")
+
+        if serialno:
+            devices = [device for device in devices if getattr(device, "serialno", None) == serialno]
             if not devices:
                 raise kmb.DeviceNotFoundError("Keembay device not found")
 

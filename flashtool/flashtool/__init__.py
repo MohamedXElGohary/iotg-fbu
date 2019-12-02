@@ -4,10 +4,12 @@ import re
 import os
 import time
 import shutil
+from . import linuxutils
+from . import pcie
 
 
 # Note:  more names can be added to __all__ later.
-__all__ = (["discover", "fip_check", "USBDevice", "PCIEDevice", "DeviceNotFoundError", "FIPCheckError",])
+__all__ = (["fip_check", "USBDevice", "PCIEDevice", "DeviceNotFoundError", "FIPCheckError"])
 
 
 # Exception classes used by this module.
@@ -136,26 +138,29 @@ class SingleUSBDevice(USBDevice):
     dl_cmd = ["./fastboot", "stage", "fip"]
     dl_parse = r"^Sending\s+'(.+)'\s+\((.+)\)\s+(OKAY)\s+\[\s+(.+)s\]\s+(Finished).\s+Total\s+time:\s+(.+)s\s*"
 
-    def __init__(self, bus, dev):
+    def __init__(self, bus, dev, prod, serialno):
         self.bus = bus
         self.dev = dev
+        self.prod = prod
+        self.serialno = serialno
 
     @classmethod
     def discover(cls, **kwds):
-        try:
-            args, returncode, stdout = _run_cmd(cls.get_all_cmd, **kwds)
-        except subprocess.TimeoutExpired:
-            stdout = ""
-        devices = []
-        for line in stdout.split("\n"):
-            m = re.match(cls.get_parse, line)
-            try:
-                bus = m.group(1)
-                dev = m.group(2)
-                devices.append(cls(bus, dev))
-                break
-            except AttributeError:
-                continue
+        devices = [cls(device["bus"], device["dev"], device["prod"], device["iSerial"]) for device in linuxutils.kmb_lsusb("iSerial")]
+        # try:
+        #     args, returncode, stdout = _run_cmd(cls.get_all_cmd, **kwds)
+        # except subprocess.TimeoutExpired:
+        #     stdout = ""
+        # devices = []
+        # for line in stdout.split("\n"):
+        #     m = re.match(cls.get_parse, line)
+        #     try:
+        #         bus = m.group(1)
+        #         dev = m.group(2)
+        #         devices.append(cls(bus, dev))
+        #         break
+        #     except AttributeError:
+        #         continue
         return devices
 
     def download(self, fip, **kwds):
@@ -172,10 +177,42 @@ class SingleUSBDevice(USBDevice):
             raise DeviceDownloadError(stdout, self) from None
 
     def __repr__(self):
-        return "USB Bus {} Device {}: ID 8087:0b39 Intel Movidius Keembay 3xxx.".format(self.bus, self.dev)
+        return "USB Bus {} Device {} SerialNumber {} ID 8087:0b39 Intel Movidius Keembay 3xxx.".format(self.bus, self.dev, self.serialno)
 
 
-class PCIEDevice(BaseDevice):
+class PCIEDevice:
+    def __init__(self, domain, bus, slot, func, prod, serialno, bar2):
+        self.domain = domain
+        self.bus = bus
+        self.slot = slot
+        self.func = func
+        self.prod = prod
+        self.serialno = serialno
+        self.bar2 = bar2
+
+    @classmethod
+    def discover(cls, **kwds):
+        return [cls(device["domain"],
+                device["bus"],
+                device["slot"],
+                device["func"],
+                device["prod"],
+                device["Serial"],
+                device["bar2"]) for device in linuxutils.kmb_lspci("Serial") if pcie.check_recovery(device["bar2"])]
+
+    @property
+    def dev_path(self):
+        return ".".join([":".join([self.domain, self.bus, self.slot]), self.func])
+
+    def download(self, fip, **kwds):
+        result = {"total": {"status": "success", "time": pcie.download_fip(self.dev_path, fip)}}
+        return result, "pcie.download_fip({},{})".format(self.dev_path, fip), 0, "NA"
+
+    def __repr__(self):
+        return "PCIE {} SerialNumber {} Intel Movidius Keembay 3xxx.".format(self.dev_path, self.serialno)
+
+
+class XLinkDevice(BaseDevice):
     """A PCIE Device class which also has a factory method which returns a list of PCIE devices in the system
 
     Attributes:
@@ -203,7 +240,7 @@ class PCIEDevice(BaseDevice):
         **kwds: keyword args for subprocess.run(). E.g timeout=10
         """
         try:
-            args, returncode, stdout = _run_cmd(cls.get_all_cmd, **kwds)
+            _, _, stdout = _run_cmd(cls.get_all_cmd, **kwds)
         except subprocess.TimeoutExpired:
             stdout = ""
         devices = []
@@ -234,7 +271,7 @@ class PCIEDevice(BaseDevice):
         Args:
         **kwds: keyword args for subprocess.run(). E.g timeout=10
         """
-        retries = kwds.pop("retries", 0)
+        # retries = kwds.pop("retries", 0)
         shutil.copy(fip, '/lib/firmware/myriad.mvcmd')
         start = time.perf_counter()
         args, returncode, stdout = _run_cmd(self.dl_cmd, **kwds)

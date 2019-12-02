@@ -63,26 +63,21 @@ Supports firmware recovery only. OS recovery is not supported now. The term firm
 
 ## 4. System Requirement
 
-- Linux Ubuntu 16.04 or greater
+- Linux Ubuntu 16.04 or greater with Sudo privilage
 - Python 3.5 or greater with Pip
+- PCIE recovery: System that supports more than 4GB of PCIe BAR
+
+4.1. Below are the steps to increase BAR size in Uzel:
+4.1.1	Power On Uzel without the device. Press Del to enter BIOS
+4.1.2	Go to Chipset-->System Agent(SA) Configuration-->Above 4GB MMIO BIOS-->Enabled
+4.1.3	Save and Exit. System will continue to boot. Power off.
+4.1.4	Set Keembay EVM to PCIe recovery mode. Plug in and power On Uzel.
+4.1.5	If Uzel boots, then the new settings are in place. We can continue with recovering the device.
 
 
 ## 5. Installation
 
-5.1. Add udev rules . Add the following lines to /etc/udev/rules.d/99-keembay.rules(create the file if it doesn't exist):
-
-
-```
-SUBSYSTEMS=="usb", ATTRS{idVendor}=="8087", ATTRS{idProduct}=="0b39", GROUP="users", MODE="0666"
-```
-
-5.2. To activate, run:
-
-```shell
-$ sudo udevadm control --reload-rules && sudo udevadm trigger
-```
-
-5.3. Extract the release package and install the package using pip.
+5.1. Extract the release package and install the package using pip.
 
 ```shell
 $ unzip -d flashtool_YYYYmmdd/ flashtool_YYYYmmdd.zip
@@ -90,15 +85,57 @@ $ cd flashtool_YYYYmmdd/
 $ pip3 install --user .
 ```
 
-5.4. Once the installation has completed successfully, you can see the tool working by running
+5.2. Once the installation has completed successfully, create a symbolic link to the launcher in /usr/bin/ so the launcher can be used with sudo.
+
+```shell
+$ sudo ln -s $(which flashtool) /usr/bin/flashtool
+```
+
+5.3. Once the installation has completed successfully, you can check the tool working by running
 
 ```shell
 $ flashtool --help
 ```
 
+5.4. For PCIe, driver component need to be loaded. To do that, inside the release package:
+
+```shell
+$ cd drivers
+$ sudo dpkg -i kmb-pcie-host-driver.deb
+$ sudo insmod /lib/modules/$(uname -r)/updates/dkms/mxlk.ko
+```
+
+
 ## 6. Usage Guide
 
-Keembay flashtool has two commands only.
+6.1. The device needs to be placed in 'recovery' mode. 
+
+6.1.1. Two ways the device will go into 'recovery' mode:
+- Auto recovery: There is no valid fip in flash.
+- Forced recovery: By using 'recovery jumper'
+
+6.1.2. For Keembay EVM
+- USB:
+Set the BOOT DIP SW to eMMC Recovery boot and connect KMB via USB to a Linux host:
+```
+------------------------------
+BOOT DIP SW #: 1 2 3 4 5 6 7 8
+------------------------------
+       Value : 1 1 1 1 0 0 0 1
+------------------------------
+```
+- PCIE:
+Set the BOOT DIP SW to eMMC PCIe Recovery boot and connect KMB via PCIE to a Linux host and power on the host:
+```
+------------------------------
+BOOT DIP SW #: 1 2 3 4 5 6 7 8
+------------------------------
+       Value : 1 1 1 1 0 1 0 1
+------------------------------
+```
+
+
+6.2. Keembay flashtool needs to be run with Sudo privilage. The commands are below.
 
 ```shell
 $ flashtool --help
