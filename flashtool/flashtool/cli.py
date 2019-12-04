@@ -69,7 +69,7 @@ logger = logging.getLogger("flashtool", logging_cfg=cp["logging"])
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 @click.group(context_settings=CONTEXT_SETTINGS)
-@click.version_option(version="0.5.0")
+@click.version_option(version="0.5.1")
 def cli():
     pass
 
@@ -82,9 +82,7 @@ def cli():
 @click.argument("fip", type=click.Path(exists=True, resolve_path=True), required=True)
 @click.option("-f", "--force", is_flag=True, help="Skip FIP checking.")
 def download(verbose, timeout, device_type, serialno, fip, force):
-# def download(verbose, timeout, device_type, fip, force):
     """Download FIP into device"""
-    # serialno = None
     try:
         if verbose > 0:
             for handler in logger.root.handlers:
@@ -112,7 +110,7 @@ def download(verbose, timeout, device_type, serialno, fip, force):
                 raise click.BadOptionUsage(device_type, "--device-type can be provided only once")
             if device_type[0] == "usb":
                 logger.debug("USB devices selected")
-                devices = kmb.SingleUSBDevice.discover()
+                devices = kmb.USBDevice.discover()
                 if not devices:
                     raise kmb.DeviceNotFoundError("Keembay USB device not found")
             else:
@@ -122,7 +120,7 @@ def download(verbose, timeout, device_type, serialno, fip, force):
                     raise kmb.DeviceNotFoundError("Keembay PCIE device not found")
         except IndexError:
             logger.debug("All devices selected")
-            devices = [*kmb.SingleUSBDevice.discover(), *kmb.PCIEDevice.discover()]
+            devices = [*kmb.USBDevice.discover(), *kmb.PCIEDevice.discover()]
             if not devices:
                 raise kmb.DeviceNotFoundError("Keembay device not found")
 
@@ -161,7 +159,7 @@ def devices(verbose, device_type, serialno):
                 raise click.BadOptionUsage(device_type, "--device-type can be provided only once")
             if device_type[0] == "usb":
                 logger.debug("USB devices selected")
-                devices = kmb.SingleUSBDevice.discover()
+                devices = kmb.USBDevice.discover()
                 if not devices:
                     raise kmb.DeviceNotFoundError("Keembay USB device not found")
             else:
@@ -171,7 +169,12 @@ def devices(verbose, device_type, serialno):
                     raise kmb.DeviceNotFoundError("Keembay PCIE device not found")
         except IndexError:
             logger.debug("All devices selected")
-            devices = [*kmb.SingleUSBDevice.discover(), *kmb.PCIEDevice.discover()]
+            devices = [*kmb.USBDevice.discover(), *kmb.PCIEDevice.discover()]
+            if not devices:
+                raise kmb.DeviceNotFoundError("Keembay device not found")
+
+        if serialno:
+            devices = [device for device in devices if getattr(device, "serialno", None) == serialno]
             if not devices:
                 raise kmb.DeviceNotFoundError("Keembay device not found")
 

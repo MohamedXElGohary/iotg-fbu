@@ -15,6 +15,7 @@ BOM = [
     "flashtool",
     "flashtool.py",
     "examples",
+    "drivers",
     "README.md",
     "docs",
     "LICENSE",

@@ -15,14 +15,13 @@ def kmb_lsusb(*dev_attrs, **sp_options):
     _, _, stdout = _run(lsusb_cmd, **sp_options)
     stdout = "\n".join([stdout, ""]) # adding a \n to the stdout of lsusb so the re pattern will work
     devices = [m.groupdict() for  m in lsusb_parse.finditer(stdout)]
-
     for device in devices:
         for line in device.pop("desc").split("\n"):
             splitted = re.split(r'\s+', line.strip())
             if splitted[0] in dev_attrs:
                 device[splitted[0]] = splitted[-1]
-
     return devices
+
 
 def kmb_lspci(*dev_attrs, **sp_options):
     _, _, stdout = _run(lspci_cmd, **sp_options)

@@ -9,8 +9,7 @@ from . import pcie
 
 
 # Note:  more names can be added to __all__ later.
-__all__ = (["fip_check", "USBDevice", "PCIEDevice", "DeviceNotFoundError", "FIPCheckError"])
-
+__all__ = (["fip_check", "USBDevice", "FastbootDevice", "PCIEDevice", "DeviceNotFoundError", "FIPCheckError"])
 
 # Exception classes used by this module.
 class ToolError(Exception): pass
@@ -55,7 +54,7 @@ class BaseDevice(abc.ABC):
         raise NotImplementedError
 
 
-class USBDevice(BaseDevice):
+class FastbootDevice(BaseDevice):
     """A USB Device class which also has a factory method which returns a list of USB devices in the system
 
     Attributes:
@@ -64,7 +63,7 @@ class USBDevice(BaseDevice):
     get_all_cmd = ["./fastboot", "devices"]
     get_parse = r"^(\w+)\sfastboot"
     # dl_cmd = ["./fastboot", "-s", "dev_id", "flash", "boot", "fip"]
-    dl_cmd = ["./fastboot", "-s", "dev_id", "stage", "fip"]
+    dl_cmd = ["./fastboot", "stage", "fip"]
     dl_parse = r"^Sending\s+'(.+)'\s+\((.+)\)\s+(OKAY)\s+\[\s+(.+)s\]\s+(Finished).\s+Total\s+time:\s+(.+)s\s*"
 
     def __init__(self, dev_id):
@@ -120,7 +119,7 @@ class USBDevice(BaseDevice):
         }
         """
         retries = kwds.pop("retries", None)
-        self.dl_cmd[2], self.dl_cmd[4] = self.dev_id, fip
+        self.dl_cmd[2] = fip
         args, returncode, stdout = _run_cmd(self.dl_cmd, **kwds)
         m = re.match(self.dl_parse, stdout)
         result = {}
@@ -132,10 +131,10 @@ class USBDevice(BaseDevice):
             raise DeviceDownloadError(stdout, self) from None
 
 
-class SingleUSBDevice(USBDevice):
+class USBDevice(BaseDevice):
     get_all_cmd = ["lsusb", "-d", "8087:0b39"]
     get_parse = r"^Bus\s+(\w+)\s+Device\s+(\w+):\s+ID\s+\w+:\w+\s+(.+)"
-    dl_cmd = ["./fastboot", "stage", "fip"]
+    dl_cmd = ["./fastboot", "-s", "dev_id", "stage", "fip"]
     dl_parse = r"^Sending\s+'(.+)'\s+\((.+)\)\s+(OKAY)\s+\[\s+(.+)s\]\s+(Finished).\s+Total\s+time:\s+(.+)s\s*"
 
     def __init__(self, bus, dev, prod, serialno):
@@ -165,7 +164,7 @@ class SingleUSBDevice(USBDevice):
 
     def download(self, fip, **kwds):
         retries = kwds.pop("retries", 0)
-        self.dl_cmd[2] = fip
+        self.dl_cmd[2], self.dl_cmd[4] = self.serialno, fip
         args, returncode, stdout = _run_cmd(self.dl_cmd, **kwds)
         m = re.match(self.dl_parse, stdout)
         result = {}
