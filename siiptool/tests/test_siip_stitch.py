@@ -225,7 +225,7 @@ class TestErrorCases(unittest.TestCase):
 
     @assert_cleanup
     def test_missing_key(self):
-        """Missing priviate key"""
+        """Missing private key"""
 
         cmd = [
             "python",
@@ -306,7 +306,7 @@ class TestErrorCases(unittest.TestCase):
         ]
 
         results = subprocess.run(cmd, capture_output=True)
-        assert b"is not an RSA priviate key" in results.stderr
+        assert b"is not an RSA private key" in results.stderr
 
     @assert_cleanup
     def test_privkey_not_exist(self):
