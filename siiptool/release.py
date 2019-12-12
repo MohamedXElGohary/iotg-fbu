@@ -17,6 +17,8 @@ BOM = [
     "thirdparty",
     "LICENSE",
     "USER_MANUAL.html",
+    "docs/stitching_usage_flow.png",
+    "docs/subregion_capsule_usage_flow.png"
 ]
 
 
