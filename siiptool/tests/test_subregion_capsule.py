@@ -340,16 +340,16 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             + sub_region_desc.s_fv_guid
         )
         gen_fv_cmd = img.create_gen_fv_command(
-            sub_region_desc.s_fv_guid, "OutputFile.Fv", dummy_ffs_files[1], "OutputFile.Fv"
+            sub_region_desc.s_fv_guid, "OutputFile.Fv", dummy_ffs_files[1],
+            "OutputFile.Fv"
         )
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))
 
-        fv_cmd_0 = [tools_path.GENFV, "-o", "OutputFile.Fv", "-b", "0x1000", "-f", dummy_ffs_files[0],
-                    "-g", fmp_guid, "--FvNameGuid", sub_region_desc.s_fv_guid]
-        
-        fv_cmd_1 = [tools_path.GENFV, "-i", "OutputFile.Fv", "-o", "OutputFile.Fv", "-b", "0x1000", "-f",
-                    dummy_ffs_files[1], "-g", fmp_guid, "--FvNameGuid", sub_region_desc.s_fv_guid]
-        fv_cmd_list =[fv_cmd_0, fv_cmd_1]
+        fv_cmd_list = [[tools_path.GENFV, "-o", "OutputFile.Fv", "-b", "0x1000",
+                        "-f", dummy_ffs_files[0], "-g", fmp_guid,
+                        "--FvNameGuid", sub_region_desc.s_fv_guid, '-f',
+                        '.\\tempSubRegionFfs2.ffs']]
+
         gen_fv_cmd_list = img.build_fv_from_ffs_files(
             sub_region_desc, "OutputFile.Fv", dummy_ffs_files
         )
