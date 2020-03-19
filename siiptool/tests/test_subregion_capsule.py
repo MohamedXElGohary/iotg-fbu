@@ -6,6 +6,7 @@ import subprocess
 import unittest
 import uuid
 import filecmp
+import glob
 from math import log
 
 import common.subregion_descriptor as dscrptr
@@ -19,6 +20,10 @@ JSON_PATH = os.path.join("scripts", "Examples")
 COLLATER_PATH = os.path.join("tests", "Collateral")
 
 class JsonPayloadParserTestCase(unittest.TestCase):
+
+    def tearDown(self):
+        cleanup()
+
     def test_ParseJsonSubRegDescriptorFiles(self):
         sub_region_desc = dscrptr.SubRegionDescriptor()
         sub_region_desc.parse_json_data(os.path.join("tests", "Collateral", "GoodSubRegDescExample.json"))
@@ -143,6 +148,10 @@ class JsonPayloadParserTestCase(unittest.TestCase):
 
 
 class SubRegionImageGeneratorTestCase(unittest.TestCase):
+
+    def tearDown(self):
+        cleanup()
+
     def test_GenerateSubRegionImage(self):
 
         private_cert = os.path.join("tests", "Collateral", "TestCert.pem")
@@ -355,8 +364,12 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         )
         self.assertEqual(fv_cmd_list , gen_fv_cmd_list)
 
+
 class SubRegionFunctionalityTestCases(unittest.TestCase):
-    
+
+    def tearDown(self):
+        cleanup()
+
     def test_generate_capsule(self):
         cmd = [
             "python",
@@ -373,6 +386,33 @@ class SubRegionFunctionalityTestCases(unittest.TestCase):
         ]
         subprocess.check_call(cmd)
         os.remove("Tmac_Capsule.bin")
+
+    def test_generate_capsule_without_keys(self):
+        cmd = [
+            "python",
+            SUBREGION_CAPSULE_TOOL,
+            "-o",
+            "Tmac_Capsule.bin",
+            os.path.join(JSON_PATH, "tsn_mac_address.json"),
+        ]
+        subprocess.check_call(cmd)
+        os.remove("Tmac_Capsule.bin")
+
+    def test_generate_capsule_with_missing_keys(self):
+        cmd = [
+            "python",
+            SUBREGION_CAPSULE_TOOL,
+            "-o",
+            "Tmac_Capsule.bin",
+            "-s",
+            os.path.join(COLLATER_PATH, "TestCert.pem"),
+            "-p",
+            os.path.join(COLLATER_PATH, "TestSub.pub.pem"),
+            os.path.join(JSON_PATH, "tsn_mac_address.json"),
+        ]
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            subprocess.check_call(cmd)
+        self.assertEqual(cm.exception.returncode, 2)
 
     def test_generate_capsule_with_multi_ffs_files(self):
 
@@ -391,6 +431,19 @@ class SubRegionFunctionalityTestCases(unittest.TestCase):
         ]
         subprocess.check_call(cmd)
         os.remove("PseCapsule.bin")
-        
+
+
+def cleanup():
+    print("Cleaning up generated files ...")
+    to_remove = []
+    to_remove.extend(glob.glob("tmp.*", recursive=True))
+
+    for f in to_remove:
+        try:
+            os.remove(f)
+        except FileNotFoundError:
+            pass
+
+
 if __name__ == "__main__":
     unittest.main()
