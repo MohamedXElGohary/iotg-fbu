@@ -163,7 +163,7 @@ def get_pubkey_hash_from_privkey(privkey_pem):
     exp_buf = pack_num(puk_num.e, 4)
     hex_dump((mod_buf + exp_buf), msg="Public Key (%s)" % privkey_pem)
 
-    pubkey_data = mod_buf + exp_buf
+    pubkey_data = mod_buf[::-1] + exp_buf[::-1]  # Match public key endian
     hash_result = compute_hash(bytes(pubkey_data))
 
     hex_dump(hash_result, msg="Key Hash")
