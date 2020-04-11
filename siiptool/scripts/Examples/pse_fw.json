@@ -11,7 +11,7 @@
         "Compression": true,
         "Data" :
         [
-          ["SiipFwManifest", "FILE", 22408, "/bins/SiipFwManifest.bin"]
+          ["SiipFkm", "FILE", 22408, "fkm.bin"]
         ]
       },
       {
@@ -19,7 +19,7 @@
         "Compression": true,
         "Data" :
         [
-          ["OseFw", "FILE", 26628, "/bins/OseFw.bin"]
+          ["PseFw", "FILE", 26628, "signed.bin"]
         ]
       }
     ]

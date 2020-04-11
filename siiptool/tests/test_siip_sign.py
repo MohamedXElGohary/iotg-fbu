@@ -145,36 +145,34 @@ class TestSIIPSign(unittest.TestCase):
             subprocess.check_call(cmd)
         self.assertEqual(cm.exception.returncode, 1)
 
-    def test_signing_with_two_keys(self):
-        '''Test signing with two keys'''
+    def test_fkm_subcommand(self):
+        '''Test FKM generation and verify subcommand'''
 
         hash_options = ['sha256', 'sha384', 'sha512']
-        pld_file = 'payload.bin'
-        out_file = 'signed.bin'
+        out_file = 'fkm_only.bin'
         fkm_key = ('key1.pem', 'key1.pub.pem')
         pld_key = ('key2.pem', 'key2.pub.pem')
 
-        with open(pld_file, 'wb') as pld:
-            pld.write(os.urandom(1024*1024))
-
         # Create test keys
         for priv, pub in [fkm_key, pld_key]:
-            cmd = ['openssl', 'genrsa', '-out', priv, '2048']
+            cmd = ['openssl', 'genrsa', '-out', priv, '3072']
             subprocess.check_call(cmd)
 
             cmd = ['openssl', 'rsa', '-pubout', '-in', priv, '-out', pub]
             subprocess.check_call(cmd)
 
         for hash_alg in hash_options:
-            cmd = ['python', SIIPSIGN, 'sign', '-i', pld_file + ',' + pld_key[0],
-                   '-o', out_file,
-                   '-k', fkm_key[0],
-                   '-s', hash_alg]
+            cmd = ['python', SIIPSIGN, 'fkmgen',
+                                       '-k', fkm_key[0],
+                                       '-p', pld_key[1],  # Use public key
+                                       '-s', hash_alg,
+                                       '-o', out_file]
+            print(" ".join(cmd))
             subprocess.check_call(cmd)
 
-            cmd = ['python', SIIPSIGN, 'verify', '-i', out_file + ',' + pld_key[1],
-                   '-p', fkm_key[1],
-                   '-s', hash_alg]
+            cmd = ['python', SIIPSIGN, 'fkmcheck', '-i', out_file,
+                                                   '-p', fkm_key[1],
+                                                   '-t', pld_key[1]]  # pubkey
             subprocess.check_call(cmd)
 
             cmd = ['python', SIIPSIGN, 'decompose', '-i', out_file]
