@@ -140,7 +140,7 @@ class TestErrorCases(unittest.TestCase):
             "-ip",
             "pse",
         ]
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert no_file in results.stderr
 
         # ip input file does not exists
@@ -152,7 +152,7 @@ class TestErrorCases(unittest.TestCase):
             "-ip",
             "pse",
         ]
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert no_file in results.stderr
 
         # BIOS input file is blank
@@ -165,7 +165,7 @@ class TestErrorCases(unittest.TestCase):
             "-ip",
             "pse",
         ]
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert file_empty in results.stderr
 
         # IP input file is blank
@@ -177,7 +177,7 @@ class TestErrorCases(unittest.TestCase):
             "-ip",
             "pse",
         ]
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert file_empty in results.stderr
 
         # IP input file is too large
@@ -189,7 +189,7 @@ class TestErrorCases(unittest.TestCase):
             "-ip",
             "pse",
         ]
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert file_large in results.stderr
 
     def test_inputfile_w_incorrect_format(
@@ -204,7 +204,7 @@ class TestErrorCases(unittest.TestCase):
             "pse",
         ]
 
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert b"FMMT timed out" in results.stderr
 
     @assert_cleanup
@@ -220,7 +220,7 @@ class TestErrorCases(unittest.TestCase):
             "pse",
         ]
 
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert b"Could not find file" in results.stderr
 
     @assert_cleanup
@@ -259,7 +259,7 @@ class TestErrorCases(unittest.TestCase):
             "large_key.pem",
         ]
 
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert (
             b"the key file size must be greater than 0 and less than 2k!"
             in results.stderr
@@ -283,7 +283,7 @@ class TestErrorCases(unittest.TestCase):
             "empty_key.pem",
         ]
 
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert (
             b"the key file size must be greater than 0 and less than 2k!"
             in results.stderr
@@ -305,7 +305,7 @@ class TestErrorCases(unittest.TestCase):
             os.path.join(IMAGES_PATH, "nonprivkey.pem"),
         ]
 
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert b"is not an RSA private key" in results.stderr
 
     @assert_cleanup
@@ -323,7 +323,7 @@ class TestErrorCases(unittest.TestCase):
             os.path.join(IMAGES_PATH, "priv_key2.pem"),
         ]
 
-        results = subprocess.run(cmd, capture_output=True)
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert b"does not exist" in results.stderr
 
     @assert_cleanup
@@ -340,7 +340,7 @@ class TestErrorCases(unittest.TestCase):
                 "-ip",
                 "pse",
             ]
-            results = subprocess.run(cmd, capture_output=True)
+            results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             assert b"Thirdparty tool not found" in results.stderr
 
 

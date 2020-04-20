@@ -35,17 +35,17 @@ All third party utilities are included in the release package. However, for
 initial setup, users are required to install Python software and additional
 modules before running these tools:
 
-- The minimum Python version is 3.7.x.
+- The minimum Python version is 3.6.x.
 - Python module `cryptography`
 - Python module `click`
 
 
-## Install Python 3.7.x
+## Install Python 3.6.x
 
 For Windows:
 1. Download Python from: https://www.python.org/downloads/
 2. Start installation and choose 'Customized Install'
-3. Change install path to `C:\Python37`
+3. Change install path to `C:\Python36`
 4. Make sure pip and 'Add to PATH' are selected
 5. Complete installation
 
@@ -54,10 +54,10 @@ For Ubuntu Linux 18.04 LTS:
   sudo apt-get update
   sudo apt-get -y install software-properties-common
   sudo add-apt-repository ppa:deadsnakes/ppa
-  sudo apt-get -y install curl python3.7
+  sudo apt-get -y install curl python3.6
   curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-  sudo python3.7 get-pip.py
-  sudo ln -s /usr/bin/python3.7 /usr/bin/python
+  sudo python3.6 get-pip.py
+  sudo ln -s /usr/bin/python3.6 /usr/bin/python
 ```
 
 Note: On Windows, files with extension `.py` may not be associated to Python interpreter, e.g `*.py` is opened by text editor by default. You may need to fix this problem before running the script. Otherwise, stitching feature will fail.
@@ -84,14 +84,14 @@ Install additional Python modules
 
 For Windows
 ```batch
-  C:\Python37\Scripts\pip.exe install cryptography
-  C:\Python37\Scripts\pip.exe install click
+  C:\Python36\Scripts\pip.exe install cryptography
+  C:\Python36\Scripts\pip.exe install click
 ```
 
 For Linux
 ```shell
-  $ python3.7 -m pip install --user cryptography
-  $ python3.7 -m pip install --user click
+  $ python3.6 -m pip install --user cryptography
+  $ python3.6 -m pip install --user click
 ```
 
 Note: If there are multiple Python versions installed on the host, it is highly recommended to use `virtualenv` or `pipenv` before running the scripts.
@@ -617,7 +617,7 @@ Anyone who needs to modify firmware or data in an IFWI Image or create a UEFI su
 
 Do the scripts run in Python 2.7?
 ----------------------------------
-No. Python 2.7 will be no longer be maintained past 2020 (see https://pythonclock.org/). The minimum required version is 3.7.
+No. Python 2.7 will be no longer be maintained past 2020 (see https://pythonclock.org/). The minimum required version is 3.6.
 
 
 Can I have multiple versions of Python installed in the system to run the scripts?
@@ -653,6 +653,3 @@ Finally, contact technical support with the domain knowledge for help.
 Do these scripts support graphic user interface (GUI)?
 ------------------------------------------------------
 Not currently. These command line scripts only run inside a command shell (`cmd.exe` or `bash`)
-
-
-

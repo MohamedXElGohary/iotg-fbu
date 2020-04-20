@@ -354,12 +354,14 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             "OutputFile.Fv"
         )
         self.assertEqual(gen_fv_cmd_exp, " ".join(gen_fv_cmd))
+        
+        #'./tempSubRegionFfs2.ffs'
 
         fv_cmd_list = [[tools_path.GENFV, "-o", "OutputFile.Fv", "-b", "0x1000",
                         "-f", dummy_ffs_files[0], "-g", fmp_guid,
                         "--FvNameGuid", sub_region_desc.s_fv_guid, '-f',
-                        '.\\tempSubRegionFfs2.ffs']]
-
+                        os.path.join(".", "tempSubRegionFfs2.ffs")]]
+                        
         gen_fv_cmd_list = img.build_fv_from_ffs_files(
             sub_region_desc, "OutputFile.Fv", dummy_ffs_files
         )

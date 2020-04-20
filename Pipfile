@@ -4,21 +4,21 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+bandit = "*"
 flake8 = "*"
 black = "*"
-pypandoc = "*"
+pylint = "*"
 pytest-cov = "*"
 pytest-html = "*"
-pytest = "==5.0.1"
-bandit = "*"
-pylint = "*"
+pypandoc = "*"
 
 [packages]
-cryptography = "*"
 click = "*"
+cryptography = "*"
+pytest = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.6"
 
 [pipenv]
 allow_prereleases = true
