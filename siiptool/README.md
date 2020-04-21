@@ -19,7 +19,7 @@ It supports Windows 10, Ubuntu Linux, or Yocto Linux.
 
 ## Installation
 
-* Install Python 3.7 and additional [modules](requirements.txt)
+* Install Python v3.6 and additional [modules](requirements.txt)
 
 ```
 pip install -r requirements.txt
@@ -37,7 +37,7 @@ Pre-compiled OpenSSL for Windows can be downloaded from [here](https://wiki.open
 
 #### JSON Input Format
 
-Input file to run sub-region capsule is in JSON format that describes the data structure and field values to be serialized into binary format.
+Input file to run sub-region capsule requires a JSON format that describes the data structure and field values to be serialized into binary format.
 
 Format of the JSON payload descriptor file:
 
@@ -68,7 +68,7 @@ Supported `data_type` values are "DECIMAL", "HEXADECIMAL", "STRING" or "FILE".
 
 #### Certificate files
 
-Capsule can be signed using certificates. For testing purpose, you can download them from [here](https://github.com/tianocore/edk2/tree/master/BaseTools/Source/Python/Pkcs7Sign).
+If the signed capsule is required, you shall provide certificates from the command line. For testing purpose, they can be downloaded from [here](https://github.com/tianocore/edk2/tree/master/BaseTools/Source/Python/Pkcs7Sign).
 
 ```
 TestCert.pem
@@ -105,9 +105,9 @@ The capsule file `capsule.out.bin` is generated and should be used as input file
 
 ### Stitching tool
 
-Stitch tool changes or merges a supported sub-region file inside a full IFWI image based on UEFI Firmware Volume format.
+The stitch tool can change or merge a supported sub-region file inside a full IFWI image based on UEFI Firmware Volume format.
 
-To get list of supported sub-regions, run:
+To get a list of supported sub-regions, run:
 
 ```
 $ python3 siip_stitch.py -h
@@ -146,7 +146,7 @@ Done!
 
 ### Signing tool
 
-Stitch tool generates security signatures and auxiliary data for a _payload_ file. When BIOS loads the payload (code or data) during boot, it verifies the payload authenticity and integrity first.
+The signing tool generates security signatures and auxiliary data for a _payload_ file. When BIOS loads the payload (code or data) during boot, it verifies the payload authenticity and integrity first.
 
 For example, to sign an image using RSA private key `priv3k.pem`, run:
 
@@ -154,7 +154,7 @@ For example, to sign an image using RSA private key `priv3k.pem`, run:
 python3 siip_sign.py sign -i pse.bin -k priv3k.pem -o pse.signed.bin
 ```
 
-The signed image (e.g. `pse.signed.bin`), is the input file to be  either stitched into IFWI image, or for creating a capsule image for firmware update.
+The signed image (e.g. `pse.signed.bin`), is the input file to be either stitched into IFWI image, or for creating a capsule image for firmware update.
 
 
 ## License
