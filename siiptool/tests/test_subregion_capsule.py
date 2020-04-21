@@ -161,6 +161,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
         output_file = "capsule.out.bin"
 
         full_cmd_line = [
+            "python",
             SUBREGION_CAPSULE_TOOL,
             "-o", output_file,
             "--signer-private-cert=%s" % private_cert,
@@ -301,7 +302,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             )
             gen_sec_cmd = img.create_gensec_cmd(["raw", "PI_NONE"], ["somefile.bin"])
             self.assertEqual(gen_sec_cmd_exp, " ".join(gen_sec_cmd))
-           
+
             gen_sec_cmd_exp = (
                 tools_path.GENSEC
                 + " -o "
@@ -311,7 +312,7 @@ class SubRegionImageGeneratorTestCase(unittest.TestCase):
             )
             gen_sec_cmd = img.create_gensec_cmd(["ui",dummy_ui_name], None)
             self.assertEqual(gen_sec_cmd_exp, " ".join(gen_sec_cmd))
-            
+
             gen_ffs_cmd_exp = (
                 tools_path.GENFFS
                 + " -o "
