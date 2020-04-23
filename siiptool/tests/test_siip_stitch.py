@@ -207,6 +207,26 @@ class TestErrorCases(unittest.TestCase):
         results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         assert b"FMMT timed out" in results.stderr
 
+    def test_overwrite_output(
+        self
+    ):  # allow overwrite of files
+        
+        shutil.copy(os.path.join(IMAGES_PATH, "EHL_EDK_13M_EDK_1352_00_D_Simics.bin"), "IFWI.bin")
+        cmd = [
+            "python",
+            SIIPSTITCH,
+            #os.path.join(IMAGES_PATH, "IFWI.bin"),
+            "IFWI.bin",
+            os.path.join(IMAGES_PATH, "PseFw.bin"),
+            "-ip",
+            "pse",
+            "-o",
+            "IFWI.bin",
+        ]
+
+        results = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        assert b"file arleady exist" in results.stdout
+
     @assert_cleanup
     def test_no_fv_found(self):  #  Firmware volume not found in the file
         with open("tmp_dummy.bin", "wb") as fd:
